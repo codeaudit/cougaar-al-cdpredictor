@@ -45,7 +45,7 @@
 		<copy todir="staging/sys">
 			<fileset dir="data/libs" includes="*.jar"/>
 		</copy>
-		<zip zipfile="psu_cougaar_overlay.zip" basedir="staging"/>
+		<zip zipfile="Logistics_psu_cougaar_overlay.zip" basedir="staging"/>
 		<delete dir="staging"/>
 	</target>
 
