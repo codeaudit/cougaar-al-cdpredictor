@@ -27,6 +27,7 @@
         <javac  deprecation="false" 
                 debug="true" 
                 optimize="false" 
+								excludes="**/tools/alf/**/*.java"
                 srcdir="${src}" 
                 destdir="${build}">
                 <classpath refid="cougaar.libs"/>
