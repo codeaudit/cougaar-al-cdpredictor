@@ -298,12 +298,18 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 	  String status2 = LoadIndicator.NORMAL_LOAD;
         BufferedReader is = null;
 	  ConfigFinder finder = getConfigFinder() ;
+	  File ff=null;
 	  String f=null;
         if ( textFileName != null && finder != null ) 
         {
-           f = finder.locateFile(textFileName).toString() ;
+           ff = finder.locateFile(textFileName);
 	  }
-	  //System.out.println(f);
+        if(ff==null)
+	  {
+	   System.out.println("Text File:"+" "+textFileName+" "+"not found in configs/common directory");
+	   return;
+	  }
+	  f = ff.toString() ;
 	  
 				  try
 				  {	  
