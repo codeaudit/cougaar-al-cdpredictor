@@ -271,7 +271,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
             }
 
             // TODO merge the target locations based on fidelity/error.
-            // System.out.println("Merging status report " + statusReport );
+            System.out.println("Merging status report " + statusReport );
             mergeSensorValues( statusReport ) ;
 
             long startTime = System.currentTimeMillis();
