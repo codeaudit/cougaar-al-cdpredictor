@@ -27,6 +27,7 @@ import org.cougaar.core.adaptivity.InterAgentOperatingMode;
 import org.cougaar.core.agent.ClusterIdentifier;
 import org.cougaar.core.adaptivity.OMCRangeList;
 import org.cougaar.tools.castellan.planlog.DBEventLog;
+//import org.cougaar.core.adaptivity.SensorCondition;
 // Hong : End
 
 import org.cougaar.core.plugin.*;
@@ -42,6 +43,7 @@ import org.cougaar.tools.castellan.planlog.InMemoryEventLog;
 import org.cougaar.tools.castellan.planlog.PersistentEventLog;
 import org.cougaar.tools.castellan.pdu.PDU;
 import org.cougaar.tools.castellan.pdu.EventPDU;
+
 
 import java.util.*;
 
@@ -150,7 +152,7 @@ public class SensorPlugin extends ComponentPlugin
         log = (LoggingService) broker.getService(this, LoggingService.class, null);
 
 		// Hong : Begin
-		String fbtype = null;
+		String fbtype = "LookupTable";
         bs = getBlackboardService();
 		// Hong : End
 
@@ -188,6 +190,10 @@ public class SensorPlugin extends ComponentPlugin
 
             count++;
         }
+
+		props.put( "dbpath", "jdbc:mysql://localhost/" ) ;
+        props.put( "user", "") ;
+        props.put( "password", "" ) ;
 
         // Create event logs.
         System.out.println("SensorPlugin:: Hostname=" + props.getProperty("dbpath") + ",username=" + props.getProperty("user") ) ;
@@ -351,7 +357,7 @@ public class SensorPlugin extends ComponentPlugin
 
     protected FlushThread flushThread ;
     protected String databaseName = null;
-    protected boolean logToMemory = false, logToDatabase = false;
+    protected boolean logToMemory = true, logToDatabase = true;
     protected InMemoryEventLog memoryLog;
     protected PersistentEventLog persistentLog;
     protected PDUBuffer buffer;

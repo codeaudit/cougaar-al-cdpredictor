@@ -39,11 +39,8 @@ public class PSUFBSensor1Plugin extends ComponentPlugin
                             if (same(verb, "ProjectWithdraw") || same(verb, "Withdraw")) {
                                 source = task.getParentTaskUID().getOwner();
                             }
-                            else if (same(verb, "ProjectSupply") || same(verb, "Supply")) {
+                            else if (same(verb, "ProjectSupply") || same(verb, "Supply") || same(verb, "Transport")) {
                                 source = task.getUID().getOwner();
-                            }
-                            else if (same(verb, "Transport")) {
-                                source = "xxx";
                             }
                             if (source!= null) {
                                 if (!same(source, cluster)) {
@@ -119,7 +116,7 @@ public class PSUFBSensor1Plugin extends ComponentPlugin
         long event_time;
         String verb;
 
-        if (allocationSubscription.size() < 3) return;
+        if (allocationSubscription.size() < 2) return;
         
         long min_alloc_time = Long.MAX_VALUE, max_alloc_time = Long.MIN_VALUE;
         long min_task_time = Long.MAX_VALUE, max_task_time = Long.MIN_VALUE;
@@ -150,7 +147,7 @@ public class PSUFBSensor1Plugin extends ComponentPlugin
             }
         }
         
-        if (valid_alloc < 3 || valid_task < 3) {
+        if (valid_alloc < 2 || valid_task < 2) {
             return;
         }
         

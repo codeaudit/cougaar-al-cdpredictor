@@ -32,16 +32,64 @@ import org.cougaar.tools.castellan.ldm.*;
 import org.cougaar.tools.castellan.server.ServerBlackboardMTImpl;
 import org.cougaar.tools.castellan.planlog.PDUBuffer;
 import org.cougaar.tools.castellan.planlog.InMemoryEventLog;
-import org.cougaar.tools.castellan.planlog.DBEventLog;
+import org.cougaar.tools.castellan.planlog.PersistentEventLog;
 import org.cougaar.tools.castellan.pdu.PDU;
 import org.cougaar.tools.castellan.pdu.EventPDU;
 
-import java.util.Iterator;
-import java.util.Collection;
-import java.util.Properties;
+import java.util.*;
+
+import org.cougaar.tools.castellan.planlog.DBEventLog;
+
 
 public class PSULogServerPlugin extends ComponentPlugin
 {
+
+    /**
+     * Thread used to periodically flush the buffer.
+     */
+    class FlushThread extends Thread {
+
+        public boolean isStop ()
+        {
+            return stop;
+        }
+
+        public void setStop ( boolean stop )
+        {
+            this.stop = stop;
+        }
+
+        public long getDelay ()
+        {
+            return delay;
+        }
+
+        public void setDelay ( long delay )
+        {
+            this.delay = delay;
+        }
+
+        public void run ()
+        {
+            while ( !stop ) {
+                try {
+                    Thread.sleep( 2000 );
+                }
+                catch ( InterruptedException e ) {
+                }
+
+                if ( stop ) {
+                    break ;
+                }
+
+                flushBuffer() ;
+            }
+        }
+
+        boolean stop = false ;
+        long delay = 2000 ;
+    }
+
     class TriggerFlushAlarm implements PeriodicAlarm
     {
         public TriggerFlushAlarm(long expTime)
@@ -59,6 +107,7 @@ public class PSULogServerPlugin extends ComponentPlugin
         {
             return expTime;
         }
+
         public void expire()
         {
             expired = true;
@@ -86,7 +135,7 @@ public class PSULogServerPlugin extends ComponentPlugin
     /**
      * Extracts received log messages.
      */
-    UnaryPredicate logMessagePredicate = new UnaryPredicate()
+    protected UnaryPredicate logMessagePredicate = new UnaryPredicate()
     {
         public boolean execute(Object o)
         {
@@ -102,7 +151,7 @@ public class PSULogServerPlugin extends ComponentPlugin
     /**
      * Extracts received log messages.
      */
-    UnaryPredicate pduBufferPredicate = new UnaryPredicate()
+    protected UnaryPredicate pduBufferPredicate = new UnaryPredicate()
     {
         public boolean execute(Object o)
         {
@@ -147,8 +196,12 @@ public class PSULogServerPlugin extends ComponentPlugin
             count++;
         }
 
+		props.put( "dbpath", "jdbc:mysql://localhost/" ) ;
+        props.put( "user", "") ;
+        props.put( "password", "" ) ;
+
         // Create event logs.
-        System.out.println("LogServerPlugin:: Hostname=" + props.getProperty("dbpath") + ",username=" + props.getProperty("user") ) ;
+        System.out.println("PSULogServerPlugin:: Hostname=" + props.getProperty("dbpath") + ",username=" + props.getProperty("user") ) ;
         if (logToMemory)
         {
             memoryLog = new InMemoryEventLog();
@@ -160,28 +213,85 @@ public class PSULogServerPlugin extends ComponentPlugin
             String databaseName = getDatabaseName();
             try
             {
+//                persistentLog = new PersistentEventLog(databaseName, props);
                 persistentLog = new DBEventLog(databaseName, props);
             }
             catch (Exception e)
             {
-                if (log.isWarnEnabled())
+                if (log.isErrorEnabled())
                 {
                     log.error("Could not open \"" + databaseName + "\" persistent database for writing.");
                 }
+                System.out.println("Could not open database for writing.");
                 System.out.println(e);
                 e.printStackTrace();
             }
             log.info( "Opened " + databaseName + " for writing." );
-            System.out.println( "LogServerPlugin::Opened " + databaseName + " for writing." );
+            System.out.println( "PSULogServerPlugin::Opened " + databaseName + " for writing." );
         }
 
-        AlarmService as = getAlarmService() ;
-        as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
+        //AlarmService as = getAlarmService() ;
+        //as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
+        flushThread = new FlushThread() ;
+        flushThread.start();
     }
 
     protected String getDatabaseName()
     {
-        return getClusterIdentifier().cleanToString() + currentTimeMillis();
+        Date d = new Date( System.currentTimeMillis() ) ;
+        // Hard code EST for now.
+        String[] ids = TimeZone.getAvailableIDs(-5 * 60 * 60 * 1000);
+        SimpleTimeZone est = new SimpleTimeZone(-5 * 60 * 60 * 1000, ids[0]);
+        GregorianCalendar calendar = new GregorianCalendar( est ) ;
+        calendar.setTime( d );
+        int dom = calendar.get( Calendar.DAY_OF_MONTH ) ;
+        int moy = calendar.get( Calendar.MONTH ) ;
+        int y = calendar.get( Calendar.YEAR ) ;
+        int hod = calendar.get( Calendar.HOUR_OF_DAY ) ;
+        int min = calendar.get( Calendar.MINUTE ) ;
+
+        StringBuffer buf = new StringBuffer() ;
+        if ( moy < 10 ) {
+            buf.append( '0' ) ;
+        }
+        buf.append( moy ) ;
+        if ( dom < 10 ) {
+            buf.append( '0' ) ;
+        }
+        buf.append( dom ) ;
+        buf.append( y ) ;
+        buf.append( '_' ) ;
+        if ( hod < 10 ) {
+            buf.append( '0' ) ;
+        }
+        buf.append( hod ) ;
+        if ( min < 10 ) {
+            buf.append( '0' ) ;
+        }
+        buf.append( min ) ;
+
+        return getBindingSite().getAgentIdentifier().cleanToString() + buf.toString() ;
+    }
+
+    public void unload ()
+    {
+        super.unload();
+
+        if ( flushThread != null ) {
+            flushThread.setStop( true );
+            flushThread.interrupt() ;
+            flushThread = null ;
+        }
+
+        if ( log != null ) {
+            getServiceBroker().releaseService( this, LoggingService.class, log );
+            log = null ;
+        }
+
+        if ( persistentLog != null ) {
+            persistentLog.close();
+            persistentLog = null ;
+        }
     }
 
     public void execute()
@@ -233,13 +343,16 @@ public class PSULogServerPlugin extends ComponentPlugin
                 buffer.clearIncoming();
             }
         }
+
     }
 
-    String databaseName = null;
-    boolean logToMemory = false, logToDatabase = false;
-    InMemoryEventLog memoryLog;
-    DBEventLog persistentLog;
-    PDUBuffer buffer;
-    LoggingService log ;
-    IncrementalSubscription pduBufferSubscription;
+    protected FlushThread flushThread ;
+    protected String databaseName = null;
+    protected boolean logToMemory = false, logToDatabase = true;
+    protected InMemoryEventLog memoryLog;
+//    protected PersistentEventLog persistentLog;
+    protected DBEventLog persistentLog;
+    protected PDUBuffer buffer;
+    protected LoggingService log ;
+    protected IncrementalSubscription pduBufferSubscription;
 }

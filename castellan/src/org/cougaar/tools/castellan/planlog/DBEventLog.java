@@ -1,5 +1,5 @@
 /*
-* $Header: /opt/rep/cougaar.cvs/al-cdpredictor/castellan/src/org/cougaar/tools/castellan/planlog/DBEventLog.java,v 1.1 2002-06-12 17:03:31 abucus96 Exp $
+* $Header: /opt/rep/cougaar.cvs/al-cdpredictor/castellan/src/org/cougaar/tools/castellan/planlog/DBEventLog.java,v 1.2 2002-08-20 04:50:50 abucus96 Exp $
 *
 * $Copyright$
 *
@@ -10,7 +10,10 @@
 
 /*
 * $Log: DBEventLog.java,v $
-* Revision 1.1  2002-06-12 17:03:31  abucus96
+* Revision 1.2  2002-08-20 04:50:50  abucus96
+* *** empty log message ***
+*
+* Revision 1.1  2002/06/12 17:03:31  abucus96
 * *** empty log message ***
 *
 * Revision 1.2  2002/06/10 23:21:07  cvspsu
@@ -405,9 +408,19 @@ public class DBEventLog implements EventLog
 
     public synchronized void add(PDU pdu)
     {
+
         int Type = 0;
-        if ( pdu instanceof EventPDU ) {
-            myEventPDUTable.add( (EventPDU)pdu );
+        if ( pdu instanceof TaskPDU ) {
+            myTaskPDUTable.add( (TaskPDU)pdu );
+        }
+		else if ( pdu instanceof PlanElementPDU ) {
+            myPlanElementPDUTable.add( (PlanElementPDU)pdu );
+        }
+		else if ( pdu instanceof AssetPDU ) {
+            myAssetPDUTable.add( (AssetPDU)pdu );
+        }
+		else if ( pdu instanceof AllocationResultPDU ) {
+            myAllocResPDUTable.add( (AllocationResultPDU)pdu );
         }
         else if( pdu instanceof ExecutionPDU ) {
             myExecutionPDUTable.add( (ExecutionPDU)pdu );
