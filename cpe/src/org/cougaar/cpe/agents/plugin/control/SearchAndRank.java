@@ -12,8 +12,8 @@ import org.cougaar.tools.techspecs.qos.ControlMeasurement;
  */
 public class SearchAndRank {
 	public SearchAndRank(ControlMeasurement c) {
-		//this.cm=c;
-		this.cm = new ControlMeasurement("System", "Permutations", MessageAddress.getMessageAddress("search"), System.currentTimeMillis(), c.getOpmodes(), c.getTaskTimes());
+		this.cm = c;
+		//this.cm = new ControlMeasurement("System", "Permutations", MessageAddress.getMessageAddress("search"), System.currentTimeMillis(), c.getOpmodes(), c.getTaskTimes());
 	}
 
 	public ControlMessage getTop(int i) {
@@ -112,18 +112,20 @@ public class SearchAndRank {
 						Iterator itr = a.iterator();
 						while (itr.hasNext()) {
 							count++;
-						ScalingModel sm = new ScalingModel();
-						// call a method to give the scaled times
-						// params current_measurement, target_opmodes
-						HashMap est = sm.scale(cm, (HashMap) itr.next());
+							ScalingModel sm = new ScalingModel();
+							HashMap h = (HashMap) itr.next();
+							// call a method to give the scaled times
+							// params current_measurement, target_opmodes
+							HashMap est = sm.scale(cm, h);
 
-						//printing original and scaled times
-						System.out.println(count + ": MEASURED"+ cm.getMeanTaskTimes());
-						System.out.println(count + ": SCALED  "+ est.toString()+"\n");
-						//queueingParameters.add(new QueueingParameters(System.currentTimeMillis(), (HashMap) itr.next(), est));
-						//
-						//System.out.println(count + " [original]: " + temp);
-						//System.out.println(count + " [changed ]: " + (HashMap) itr.next() + "\n");
+							//printing original and scaled times
+							//System.out.println(count + ": MEASURED"+ cm.getMeanTaskTimes());
+							//System.out.println(count + ": SCALED  "+ est.toString()+"\n");
+							if (sm.getifEstimated())
+								queueingParameters.add(new QueueingParameters(System.currentTimeMillis(), h, est));
+							
+							//System.out.println(count + " [original]: " + temp);
+							//System.out.println(count + " [changed ]: " + (HashMap) itr.next() + "\n");
 
 						}
 
@@ -131,7 +133,7 @@ public class SearchAndRank {
 
 				}
 
-		//System.out.println("QUEUEING PARAMETERS\n" + toString());
+		System.out.println("QUEUEING PARAMETERS\n" + toString());
 		//System.out.println("COUNT= " + count);
 	}
 
@@ -219,7 +221,7 @@ public class SearchAndRank {
 	//only if that node and opmode is there it will set/change the opmode, otherwise it will return null
 	public HashMap setOpModeValue(HashMap opModes, MessageAddress node, String opmodeName, int value) {
 		// this code involves a selective recreation of the original opmodes hashmap while fusing the needed changes 
-		
+
 		HashMap temp = new HashMap();
 		if ((opModes != null) && (opModes.containsKey((Object) node))) {
 			Collection c = opModes.keySet();
@@ -246,15 +248,15 @@ public class SearchAndRank {
 			}
 			return temp;
 		}
-//			//original code			
-//          if ((opModes != null) && (opModes.containsKey((Object) node))) {
-//			HashMap h = (HashMap) opModes.get((Object) node);
-//			if (h.containsKey((Object) opmodeName)) {
-//				h.put((Object) opmodeName, new Integer(value));
-//				opModes.put(node, h);
-//				return opModes;
-//			}
-//		}
+		//			//original code			
+		//          if ((opModes != null) && (opModes.containsKey((Object) node))) {
+		//			HashMap h = (HashMap) opModes.get((Object) node);
+		//			if (h.containsKey((Object) opmodeName)) {
+		//				h.put((Object) opmodeName, new Integer(value));
+		//				opModes.put(node, h);
+		//				return opModes;
+		//			}
+		//		}
 		return null;
 	}
 
