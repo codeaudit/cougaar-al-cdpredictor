@@ -54,6 +54,11 @@ public class BoundaryTaskLog extends TaskLog implements BoundaryLog {
         super(uid, cluster, taskVerb, createdTime, createdExecutionTime);
     }
 
+    public void outputParamString(StringBuffer buf) {
+        super.outputParamString(buf);
+        buf.append( ",type=" ).append( BoundaryConstants.toParamString( getBoundaryType()) ) ;
+    }
+
     public void setBoundaryType( int type ) {
         this.type = type ;
     }

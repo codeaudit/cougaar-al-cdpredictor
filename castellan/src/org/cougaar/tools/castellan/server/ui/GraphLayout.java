@@ -76,9 +76,10 @@ public class GraphLayout {
     } // end of GrappaDotReader
 
 
+
     /** This is borrowed from CSmart's graphing routine.
      */
-    public static Graph doLayout( ServerApp app, File dotFile ) {
+    public static Graph doLayout( String dotPath, File dotFile ) {
 
         // This is the size of the dot file, use this
         // for initializing the Buffer for reading the dot.exe process output
@@ -90,7 +91,7 @@ public class GraphLayout {
         //		       " at: " + System.currentTimeMillis()/1000);
 
         File dotExecutable = null ;
-        String command = app.getDotPath() + ' ' + dotFile;
+        String command = dotPath + ' ' + dotFile;
 
         //    System.out.println("Starting: " + command + " at: " +
         //		       System.currentTimeMillis()/1000);

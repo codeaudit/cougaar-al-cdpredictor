@@ -29,6 +29,7 @@ import org.cougaar.tools.castellan.analysis.AggregateLog;
 import org.cougaar.tools.castellan.server.ServerApp;
 import org.cougaar.tools.alf.AgentLoadObserver;
 import org.cougaar.tools.alf.BoundaryVerbTaskAggregate;
+import org.cougaar.tools.alf.BoundaryConstants;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -48,18 +49,25 @@ public class BoundaryAggregateLayout {
 
             for ( Iterator  iter = builder.getAggregates(); iter.hasNext(); ) {
                 BoundaryVerbTaskAggregate bvta = ( BoundaryVerbTaskAggregate ) iter.next() ;
-                ps.print( '"' + bvta.getID() + '"' ) ;
-                ps.print( " [label=\"" + bvta.getCluster() + "," + bvta.getVerb() + ","
-                          + bvta.getBoundaryType() + "\""  +             // The label
+                int id = bvta.getID() ;
+                ps.print( "\"" + id + "\"" ) ;
+                ps.println( " [label=\""  // Begin label
+                          + bvta.getCluster() + "," + bvta.getVerb() + ",\\n"
+                          + BoundaryConstants.toParamString( bvta.getBoundaryType() )
+                          + "\\n#instances=" + bvta.getNumLogs()
+                          + "\""  +             // End the label
                           " shape=box,style=filled,color=palegreen]; "   // The appearance
                 ) ;
                 //
                 for (int i=0;i<bvta.getNumChildren();i++) {
                     AggregateLog al = bvta.getChild(i) ;
-                    ps.println( "\"" + bvta.getID() + "\" -> " + al.getID() + ";" );
+                    ps.println( "\"" + bvta.getID() + "\" -> \"" + al.getID() + "\";" );
                 }
                 count++ ;
             }
+            ps.println( "}" ) ;
+            ps.close();
+            fos.close();
         }
         catch ( Exception e ) {
              e.printStackTrace(); ;

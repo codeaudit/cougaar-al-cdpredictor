@@ -397,7 +397,7 @@ public class ServerUIFrame extends javax.swing.JFrame {
             e.printStackTrace();
         }
 
-        System.out.println("Society = " + sd.toString() );
+        System.out.println("\n=============================\nSOCIETY\n " + sd.toString() );
 
 /*
         System.out.println("\nEntry points:");
@@ -411,11 +411,26 @@ public class ServerUIFrame extends javax.swing.JFrame {
         }
 */
 
-        System.out.println("Boundary Task Aggregates:");
+        System.out.println("\n============================\nBoundary Task Aggregates:");
         for (Iterator iter=observer.getAggregates();iter.hasNext(); ) {
             System.out.println( iter.next() );
         }
 
+        File tempFile = app.getTempFile( ".dot" ) ;
+        BoundaryAggregateLayout bal = new BoundaryAggregateLayout() ;
+        int count = bal.layoutAggregateGraph( tempFile, observer ) ;
+
+        if ( count == 0 ) {
+            JOptionPane.showMessageDialog( this, "No aggregate nodes processed.", "Workflow graph", JOptionPane.ERROR_MESSAGE ) ;
+        }
+        else {
+            JOptionPane.showMessageDialog( this, "A total of " + count + " nodes were processed.", "Workflow graph",
+                JOptionPane.INFORMATION_MESSAGE ) ;
+        }
+
+        Graph g = GraphLayout.doLayout( app.getDotPath(), tempFile ) ;
+        GraphFrame gf = new GraphFrame( "Workflow", g ) ;
+        gf.setVisible( true );
     }
 
     protected void doAggregateGraphAnalysis() {
@@ -481,7 +496,7 @@ public class ServerUIFrame extends javax.swing.JFrame {
                 JOptionPane.INFORMATION_MESSAGE ) ;
         }
 
-        Graph graph = gbl.doLayout( tempFile ) ; // Convert dot file to graph
+        Graph graph = GraphLayout.doLayout( app.getDotPath(), tempFile ) ; // Convert dot file to graph
 	    GraphFrame gf = new GraphFrame( "Task Graph", graph ) ;
         gf.setSize( 800, 600 ) ;
         gf.setVisible( true ) ;
@@ -547,7 +562,7 @@ public class ServerUIFrame extends javax.swing.JFrame {
             JOptionPane.showMessageDialog( this, "A total of " + count + " asset nodes processed.", "Task Graph",
                 JOptionPane.INFORMATION_MESSAGE ) ;
         }
-        Graph graph = gbl.doLayout( tempFile ) ; // Convert dot file to graph
+        Graph graph = GraphLayout.doLayout( app.getDotPath(), tempFile ) ; // Convert dot file to graph
 	    GraphFrame gf = new GraphFrame( "Task Graph", graph ) ;
         gf.setSize( 800, 600 ) ;
         gf.setVisible( true ) ;
@@ -658,7 +673,7 @@ public class ServerUIFrame extends javax.swing.JFrame {
                 JOptionPane.INFORMATION_MESSAGE ) ;
         }
 
-        Graph graph = gbl.doLayout( tempFile ) ; // Convert dot file to graph
+        Graph graph = GraphLayout.doLayout( app.getDotPath(), tempFile ) ; // Convert dot file to graph
         GraphFrame gf = new GraphFrame( "Task Graph", graph ) ;
         gf.setSize( 800, 600 ) ;
         gf.setVisible( true ) ;

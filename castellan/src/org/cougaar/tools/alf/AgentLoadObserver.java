@@ -309,6 +309,10 @@ public class AgentLoadObserver {
             //System.out.println(" \nPROCESSING " + tl );
             int btype = getBoundaryType( tl ) ;
             tl.setBoundaryType( btype ) ;
+
+            //if ( BoundaryConstants.isIncoming( btype ) && BoundaryConstants.isOutgoing( btype ) ) {
+            //    System.out.println("FOUND RELAY TASK " + tl );
+            //}
             //System.out.println( "\tBYTPE is " + BoundaryConstants.toParamString( btype ) );
 
             /**
@@ -317,6 +321,7 @@ public class AgentLoadObserver {
             if ( ( BoundaryConstants.isSource(btype) || BoundaryConstants.isIncoming( btype ) ) &&
                   BoundaryConstants.isTerminal( btype ) )
             {
+                incomingAndSource.add( tl ) ;
                 BoundaryLog ptl = ( BoundaryLog ) pld.getLog( tl.getParent() ) ;
                 if ( ptl != null ) {
                     ptl.addOutgoingDescendent( tl );
@@ -329,6 +334,7 @@ public class AgentLoadObserver {
             else if ( ( BoundaryConstants.isSource(btype) || BoundaryConstants.isIncoming( btype ) )
                     && BoundaryConstants.isOutgoing( btype ) ) {
                 // I am both incoming and outgoing.  Connect myself to my parent and to my remote alloc task.
+                incomingAndSource.add( tl ) ;
                 BoundaryLog ptl = ( BoundaryLog ) pld.getLog( tl.getParent() ) ;
                 if ( ptl != null ) {
                     ptl.addOutgoingDescendent( tl );
@@ -407,23 +413,45 @@ public class AgentLoadObserver {
     }
 
     protected void processForwardingTask( BoundaryTaskLog btl ) {
+        // System.out.println("Processing forwarding task" + btl );
         AllocationLog allocLog = ( AllocationLog ) pld.getPlanElementLogForTask( btl.getUID() ) ;
         AssetLog assetLog = ( AssetLog ) pld.getLog( allocLog.getAssetUID() ) ;
         String targetCluster = assetLog.getClusterProperty() ;
 
+        TaskLog ptl = ( TaskLog ) pld.getLog( btl.getParent() ) ;
+        String parent = ptl.getCluster() ;
+
+        // We don't care about the source (yet)
         BoundaryVerbTaskAggregate agg =
             checkTaskAggregate( btl.getBoundaryType(), btl.getTaskVerb().toString(), btl.getCluster(), targetCluster, null ) ;
         agg.logInstance( btl ) ;
         uidToAggregateMap.put( btl.getUID(), agg ) ;
 
+        // Get the parent with target myself.
+        BoundaryVerbTaskAggregate pagg = checkTaskAggregate( ( ( BoundaryLog ) ptl ).getBoundaryType(),
+                ptl.getTaskVerb(), parent, btl.getCluster(), null ) ;
+        pagg.logChildAggregateLog( agg, btl ) ;
+
         /**
-         * Hook up the descendent as an incoming.
+         * Hook up the descendents as an incoming to the next.
          */
         for ( Iterator iter=btl.getOutgoingDescendents();iter.hasNext();) {
             BoundaryTaskLog ctl = ( BoundaryTaskLog ) iter.next() ;
+            String target = null ;
+            // Get the target cluster for the child iff the child is an relay/forwarding
+            // child as well.
+            if ( BoundaryConstants.isOutgoing( ctl.getBoundaryType() ) ) {
+                Iterator citer = ctl.getOutgoingDescendents() ;
+                if ( citer.hasNext() ) {
+                    TaskLog tl = ( TaskLog ) citer.next() ;
+                    target = tl.getCluster() ;
+                }
+            }
+
+            // Hook up all the children
             BoundaryVerbTaskAggregate cagg =
                 checkTaskAggregate( ctl.getBoundaryType(), ctl.getTaskVerb().toString(),
-                                    ctl.getCluster(), null, null ) ;
+                                    ctl.getCluster(), target, null ) ;
             cagg.logInstance( ctl ) ;
             agg.logChildAggregateLog( cagg, ctl ) ;
             cagg.logParent( agg );

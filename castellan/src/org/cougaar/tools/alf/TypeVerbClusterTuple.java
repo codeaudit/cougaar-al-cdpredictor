@@ -59,11 +59,31 @@ class TypeVerbClusterTuple {
 
     public int hashCode() { return hashCode ; }
 
+    protected static boolean compareStrings( Object a, Object b ) {
+        if ( a == null && b == null ) {
+            return true ;
+        }
+        if ( ( a != null && b == null ) || ( a == null && b != null ) ) {
+            return false ;
+        }
+        return a.equals( b ) ;
+    }
+
     public boolean equals( Object o ) {
         if ( o instanceof TypeVerbClusterTuple ) {
             TypeVerbClusterTuple p = ( TypeVerbClusterTuple ) o ;
-            return ( p.type == type ) && p.verb.equals( verb ) && p.cluster.equals( cluster )
-                    && ( targetAgent == p.targetAgent );
+            boolean result = ( p.type == type ) && p.verb.equals( verb ) ;
+
+            if ( !result ) {
+                return false ;
+            }
+            if ( !( compareStrings( p.cluster, cluster ) || ! compareStrings(p.targetAgent, targetAgent ) ) ) {
+                return false ;
+            }
+            if ( !compareStrings(p.sourceAgent,sourceAgent) ) {
+                return false ;
+            }
+            return true ;
         }
         return false ;
     }
