@@ -38,10 +38,12 @@
 
 	<target name="create_cougaar_overlay">
 		<mkdir dir="staging/lib"/>
+		<mkdir dir="staging/configs/common"/>
 		<mkdir dir="staging/sys"/>
 		<antcall target="delete"/>
 		<antcall target="jar"/>
 		<copy file="${jar}" todir="staging/lib"/>
+		<copy file="test/configs/newminitestconfig/PlanEventLogConfig.xml" todir="staging/configs/common/"/>
 		<copy todir="staging/sys">
 			<fileset dir="data/libs" includes="*.jar"/>
 		</copy>
