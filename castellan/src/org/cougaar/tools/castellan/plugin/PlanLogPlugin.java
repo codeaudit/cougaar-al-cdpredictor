@@ -60,6 +60,27 @@ import java.io.File;
  */
 public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
+    class FlushThread extends Thread {
+        public void run ()
+        {
+            while ( !stop ) {
+                try {
+                   sleep( interval ) ;
+                }
+                catch ( InterruptedException e ) {
+                }
+
+                BlackboardService bs = getBlackboardService() ;
+                bs.openTransaction();
+                mtImpl.execute();
+                bs.closeTransaction();
+            }
+        }
+
+        long interval = 4000 ;
+        boolean stop = false ;
+    }
+
     class FlushAlarm implements PeriodicAlarm {
         public FlushAlarm( long expTime )
         {
@@ -161,8 +182,10 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
                                System.currentTimeMillis(), currentTimeMillis() ) ;
             sendMessage( pdu );
 
-            // Start the peridic alarm to flush the buffer.
-            getAlarmService().addRealTimeAlarm( new FlushAlarm( System.currentTimeMillis() + 5000 ) ) ;
+            flushThread = new FlushThread() ;
+            flushThread.start();
+            // Start the periodic alarm to flush the buffer.
+            // getAlarmService().addRealTimeAlarm( new FlushAlarm( System.currentTimeMillis() + 5000 ) ) ;
         }
     }
 
@@ -751,6 +774,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         mtImpl.execute();
     }
 
+    protected FlushThread flushThread ;
     protected PlanLogConfig config ;
     protected PDUBuffer buffer ;
     protected ClientMessageTransport mtImpl ;
