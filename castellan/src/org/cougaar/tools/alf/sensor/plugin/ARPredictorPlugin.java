@@ -34,13 +34,7 @@ import java.io.PrintWriter;
 import java.util.*;
 
 public class ARPredictorPlugin extends ComponentPlugin {
-/*
-	UnaryPredicate commStatusPredicate = new UnaryPredicate() {
-        public boolean execute(Object o) {
-              return o instanceof CommStatus;
-        }
-    };
-*/
+
 	// this is for the tasks to be allocated by this predictor after communication is lost.
 	UnaryPredicate supplyTaskPredicate = new UnaryPredicate() {
         public boolean execute(Object o) {
@@ -87,55 +81,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 	UnaryPredicate historyPredicate	= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof History;   }    };
 
-	class History implements java.io.Serializable {
-
-		HashMap listOfSubItem;
-		String name = null;
-		public History(String name) {	// this name is for identification
-			super();
-			this.name = name;
-			listOfSubItem = new HashMap();
-		}
-
-		public boolean isThisName(String name) {
-			return this.name.equalsIgnoreCase(name);
-		}
-
-		public TreeMap getHistory(String nomenclature) {
-
-			TreeMap timeSeriesOfTheItem = (TreeMap) listOfSubItem.get(nomenclature);
-
-			if (timeSeriesOfTheItem == null){
-				timeSeriesOfTheItem = new TreeMap(new DateComparator());
-				listOfSubItem.put(nomenclature,timeSeriesOfTheItem);
-			}
-
-			return timeSeriesOfTheItem;
-		}
-	};
-
-	private class DateComparator implements Comparator, java.io.Serializable {
-		
-		public int compare(Object o1, Object o2) {
-		    if (o1 == o2) return 0;
-	    
-		    Long x = (Long) o1;
-		    Long y = (Long) o2;
-		    long x_date = x.longValue();
-		    long y_date = y.longValue();
-				
-	    
-		    // Smaller dates are less preferable
-		    if (x_date < y_date)
-				return 1;
-		    else if (x_date > y_date) 
-				return -1;
-		    else 
-				return 0;
-		}
-
-    }
-
 	History history = null;
 
 	// I assume here that the record of allocation result will be kept in time sequence.
@@ -158,7 +103,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
         myDomainService = (DomainService) getBindingSite().getServiceBroker().getService(this, DomainService.class, null);
         myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null);
 
-//		commStatusSubscription	= (IncrementalSubscription) myBS.subscribe(commStatusPredicate);
 		allocSubscription				= (IncrementalSubscription) myBS.subscribe(allocPredicate);		//	subscribe to allocation 
         arPluginMessageSubscription		= (IncrementalSubscription) myBS.subscribe(arPluginMessagePredicate);
 		historySubscription				= (IncrementalSubscription) myBS.subscribe(historyPredicate);	// for rehydration
@@ -180,7 +124,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 			myBS.publishAdd(history);
 		}
 
-        myLoggingService.shout("ARPredictorPlugin start at " + cluster);
+//        myLoggingService.shout("ARPredictorPlugin start at " + cluster);
         myBS.setShouldBePersisted(false);
     }
 
@@ -191,44 +135,16 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 		boolean changed = checkAllocSubscription();
 		checkARPluginMessage();
-//		boolean commLost = checkComm();
 
-		predictAllocationResults();
-//		if (commLost)	{			
-//			callPredictor();			
-//			alarm = new TriggerFlushAlarm(currentTimeMillis());
-//          as.addAlarm(alarm);
-//		}  
+		if (c1!=null)	{
+			predictAllocationResults(c1);
+		}
+
+		if (c3!=null)	{
+			predictAllocationResults(c3);
+		}
+
     }
-/*
-	private boolean checkComm()	{
-
-		boolean status = false;
-
-		for (Enumeration e = commStatusSubscription.getAddedList(); e.hasMoreElements();) {
-            CommStatus cs = (CommStatus) e.nextElement();
-            String customerAgentName = cs.getConnectedAgentName();
-            status = cs.isCommUp();
-            myLoggingService.shout("Communication status is: "+status);
-            if(status == false){
-                commLossTime = cs.getCommLossTime();
-                myLoggingService.shout("Communication Lost with Customer: "+ customerAgentName);
-                alarm = new TriggerFlushAlarm(currentTimeMillis());
-                as.addAlarm(alarm);
-                myLoggingService.shout("Comm. Loss Alarm Added");
-                comm_count++;
-            } else {
-                if(comm_count==1){
-                    commRestoreTime = cs.getCommRestoreTime();
-                    myLoggingService.shout("Communication Re-Established with Customer: "+ customerAgentName);
-                    comm_count = 0;
-                }
-            }
-        }
-						
-		return status;
-	}
-*/
 
 	private void if_history_is_null_retrieve_from_bb() {
 		
@@ -242,14 +158,22 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 	}
 
-    private boolean checkAllocSubscription() {
+	Collection c1=null;
+	Collection c2=null;
+    Collection c3=null;
+		
+	private boolean checkAllocSubscription() {
 
 		boolean updated = false;
        	if (!allocSubscription.isEmpty()) {
 
-			Collection c1 = allocSubscription.getAddedCollection();
-			Collection c2 = allocSubscription.getRemovedCollection();
-			Collection c3 = allocSubscription.getChangedCollection();
+//			Collection c1 = allocSubscription.getAddedCollection();
+//			Collection c2 = allocSubscription.getRemovedCollection();
+//			Collection c3 = allocSubscription.getChangedCollection();
+
+			c1 = allocSubscription.getAddedCollection();    
+			c2 = allocSubscription.getRemovedCollection();  
+			c3 = allocSubscription.getChangedCollection();  
 
 			// I think in updateHistory we can print out the difference between actual confidence and estimated confidence.
 			updated = updateHistory(c1, c2, c3, currentTimeMillis());	
@@ -382,7 +306,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 			String oftype = (String) pp.getIndirectObject();
 			if (!oftype.equalsIgnoreCase("BulkPOL")&&!oftype.equalsIgnoreCase("Ammunition"))	{	return false;	}
 		} else {
-			myLoggingService.shout ("null Prepositional Phrase OfType" );
+			myLoggingService.shout ("This task "+ti.getUID()+ " has null Prepositional Phrase OfType" );
 			return false;
 		}
 		return true;
@@ -413,7 +337,9 @@ public class ARPredictorPlugin extends ComponentPlugin {
 				Allocation ai = (Allocation)allocIterator.next();	Task ti = (Task) ai.getTask();
 
 /////////////// Examine whethe it is a task of BulkPOL or Ammunition.
-				if (!bulkOrAmmo(ti))	{		continue;	}
+
+//				if (!bulkOrAmmo(ti))	{		continue;	}
+
 				// nomenclature
 				String nomenclature = null;
 				if ((nomenclature = getNomenclature(ti))==null)	{		continue;		}
@@ -454,42 +380,58 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		return true;
 	}
 
-    public void callPredictor() {
-		predictAllocationResults();
-    }
+//    public void callPredictor() {
+//		predictAllocationResults();
+//    }
 
 	private int Today = 0;
 
-	private void predictAllocationResults() 
+	private void predictAllocationResults(Collection c) 
     {
 		Today = (int) (currentTimeMillis()/ 86400000);
-		Collection c = myBS.query(supplyTaskPredicate);  // These tasks should be after 
+//		Collection c = myBS.query(supplyTaskPredicate);  // These tasks should be after 
 
 		for (Iterator iter = c.iterator();iter.hasNext(); )
 		{
-			// How can I know which task is for other agents ?
-			Task t = (Task) iter.next();
+
+			Allocation allocation = (Allocation) iter.next();
+			Task t = (Task) allocation.getTask();
+
+//			// How can I know which task is for other agents ?
+//			Task t = (Task) iter.next();
 
 			if (!t.getUID().getOwner().equalsIgnoreCase(cluster))	{		continue;		}
 
 			// if Task t is not BulkPOL and not Ammunition, then skip.
-			if (!bulkOrAmmo(t))	{		continue;		}
+
+//			if (!bulkOrAmmo(t))	{		continue;		}
+
 			// nomenclature
 			String nomenclature = null;
-			if ((nomenclature = getNomenclature(t))==null)	{		continue;		}
+
+			if ((nomenclature = getNomenclature(t))==null)	{		
+				myLoggingService.shout("This task " + t.getUID() + " has null nomenclatured !!"); 
+				continue;		
+			}
 
 			// if this task does not have the report allocationResult, then print out this. 
 			// in actual comm loss, create allocationResult.
-			PlanElement allocation = (PlanElement) t.getPlanElement();
-			if (allocation != null)
-			{
-				if (!(allocation instanceof Allocation))	{
-					continue;
-				}
+//			PlanElement allocation = (PlanElement) t.getPlanElement();
+//			if (allocation != null)
+//			{
+//				if (!(allocation instanceof Allocation))	{
+//					continue;
+//				}
 
-				AllocationResult reportedResult = allocation.getReportedResult(); 
-			
-				if (reportedResult==null)
+				AllocationResult reportedResult = allocation.getReportedResult();
+
+				/// 
+				AllocationResult estimatedResult = allocation.getEstimatedResult();
+				double earConfidence = estimatedResult.getConfidenceRating();
+
+				///
+
+				if (reportedResult==null && earConfidence < 0.4 )
 				{
 					double success = 0;
 					boolean successBoolean = false;
@@ -499,9 +441,9 @@ public class ARPredictorPlugin extends ComponentPlugin {
 					TreeMap subitem = history.getHistory(nomenclature);
 					if (subitem == null) {		
 						myLoggingService.shout("TreeSet for history of "+ nomenclature + " does not exist.");
-
 					}		
 
+					long start_time = (long) (t.getPreferredValue(AspectType.START_TIME) / 86400000);
 					long end_time = (long) (t.getPreferredValue(AspectType.END_TIME) / 86400000);
 
 					int tw = 0;
@@ -513,7 +455,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 						tw++;
 						Integer successValue = (Integer) iter2.next();
 						success += successValue.intValue();
-
 					}
 
 					if (tw!=0)	{		
@@ -533,12 +474,19 @@ public class ARPredictorPlugin extends ComponentPlugin {
 						rootFactory = (PlanningFactory) myDomainService.getFactory("planning");
 					}
 
-			        AspectValue [] avs = new AspectValue[2];
-			        avs[0] = AspectValue.newAspectValue(AspectType.END_TIME, end_time);
-			        avs[1] = AspectValue.newAspectValue(AspectType.QUANTITY, PluginHelper.getPreferenceBestValue(t, AspectType.QUANTITY));
+					AspectValue [] avs = estimatedResult.getAspectValueResults(); 
 
-					AllocationResult expectedResult = rootFactory.newAllocationResult(success, successBoolean, avs);
-					allocation.setEstimatedResult(expectedResult);
+//			        AspectValue [] avs = new AspectValue[3];
+//					avs[0] = AspectValue.newAspectValue(AspectType.START_TIME, start_time*86400000);
+//			        avs[1] = AspectValue.newAspectValue(AspectType.END_TIME, end_time*86400000);
+//			        avs[2] = AspectValue.newAspectValue(AspectType.QUANTITY, PluginHelper.getPreferenceBestValue(t, AspectType.QUANTITY));
+
+//					AllocationResult expectedResult = rootFactory.newAllocationResult(success, successBoolean, avs);
+//					allocation.setEstimatedResult(expectedResult);
+
+					AllocationResult newReportedResult = rootFactory.newAllocationResult(success, successBoolean, avs);
+					allocation.setObservedResult(newReportedResult);
+
 					myBS.publishChange(allocation);
 					if (isOutputFileOn())	{
 						try {
@@ -549,7 +497,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 						}
 					}
 				}
-			}
+//			}
 		}
     }
 

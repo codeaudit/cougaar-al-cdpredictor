@@ -154,7 +154,8 @@ public class PSUPredictorPlugin extends ComponentPlugin {
 			predictorManager = new PredictorManager(cluster,myLoggingService,getConfigFinder(),this);
 
 	        if (myBS.didRehydrate() == false) {
-				demandHistoryManager = new DemandHistoryManager(myLoggingService);
+//				demandHistoryManager = new DemandHistoryManager(myLoggingService);
+				demandHistoryManager = new DemandHistoryManager();
 				predictorManager.setDemandHistoryManager(demandHistoryManager);
 				myBS.publishAdd(demandHistoryManager);
 	        }
@@ -322,7 +323,11 @@ public class PSUPredictorPlugin extends ComponentPlugin {
 		
 			if (!ti.getVerb().equals("Supply"))						{		continue;		}	// if it is not a supply task, skip.
 			if (ti.getUID().getOwner().equalsIgnoreCase(cluster))	{		continue;		}	// if it is not a task from customer, skip.
-		
+
+//			Himanshu		
+//			Asset as = task.getDirectObject();
+//			storeAsset(as);
+
 			if(!updated) {		updated = true;		}
 
 			if (action)	// true	 -> added
@@ -350,6 +355,9 @@ public class PSUPredictorPlugin extends ComponentPlugin {
 	/// PSU
 	public void generateAndPublish(String customer, String ofType, MaintainedItem maintainedItem, long end_time, double quantity, long today, long commitmentTime) {
 
+//		Vector v = vectorForPredictorTask(customer, ofType, maintainedItem.getNomenclature(),commitmentTime,end_time,quantity);
+//		NewTask nt = getNewTask(v); 
+
 		NewTask nt = getNewTask(customer, ofType, maintainedItem, end_time, quantity, today, commitmentTime);
 		myBS.publishAdd(nt);
 		myLoggingService.shout(cluster + ": Task added " + nt);
@@ -364,7 +372,6 @@ public class PSUPredictorPlugin extends ComponentPlugin {
         NewTask nt = pf.newTask();
 
         // Set verb
-        //nt.setVerb(forecastVerb);
         Verb verb = new Verb("Supply");
         nt.setVerb(verb);
 
