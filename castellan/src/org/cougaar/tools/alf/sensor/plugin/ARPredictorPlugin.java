@@ -35,26 +35,6 @@ import java.util.*;
 
 public class ARPredictorPlugin extends ComponentPlugin {
 
-	// this is for the tasks to be allocated by this predictor after communication is lost.
-	UnaryPredicate supplyTaskPredicate = new UnaryPredicate() {
-        public boolean execute(Object o) {
-			if (o instanceof Task)
-			{
-				Task tempTask = (Task) o;
-				Verb verb = tempTask.getVerb();
-				if (verb.equals("Supply"))  {		
-
-					int end_time = (int) (tempTask.getPreferredValue(AspectType.END_TIME) / 86400000);
-					if (Today < end_time)	{
-						return true;								
-					}
-
-				}
-			}
-			return false;
-        }
-    };
-
 	// Predicate for PlanElement of Supply Tasks.
 	// It is enough to subscribe to the Allocation only. I think we don't nee to subscribe to Supply tasks. 
     UnaryPredicate allocPredicate = new UnaryPredicate()	{ 	
@@ -64,7 +44,9 @@ public class ARPredictorPlugin extends ComponentPlugin {
 				Allocation alloc = (Allocation) o;
 				Task tempTask = (Task) alloc.getTask();
 				Verb verb = tempTask.getVerb();
-				if (verb.equals("Supply"))  {		return true;		}
+				if (verb.equals("Supply"))  {		
+					return true;		
+				}
 			}
 			return false; 	
 		} 
@@ -81,8 +63,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 	UnaryPredicate historyPredicate	= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof History;   }    };
 
-	History history = null;
-
     public void setupSubscriptions() {
 
 		cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
@@ -91,9 +71,9 @@ public class ARPredictorPlugin extends ComponentPlugin {
         myDomainService = (DomainService) getBindingSite().getServiceBroker().getService(this, DomainService.class, null);
         myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null);
 
-		allocSubscription				= (IncrementalSubscription) myBS.subscribe(allocPredicate);		//	subscribe to allocation 
-        arPluginMessageSubscription		= (IncrementalSubscription) myBS.subscribe(arPluginMessagePredicate);
-		historySubscription				= (IncrementalSubscription) myBS.subscribe(historyPredicate);	// for rehydration
+		allocSubscription			= (IncrementalSubscription) myBS.subscribe(allocPredicate);		//	subscribe to allocation 
+        arPluginMessageSubscription	= (IncrementalSubscription) myBS.subscribe(arPluginMessagePredicate);
+		historySubscription			= (IncrementalSubscription) myBS.subscribe(historyPredicate);	// for rehydration
 
 		if((OutputFileOn=getParametersWhichTurnsOnOrOffOutputFile())) {
 
@@ -118,16 +98,12 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
     public void execute() {
 	
-		boolean changed = checkAllocSubscription();
+		checkAllocSubscription();
 		checkARPluginMessage();
 
-		if (c1!=null)	{
+		if (c1!=null )	{
 			predictAllocationResults(c1);
 		}
-
-//		if (c3!=null)	{
-//			predictAllocationResults(c3);
-//		}
 
     }
 
@@ -143,31 +119,30 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 	}
 
-	Collection c1=null, c2=null, c3=null;
+	Collection c1=null, c3=null;
 		
-	private boolean checkAllocSubscription() {
+	private void checkAllocSubscription() {
 
-		boolean updated = false;
        	if (!allocSubscription.isEmpty()) {
 
+			Today = (int) (currentTimeMillis()/ 86400000);
+
 			c1 = allocSubscription.getAddedCollection();    
-			c2 = allocSubscription.getRemovedCollection();  
 			c3 = allocSubscription.getChangedCollection();  
 
 			// I think in updateHistory we can print out the difference between actual confidence and estimated confidence.
-			updated = updateHistory(c1, c2, c3, currentTimeMillis());	
+			updateHistory(c3);	
 		}
 
-        return updated;
 	}
 	
 	private void checkARPluginMessage() {
 
-		Collection c1 = arPluginMessageSubscription.getAddedCollection();
-		Collection c2 = arPluginMessageSubscription.getChangedCollection();
+		Collection addedMessages	= arPluginMessageSubscription.getAddedCollection();
+		Collection changedMessages  = arPluginMessageSubscription.getChangedCollection();
 
-		for (Iterator iter = c1.iterator(); iter.hasNext(); )
-		{
+		for (Iterator iter = addedMessages.iterator(); iter.hasNext(); )	{
+
 			ARPluginMessage arPluginMessage = (ARPluginMessage)iter.next();
 			if (arPluginMessage.getAgentName().equalsIgnoreCase(cluster))	{
 				continue;					
@@ -189,9 +164,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 			}
 		}
 
-
-		for (Iterator iter2 = c2.iterator(); iter2.hasNext(); )
-		{
+		for (Iterator iter2 = changedMessages.iterator(); iter2.hasNext(); )	{
 
 			ARPluginMessage arPluginMessage = (ARPluginMessage)iter2.next();
 
@@ -213,18 +186,16 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		}
 	}
 
-	private boolean updateHistory(Collection addedAllocation, Collection removedAllocation, Collection changedAllocation, long nowTime)	{
-		int nAllocations=0;
-		Iterator allocIterator=null;
-		boolean updated = true;
+	private void updateHistory(Collection changedAllocation)	{
 
-		today = (int) (nowTime/ 86400000);
+		boolean updated = false;
 
-		if (addedAllocation!=null)		{		reflectAllocationIntoHistory(addedAllocation,	today);		}
-		if (changedAllocation!=null)	{		reflectAllocationIntoHistory(changedAllocation,	today);		}
+		if (changedAllocation	!=	null)	{		updated = reflectAllocationIntoHistory(changedAllocation);		}
 
-		myBS.publishChange(history);	// for rehydration.
-		return updated;
+		if (updated) {
+			myBS.publishChange(history);	// for rehydration.
+		}
+
 	}
 
 	private boolean bulkOrAmmo(Task ti) {
@@ -253,34 +224,60 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		}
 	}
 
-	private boolean reflectAllocationIntoHistory(Collection addedAllocation, int nowTime)
+	private String getClass(Task ti) {
+		
+		PrepositionalPhrase pp = ti.getPrepositionalPhrase("OfType");
+		String oftype = null;
+
+		if (pp != null)	{
+			oftype = (String) pp.getIndirectObject();
+		} else {
+			myLoggingService.shout ("null Prepositional Phrase OfType" );
+			return null;
+		}
+		return oftype;
+	}
+
+	private boolean reflectAllocationIntoHistory(Collection addedAllocation)  // addedAllocation could be adde or changed Allocation.
 	{
-		if (addedAllocation!=null)
-		{
-			int nAllocations = addedAllocation.size();
-		    Iterator allocIterator = addedAllocation.iterator();   
 
-			for (int i = 0; i < nAllocations; i++) {
+		boolean updated = false;
 
-				Allocation ai = (Allocation)allocIterator.next();	Task ti = (Task) ai.getTask();
+		if (addedAllocation!=null)	{
 
-				// nomenclature
-				String nomenclature = null;
-				if ((nomenclature = getNomenclature(ti))==null)	{		continue;		}
-	
-				// Search 
-				TreeMap subitem = history.getHistory(nomenclature);
+			for (Iterator allocIterator = addedAllocation.iterator(); allocIterator.hasNext(); ) {
 
-				if (subitem == null && isOutputFileOn()) {		
-					myLoggingService.shout("TreeSet for history of "+ nomenclature + " could not be created !!");
-					continue;		
-				}		
-
+				Allocation ai = (Allocation)allocIterator.next();	
+				
 				int rarsuccess = -1;  // -1 -> nothing, 0 -> failure, 1 -> success.
 				double rarConfidence = 0;
 				AllocationResult rar = null;
+
 				if ((rar = ai.getReportedResult())!=null)
 				{
+					Task ti = (Task) ai.getTask();
+					if (!ti.getUID().getOwner().equalsIgnoreCase(cluster))	{		continue;		}
+
+					// nomenclature
+					String nomenclature = null;
+					if ((nomenclature = getNomenclature(ti))==null)	{		continue;		}
+	
+					// Search 
+//					TreeMap subitem = history.getHistory(nomenclature);
+					HistoryElement historyElement = history.getHistory(nomenclature);
+
+//					// ofType
+//					String ofType = null;
+//					if ((ofType = getClass(ti))==null)	{		continue;		}
+	
+//					// Search 
+//					HistoryElement historyElement = history.getHistory(ofType);
+					
+					if (historyElement == null && isOutputFileOn()) {		
+//						myLoggingService.shout("TreeSet for history of "+ nomenclature + " could not be created !!");
+						continue;		
+					}
+
 					if (rar.isSuccess())	{ rarsuccess = 1; } else { rarsuccess = 0;}
 					rarConfidence = rar.getConfidenceRating();
 
@@ -292,23 +289,22 @@ public class ARPredictorPlugin extends ComponentPlugin {
 //						rarQuantity = avQ.doubleValue();
 //						rarEndTime = avE.longValue()/86400000;
 //					}
-				}
-		    
-				long end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000) ;
 
-				if (rarsuccess >=0)		{
-					subitem.put(new Long(end_time), new Integer(rarsuccess));
+					historyElement.addResult(rarsuccess);
+//					history.putHistory(ofType,historyElement);
+					history.putHistory(nomenclature,historyElement);
+					if (!updated) 	{ updated = true; }
 				}
+
 			} // for
+
 		}
-		return true;
+
+		return updated;
+
 	}
 
-	private int Today = 0;
-
-	private void predictAllocationResults(Collection c) 
-    {
-		Today = (int) (currentTimeMillis()/ 86400000);
+	private void predictAllocationResults(Collection c)    {
 
 		for (Iterator iter = c.iterator();iter.hasNext(); )
 		{
@@ -318,35 +314,62 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 			if (!t.getUID().getOwner().equalsIgnoreCase(cluster))	{		continue;		}
 
-			// nomenclature
-			String nomenclature = null;
-
-			if ((nomenclature = getNomenclature(t))==null)	{		
-				myLoggingService.shout("This task " + t.getUID() + " has null nomenclatured !!"); 
-				continue;		
-			}
-
 			// if this task does not have the report allocationResult, then print out this. 
 			// in actual comm loss, create allocationResult.
 				AllocationResult receivedResult = allocation.getReceivedResult();
-													
+				AllocationResult reportedResult = allocation.getReportedResult();
+
 				/// 
 				AllocationResult estimatedResult = allocation.getEstimatedResult();
 				double earConfidence = estimatedResult.getConfidenceRating();
 
 				///
-				if (receivedResult==null && earConfidence < 0.4 )
+				if (reportedResult ==null && receivedResult==null && earConfidence < 0.4 )
 				{
 					double success = 0;
 					boolean successBoolean = false;
 					String successOrNot = "fail";
 
-					//////////// Search history 
-					TreeMap subitem = history.getHistory(nomenclature);
-					if (subitem == null) {		
-						myLoggingService.shout("TreeSet for history of "+ nomenclature + " does not exist.");
-					}		
+//					// ofType
+//					String ofType = null;
+//
+//					if ((ofType = getClass(t))==null)	{		
+//						myLoggingService.shout("This task " + t.getUID() + " has null ofType !!"); 
+//						continue;		
+//					}
 
+					// nomenclature
+					String nomenclature = null;
+
+					if ((nomenclature = getNomenclature(t))==null)	{		
+						myLoggingService.shout("This task " + t.getUID() + " has null nomenclatured !!"); 
+						continue;		
+					}
+
+					//////////// Search history 
+//					TreeMap subitem = history.getHistory(nomenclature);
+					HistoryElement historyElement = history.getHistory(nomenclature);
+//					HistoryElement historyElement = history.getHistory(ofType);
+
+					if (historyElement == null) {		
+
+						myLoggingService.shout("TreeSet for history of "+ nomenclature + " does not exist.");
+//						myLoggingService.shout("TreeSet for history of "+ ofType + " does not exist.");
+						success = 0.4;
+						successOrNot = "success";
+						successBoolean = true;
+
+					} else {
+					
+						success = 0.6*historyElement.getConfidence();
+						if (success > 0.4)	{	// decision on the success or failure.
+							successOrNot = "success";
+							successBoolean = true;
+						} 
+
+					}
+
+/*
 					long end_time = (long) (t.getPreferredValue(AspectType.END_TIME) / 86400000);
 
 					int tw = 0;
@@ -371,7 +394,8 @@ public class ARPredictorPlugin extends ComponentPlugin {
 						successOrNot = "success";
 						successBoolean = true;
 					}
-
+*/
+					
 					PlanningFactory rootFactory=null;
 					if(myDomainService != null) {
 						rootFactory = (PlanningFactory) myDomainService.getFactory("planning");
@@ -387,8 +411,10 @@ public class ARPredictorPlugin extends ComponentPlugin {
 					myBS.publishChange(allocImpl);
 
 					if (isOutputFileOn())	{
+						long end_time = (long) (t.getPreferredValue(AspectType.END_TIME) / 86400000);
 						try {
 							rst.write(Today+"\t"+t.getUID()+"\t"+nomenclature+"\t"+successOrNot+"\t"+success+"\t"+end_time+"\n");
+//							rst.write(Today+"\t"+t.getUID()+"\t"+ofType+"\t"+successOrNot+"\t"+success+"\t"+end_time+"\n");
 							rst.flush();
 			            } catch (java.io.IOException ioexc) {
 							System.err.println("can't write file, io error");
@@ -419,6 +445,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		return OutputFileOn;
 	}
 
+	private int Today = 0;
 	private String cluster;
     private LoggingService myLoggingService;
     private DomainService myDomainService;
@@ -427,15 +454,8 @@ public class ARPredictorPlugin extends ComponentPlugin {
     private IncrementalSubscription allocSubscription, historySubscription, arPluginMessageSubscription;
 
 	private InventoryInfo iInfo = null;
-    boolean changed = false;
-    int today = -1;
-
+	private History history = null;
 	private boolean OutputFileOn = true;
-    long nextTime = 0;
     java.io.BufferedWriter rst = null;
    
-    long commLossTime = -1;
-    long commRestoreTime = -1;
-    int comm_count = 0;
-
 }

@@ -40,7 +40,7 @@ import java.util.*;
 		public boolean isThisName(String name) {
 			return this.name.equalsIgnoreCase(name);
 		}
-
+/*
 		public TreeMap getHistory(String nomenclature) {
 
 			TreeMap timeSeriesOfTheItem = (TreeMap) listOfSubItem.get(nomenclature);
@@ -52,4 +52,21 @@ import java.util.*;
 
 			return timeSeriesOfTheItem;
 		}
+*/
+		public HistoryElement getHistory(String nomenclature) {
+
+			HistoryElement historyElement = (HistoryElement) listOfSubItem.get(nomenclature);
+
+			if (historyElement == null){
+				historyElement = new HistoryElement(nomenclature);
+			}
+
+			return historyElement;
+		}
+
+		public void putHistory(String nomenclature, HistoryElement historyElement) {	// sometimes nomenclature is ofType.
+
+			listOfSubItem.put(nomenclature, historyElement);
+		}
+
 	}
