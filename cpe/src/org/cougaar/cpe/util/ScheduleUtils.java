@@ -1,15 +1,13 @@
 package org.cougaar.cpe.util;
 
-import org.cougaar.planning.ldm.plan.ScheduleImpl;
+import org.cougaar.cpe.model.Plan;
+import org.cougaar.cpe.model.SupplyTask;
+import org.cougaar.cpe.model.Task;
 import org.cougaar.planning.ldm.plan.ScheduleElement;
-import org.cougaar.tools.alf.Schedule;
+import org.cougaar.planning.ldm.plan.ScheduleImpl;
 
 import java.util.Collection;
 import java.util.Iterator;
-
-import org.cougaar.cpe.model.SupplyTask;
-import org.cougaar.cpe.model.Plan;
-import org.cougaar.cpe.model.Task;
 
 /**
  * User: wpeng
