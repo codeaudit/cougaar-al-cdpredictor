@@ -238,7 +238,7 @@ public class TheLoadForecaster {
 	  } 
 	  catch (java.io.IOException ioexc)
 	  {
-		    System.err.println ("can't write file, io error" );
+//		    System.err.println ("can't write file, io error" );
 	  }
 
     }
@@ -301,12 +301,12 @@ public class TheLoadForecaster {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't write file, io error" + s);
+//		    System.err.println ("can't write file, io error" + s);
 	    }
 		
 		if (flag)
 		{
-			System.out.println(s);
+//			System.out.println(s);
 		}
 	}
 }

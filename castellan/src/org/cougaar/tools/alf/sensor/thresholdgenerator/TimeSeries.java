@@ -117,9 +117,9 @@ public class TimeSeries {
 			if (rs0.next())
 			{
 				starttime = rs0.getLong(1);
-				System.out.println(start_time + ", " + starttime);
+//				System.out.println(start_time + ", " + starttime);
 			} else {
-				System.out.println("Something wrong in the task table ");
+//				System.out.println("Something wrong in the task table ");
 				return null;
 			}
 
@@ -203,9 +203,9 @@ public class TimeSeries {
 			PdStatement.executeUpdate("DROP TABLE " + table2);
 
 		} catch (SQLException E) {
-          System.out.println("SQLException: " + E.getMessage());
-          System.out.println("SQLState:     " + E.getSQLState());
-          System.out.println("VendorError:  " + E.getErrorCode());
+//        System.out.println("SQLException: " + E.getMessage());
+//        System.out.println("SQLState:     " + E.getSQLState());
+//        System.out.println("VendorError:  " + E.getErrorCode());
         }
 
 		return TimeSeries;
@@ -274,9 +274,9 @@ public class TimeSeries {
 			if (rs0.next())
 			{
 				starttime = rs0.getLong(1);
-				System.out.println("the first GLS in society appears at " +start_time + ", the first GLS in this agent appears at" + starttime);  // start_time : for the first GLS, starttime : for this agent's first GLS 
+//				System.out.println("the first GLS in society appears at " +start_time + ", the first GLS in this agent appears at" + starttime);  // start_time : for the first GLS, starttime : for this agent's first GLS 
 			} else {
-				System.out.println("Something wrong in the task table ");
+//				System.out.println("Something wrong in the task table ");
 				return null;
 			}
 
@@ -368,9 +368,9 @@ public class TimeSeries {
 			PdStatement.executeUpdate("DROP TABLE " + table2);
 
 		} catch (SQLException E) {
-          System.out.println("SQLException: " + E.getMessage());
-          System.out.println("SQLState:     " + E.getSQLState());
-          System.out.println("VendorError:  " + E.getErrorCode());
+//          System.out.println("SQLException: " + E.getMessage());
+//          System.out.println("SQLState:     " + E.getSQLState());
+//          System.out.println("VendorError:  " + E.getErrorCode());
         }
 
 		return TimeSeries;
@@ -393,7 +393,7 @@ public class TimeSeries {
 				}
 		} catch (SQLException E) {
 //		  System.out.println("checkAndDelete");
-//          System.out.println("SQLException: " + E.getMessage());
+          System.out.println("SQLException: " + E.getMessage());
 //          System.out.println("SQLState:     " + E.getSQLState());
 //          System.out.println("VendorError:  " + E.getErrorCode());
         }
@@ -416,9 +416,9 @@ public class TimeSeries {
 			if (rs0.next())
 			{
 				starttime = rs0.getLong(1);
-				System.out.println(start_time + ", " + starttime);
+//				System.out.println(start_time + ", " + starttime);
 			} else {
-				System.out.println("Something wrong in the task table ");
+//				System.out.println("Something wrong in the task table ");
 				return null;
 			}
 
@@ -428,7 +428,7 @@ public class TimeSeries {
 			checkAndDelete("finishlist");
 
 			// prepare task list
-			System.out.println("A");
+//			System.out.println("A");
 			String query = "CREATE TABLE TASKLIST ( EVENTTIME BIGINT NOT NULL, " +
 												  " TASKUID BIGINT NOT NULL, " +
 												  " TASKSID VARCHAR(20) NOT NULL, " +
@@ -464,7 +464,7 @@ public class TimeSeries {
 			PdStatement.executeUpdate("drop table tt");
 
 			// get the finish time of each task
-		    java.sql.Statement PdStatement4 = con.createStatement();
+//		    java.sql.Statement PdStatement4 = con.createStatement();
 
 			// Translate database into Hashtable
 			Hashtable tasklist = new Hashtable();
@@ -513,11 +513,11 @@ public class TimeSeries {
 //					s = "update tasklist set finishtime = " + rs1.getLong(1) + " where taskuid = " + uid + " and tasksid = '" + sid +"'";
 //					PdStatement3.executeUpdate(s);
 			 	 }else {
-				 	System.out.println(k+ " does not exist !!!");
+//				 	System.out.println(k+ " does not exist !!!");
 				 }		 
 			}
 
-			System.out.println("F");
+
 
 ////////////// start to generate time series
 			java.sql.ResultSet rs1 = PdStatement.executeQuery("select max(eventtime) from tasklist");
@@ -529,7 +529,7 @@ public class TimeSeries {
 			{
 				me = rs1.getInt(1);
 			}else {
-				System.out.println("Hey Hari something wrong !!!");
+//				System.out.println("Hey Hari something wrong !!!");
 			}
 
 			sz = (int) me/unittime + 1;
@@ -539,12 +539,12 @@ public class TimeSeries {
 			// Cumulative average waiting time
 			int c=1;
 			long ct = 0;
-			System.out.println("me = " + me + ", " + me/unittime);
+//			System.out.println("me = " + me + ", " + me/unittime);
 			
 			do {
 				ct = c*unittime;
 
-				float wt = 0;
+//				float wt = 0;
 				long l = 0;
 				int n = 0;
 
@@ -574,7 +574,7 @@ public class TimeSeries {
 			} while(ct < me);
 			
 		} catch (SQLException E) {
-//          System.out.println("SQLException: " + E.getMessage());
+			System.out.println("SQLException: " + E.getMessage());
 //          System.out.println("SQLState:     " + E.getSQLState());
 //          System.out.println("VendorError:  " + E.getErrorCode());
         }
@@ -587,7 +587,7 @@ public class TimeSeries {
 	// New Version for speed improvement June 7, 2002
 	public float [][] generateNumOfTaskVsWaitingTime(String cluster, int classno, int unittime){
 
-		long starttime = 0;
+//		long starttime = 0;
 		float [][] TimeSeries = null;
 /*
 		try
@@ -783,9 +783,9 @@ public class TimeSeries {
 			if (rs0.next())
 			{
 				starttime = rs0.getLong(1);
-				System.out.println(start_time + ", " + starttime);
+//				System.out.println(start_time + ", " + starttime);
 			} else {
-				System.out.println("Something wrong in the task table ");
+//				System.out.println("Something wrong in the task table ");
 				return null;
 			}
 
@@ -795,7 +795,7 @@ public class TimeSeries {
 			checkAndDelete("finishlist");
 
 			// prepare task list
-			System.out.println("A");
+//			System.out.println("A");
 			String query = "CREATE TABLE TASKLIST ( EVENTTIME BIGINT NOT NULL, " +
 												  " TASKUID BIGINT NOT NULL, " +
 												  " TASKSID VARCHAR(20) NOT NULL, " +
@@ -831,7 +831,7 @@ public class TimeSeries {
 			PdStatement.executeUpdate("drop table tt");
 
 			// get the finish time of each task
-		    java.sql.Statement PdStatement4 = con.createStatement();
+//		    java.sql.Statement PdStatement4 = con.createStatement();
 
 			// Translate database into Hashtable
 			Hashtable tasklist = new Hashtable();
@@ -861,7 +861,7 @@ public class TimeSeries {
 
 
 ////////////
-			int z = 0;
+//			int z = 0;
 			for (Enumeration e = tasklist.keys() ; e.hasMoreElements() ;) {
 				 String k = (String) e.nextElement();
 			     task tt = (task) tasklist.get(k);
@@ -880,11 +880,11 @@ public class TimeSeries {
 //					s = "update tasklist set finishtime = " + rs1.getLong(1) + " where taskuid = " + uid + " and tasksid = '" + sid +"'";
 //					PdStatement3.executeUpdate(s);
 			 	 }else {
-				 	System.out.println(k+ " does not exist !!!");
+//				 	System.out.println(k+ " does not exist !!!");
 				 }		 
 			}
 
-			System.out.println("F");
+//			System.out.println("F");
 
 ////////////// start to generate time series
 			java.sql.ResultSet rs1 = PdStatement.executeQuery("select max(eventtime) from tasklist");
@@ -896,7 +896,7 @@ public class TimeSeries {
 			{
 				me = rs1.getInt(1);
 			}else {
-				System.out.println("Hey Hari something wrong !!!");
+//				System.out.println("Hey Hari something wrong !!!");
 			}
 
 			sz = (int) me/unittime + 1;
@@ -906,13 +906,13 @@ public class TimeSeries {
 			// Cumulative average waiting time
 			int c=1;
 			long ct = 0;
-			System.out.println("me = " + me + ", " + me/unittime);
+//			System.out.println("me = " + me + ", " + me/unittime);
 			
 			do {
 				ct = c*unittime;
 
-				float wt = 0;
-				long l = 0;
+//				float wt = 0;
+//				long l = 0;
 				int n = 0;
 
 				for (Enumeration e = tasklist.keys() ; e.hasMoreElements() ;) {
@@ -938,7 +938,7 @@ public class TimeSeries {
 			} while(ct < me);
 			
 		} catch (SQLException E) {
-//          System.out.println("SQLException: " + E.getMessage());
+            System.out.println("SQLException: " + E.getMessage());
 //          System.out.println("SQLState:     " + E.getSQLState());
 //          System.out.println("VendorError:  " + E.getErrorCode());
         }
@@ -1254,7 +1254,7 @@ public class TimeSeries {
       Class.forName("org.gjt.mm.mysql.Driver");
 
     } catch(java.lang.ClassNotFoundException e) {
-//      System.err.print("(EstablishConnetction) ClassNotFoundException:");
+       System.err.print("(EstablishConnetction) ClassNotFoundException:");
 //      System.err.println(e.getMessage());
     }
 
@@ -1267,7 +1267,7 @@ public class TimeSeries {
         return ;
     }
 
-    System.out.println( "PlanDatabase:: Connecting to dababase " + dbPath ) ;
+//    System.out.println( "PlanDatabase:: Connecting to dababase " + dbPath ) ;
     try {
       con = DriverManager.getConnection(dbPath);
 
@@ -1278,7 +1278,7 @@ public class TimeSeries {
     } catch(SQLException ex) {
 
 //      System.err.println("(EstablishConnetction) -----SQLException-----");
-//      System.err.println("SQLState:  " + ex.getSQLState());
+        System.err.println("SQLState:  " + ex.getSQLState());
 //      System.err.println("Message:  " + ex.getMessage());
 //      System.err.println("Vendor:  " + ex.getErrorCode());
     } 

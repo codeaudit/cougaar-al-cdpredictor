@@ -210,10 +210,10 @@ public class VeiwTimeSeries {
 		oneByone = false;
 
 	} else {
-		System.out.println("agentname class unittime mode");
-		System.out.println("mode = 3 : use the first GLS or the first task except RFS and RFD in the agent as the base time");
-		System.out.println("mode = 4 : use starting GLS of all society in the agent as the base time");
-		System.out.println("example : 'run 47-FSB 10 0 4' or 'run 10 0 4'");
+//		System.out.println("agentname class unittime mode");
+//		System.out.println("mode = 3 : use the first GLS or the first task except RFS and RFD in the agent as the base time");
+//		System.out.println("mode = 4 : use starting GLS of all society in the agent as the base time");
+//		System.out.println("example : 'run 47-FSB 10 0 4' or 'run 10 0 4'");
 
 		return;
 	}

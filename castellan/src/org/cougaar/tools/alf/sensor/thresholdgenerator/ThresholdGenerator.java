@@ -25,7 +25,7 @@ class ThresholdGenerator
 	
 	float series[][][] = new float[ntest][][];	// the time series generated from each database for the agent will be contained by matrix series.
 
-	System.out.println("agent name = " + agentname);
+//	System.out.println("agent name = " + agentname);
 
 	for (int i=0;i<ntest;i++)
 	{
@@ -45,11 +45,11 @@ class ThresholdGenerator
 		} 
 	}
 
-	float [] mseries = null;
+//	float [] mseries = null;
 
     if (series[0] == null)
     {
-		System.out.println("series is null");
+//		System.out.println("series is null");
     }
 
 
@@ -62,8 +62,8 @@ class ThresholdGenerator
 	
 	ff.storeThresholdFile(threshold, agentname);
 
-	if (threshold != null)
-	{
+//	if (threshold != null)
+//	{
 /*
 		for (int i=0;i<threshold.length; i++ )
 		{
@@ -71,7 +71,7 @@ class ThresholdGenerator
 			series[ntest-1][1][i] = threshold[i];
 		}
 */
-	}
+//	}
 
 	//Matlab
 //	MatlabInterface mtl = new MatlabInterface();

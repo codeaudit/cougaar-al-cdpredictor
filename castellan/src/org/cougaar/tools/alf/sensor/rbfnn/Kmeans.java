@@ -33,7 +33,7 @@ public class Kmeans {
 		dimension = X[0].length;
 
 		//  open up standard input 
-	    br = new BufferedReader(new java.io.InputStreamReader(System.in)); 
+//	    br = new BufferedReader(new java.io.InputStreamReader(System.in)); 
 
 	}
 
@@ -335,7 +335,7 @@ public class Kmeans {
 
 		return answer;
 	}
-
+/*
 	private void showMatrix(String title, double [][]X,int r, int c) {
 
 //			int i, j;
@@ -349,14 +349,14 @@ public class Kmeans {
 				}
 				System.out.println(" ");
 			}
-/*
-			try { 
-		         br.readLine(); 
-		    } catch (java.io.IOException ioe) { 
-				 System.out.println("IO error trying to read your name!"); 
-		         System.exit(1); 
-		    } 
-*/
+
+//			try { 
+//		         br.readLine(); 
+//		    } catch (java.io.IOException ioe) { 
+//				 System.out.println("IO error trying to read your name!"); 
+//		         System.exit(1); 
+//		    } 
+
 	}
 
 	private void showVector(String title, double []X,int r) {
@@ -368,14 +368,14 @@ public class Kmeans {
 			{
 				System.out.println(X[i]);
 			}
-/*
-			try { 
-		         br.readLine(); 
-		    } catch (java.io.IOException ioe) { 
-				 System.out.println("IO error trying to read your name!"); 
-		         System.exit(1); 
-		    } 
-*/
+
+//			try { 
+//		         br.readLine(); 
+//		    } catch (java.io.IOException ioe) { 
+//				 System.out.println("IO error trying to read your name!"); 
+//		         System.exit(1); 
+//		    } 
+
 	}
 
 	private void showVector(String title, int []X,int r) {
@@ -387,14 +387,14 @@ public class Kmeans {
 			{
 				System.out.println(X[i]);
 			}
-/*
-			try { 
-		         br.readLine(); 
-		    } catch (java.io.IOException ioe) { 
-				 System.out.println("IO error trying to read your name!"); 
-		         System.exit(1); 
-		    } 
-*/
-	}
 
+//			try { 
+//		         br.readLine(); 
+//		    } catch (java.io.IOException ioe) { 
+//				 System.out.println("IO error trying to read your name!"); 
+//		         System.exit(1); 
+//		    } 
+
+	}
+*/
 }

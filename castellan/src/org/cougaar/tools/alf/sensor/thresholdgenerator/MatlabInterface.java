@@ -33,7 +33,7 @@ public class MatlabInterface
 			// Coftnvert java array into Matlab array
 			int ll = threshold[0].length;
 
-			System.out.println("# of levels = " + ll + " # of tests = " + ntest);
+//			System.out.println("# of levels = " + ll + " # of tests = " + ntest);
 
 			FloatMatrix [] matmatrix = new FloatMatrix[ntest+ll];
 
@@ -48,7 +48,7 @@ public class MatlabInterface
 						matmatrix[i].set(j,1,series[i][1][j]);  // num of tasks
 					}
 				} else {
-					System.out.println("series " + i + " is null");
+//					System.out.println("series " + i + " is null");
 				}
 			}
 
@@ -116,7 +116,7 @@ public class MatlabInterface
 
 			eng.evalString( "figure" ) ;
 			eng.evalString(plot);
-			System.out.println(plot);
+//			System.out.println(plot);
 			eng.evalString( "title('"+agentname + ", class="+classno+"')");
 		}
 
@@ -141,7 +141,7 @@ public class MatlabInterface
 						matmatrix[i].set(j,1,series[i][1][j]);  // num of tasks
 					}
 				} else {
-					System.out.println("series " + i + " is null");
+//					System.out.println("series " + i + " is null");
 				}
 			}
 
@@ -187,7 +187,7 @@ public class MatlabInterface
 
 			eng.evalString( "figure" ) ;
 			eng.evalString(plot);
-			System.out.println(plot);
+//			System.out.println(plot);
 			eng.evalString( "title('"+agentname + ", class="+classno+"')");
 		}
 
@@ -199,7 +199,7 @@ public class MatlabInterface
 		         br.readLine(); 
 				 br.close();
 		    } catch (java.io.IOException ioe) { 
-				 System.out.println("IO error trying to read your name!"); 
+//				 System.out.println("IO error trying to read your name!"); 
 		         System.exit(1); 
 		    } 
 		}

@@ -82,7 +82,7 @@ public class TheSensor implements java.io.Serializable {
 	  } 
 	  catch (java.io.IOException ioexc)
 	  {
-		 System.err.println ("can't write file, io error" );
+//		 System.err.println ("can't write file, io error" );
 	  }
 
 	  // Table for checking number of tasks by agents
@@ -165,7 +165,7 @@ public class TheSensor implements java.io.Serializable {
 					LookupTable	= new Hashtable();
 
 					// debug
-					System.out.println("agent : " + current_agent);
+//					System.out.println("agent : " + current_agent);
 
 					continue;
 				}
@@ -188,7 +188,7 @@ public class TheSensor implements java.io.Serializable {
 				ULThreshold = (Float.valueOf(s.substring(st).trim())).floatValue();
 				
 				// debug
-				System.out.println("lookup: " + From + ", " + FbLevel + ", " + LLThreshold + ", " + ULThreshold);
+//				System.out.println("lookup: " + From + ", " + FbLevel + ", " + LLThreshold + ", " + ULThreshold);
 				Vector ThresholdList = null;
 				if ((ThresholdList = (Vector) LookupTable.get(From)) == null)
 				{
@@ -206,7 +206,7 @@ public class TheSensor implements java.io.Serializable {
 		} 
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't read the input file, io error" );
+//		    System.err.println ("can't read the input file, io error" );
 	    }
 	}
 
@@ -248,7 +248,7 @@ public class TheSensor implements java.io.Serializable {
             e.printStackTrace() ;
         }
 	}
-
+/*
 	private void read_param(java.io.BufferedReader param_stream){ // read parameters
 
 		String s = null;
@@ -316,7 +316,7 @@ public class TheSensor implements java.io.Serializable {
 		    System.err.println ("can't read the input file, io error" );
 	    }
 	}
-
+*/
 	// read SV from files.
 	private void read_input(java.io.BufferedReader input_stream, String agent){ 
 
@@ -388,7 +388,7 @@ public class TheSensor implements java.io.Serializable {
 		} 
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't read the input file, io error" );
+//		    System.err.println ("can't read the input file, io error" );
 	    }
 
 
@@ -513,12 +513,12 @@ public class TheSensor implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't write file, io error" + s);
+//		    System.err.println ("can't write file, io error" + s);
 	    }
 		
 		if (flag)
 		{
-			System.out.println(s);
+//			System.out.println(s);
 		}
 	}
 
@@ -592,7 +592,7 @@ public class TheSensor implements java.io.Serializable {
 
 			if (t >= nextcheckpoint)
 			{
-				System.out.println(source + ", " + t + ", " + NoTasks);
+//				System.out.println(source + ", " + t + ", " + NoTasks);
 				nextcheckpoint = t - t%1000;
 				checkfallingbehindness2(nextcheckpoint, NoTasks);	// Type 2
 				nextcheckpoint = nextcheckpoint + 1000;
