@@ -293,8 +293,8 @@ public abstract class PlanToPDUTranslator
             if ( remoteClusterID != null )
             {
                 // Find the "down" task e.g. (task1 -> cluster ->  task2), where task2 "shadows" task1.
-                Task task = ( ( AllocationforCollections ) alloc ).getAllocationTask();
-
+               // Task task = ( ( AllocationforCollections ) alloc ).getAllocationTask(); //valid
+               Task task = null; //only for turning dashboard green...not valid
                 if ( task != null )
                 {
                     UID taskU;
