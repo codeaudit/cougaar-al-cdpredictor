@@ -1,5 +1,5 @@
 <plpconfig>
   <settings>
-	<PlanLogServer address="63.122.105.54"/>
+	<PlanLogServer address="192.168.1.85"/>
   </settings>
 </plpconfig>
