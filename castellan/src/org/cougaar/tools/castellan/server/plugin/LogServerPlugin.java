@@ -36,9 +36,7 @@ import org.cougaar.tools.castellan.planlog.PersistentEventLog;
 import org.cougaar.tools.castellan.pdu.PDU;
 import org.cougaar.tools.castellan.pdu.EventPDU;
 
-import java.util.Iterator;
-import java.util.Collection;
-import java.util.Properties;
+import java.util.*;
 
 public class LogServerPlugin extends ComponentPlugin
 {
@@ -87,7 +85,7 @@ public class LogServerPlugin extends ComponentPlugin
     /**
      * Extracts received log messages.
      */
-    UnaryPredicate logMessagePredicate = new UnaryPredicate()
+    protected UnaryPredicate logMessagePredicate = new UnaryPredicate()
     {
         public boolean execute(Object o)
         {
@@ -103,7 +101,7 @@ public class LogServerPlugin extends ComponentPlugin
     /**
      * Extracts received log messages.
      */
-    UnaryPredicate pduBufferPredicate = new UnaryPredicate()
+    protected UnaryPredicate pduBufferPredicate = new UnaryPredicate()
     {
         public boolean execute(Object o)
         {
@@ -165,10 +163,11 @@ public class LogServerPlugin extends ComponentPlugin
             }
             catch (Exception e)
             {
-                if (log.isWarnEnabled())
+                if (log.isErrorEnabled())
                 {
                     log.error("Could not open \"" + databaseName + "\" persistent database for writing.");
                 }
+                System.out.println("Could not open database for writing.");
                 System.out.println(e);
                 e.printStackTrace();
             }
@@ -182,7 +181,33 @@ public class LogServerPlugin extends ComponentPlugin
 
     protected String getDatabaseName()
     {
-        return getClusterIdentifier().cleanToString() + currentTimeMillis();
+        Date d = new Date( System.currentTimeMillis() ) ;
+        // Hard code EST for now.
+        String[] ids = TimeZone.getAvailableIDs(-5 * 60 * 60 * 1000);
+        SimpleTimeZone est = new SimpleTimeZone(-5 * 60 * 60 * 1000, ids[0]);
+        GregorianCalendar calendar = new GregorianCalendar( est ) ;
+        calendar.setTime( d );
+        int dom = calendar.get( Calendar.DAY_OF_MONTH ) ;
+        int moy = calendar.get( Calendar.MONTH ) ;
+        int y = calendar.get( Calendar.YEAR ) ;
+        int hod = calendar.get( Calendar.HOUR_OF_DAY ) ;
+        int min = calendar.get( Calendar.MINUTE ) ;
+
+        StringBuffer buf = new StringBuffer() ;
+        if ( moy < 10 ) {
+            buf.append( '0' ) ;
+        }
+        buf.append( moy ) ;
+        if ( dom < 10 ) {
+            buf.append( '0' ) ;
+        }
+        buf.append( dom ) ;
+        buf.append( y ) ;
+        buf.append( '_' ) ;
+        buf.append( hod ) ;
+        buf.append( min ) ;
+
+        return getBindingSite().getAgentIdentifier().cleanToString() + buf.toString() ;
     }
 
     public void execute()
@@ -211,7 +236,7 @@ public class LogServerPlugin extends ComponentPlugin
             synchronized (buffer)
             {
                 // Now, flush out the buffer into an InMemoryEventLog object
-                if (buffer.getSize() > 0)
+                if (buffer.getIncomingSize() > 0)
                 {
                     if (logToMemory)
                     {
@@ -236,11 +261,11 @@ public class LogServerPlugin extends ComponentPlugin
         }
     }
 
-    String databaseName = null;
-    boolean logToMemory = false, logToDatabase = false;
-    InMemoryEventLog memoryLog;
-    PersistentEventLog persistentLog;
-    PDUBuffer buffer;
-    LoggingService log ;
-    IncrementalSubscription pduBufferSubscription;
+    protected String databaseName = null;
+    protected boolean logToMemory = false, logToDatabase = false;
+    protected InMemoryEventLog memoryLog;
+    protected PersistentEventLog persistentLog;
+    protected PDUBuffer buffer;
+    protected LoggingService log ;
+    protected IncrementalSubscription pduBufferSubscription;
 }
