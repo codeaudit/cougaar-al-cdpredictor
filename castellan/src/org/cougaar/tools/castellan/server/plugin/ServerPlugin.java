@@ -123,7 +123,7 @@ public class ServerPlugin extends ComponentPlugin implements PDUSink {
         }
         else {
             Object[] buffers = c.toArray() ;
-            if ( buffers.length > 0 ) {
+            if ( buffers.length > 1 ) {
                 if ( log != null && log.isWarnEnabled() ) {
                     log.warn( "More than one PDU buffer created for agent \"" + getBindingSite().getAgentIdentifier() + "\". Using first." );
                 }
