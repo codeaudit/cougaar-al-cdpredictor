@@ -16,6 +16,7 @@ public class TimePeriodMeasurementPoint extends MeasurementPoint
         if ( type == null ) {
             throw new IllegalArgumentException( "Type must be non-null." ) ;
         }
+        setMaximumHistorySize( 20000 );
         this.type = type ;
     }
 
