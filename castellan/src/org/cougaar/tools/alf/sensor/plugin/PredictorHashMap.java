@@ -30,7 +30,7 @@ import java.util.HashMap;
 public class PredictorHashMap implements java.io.Serializable {
 
 	private UID uid;
-	public static HashMap hashmap = new HashMap();
+	public HashMap hashmap = new HashMap();
 
 	/* Method to add hashmap containing each unique (customer and supply class) for a given supplier
 	 * The hashmap contained in the static hashmap would be filled with items as keys and

@@ -31,7 +31,7 @@ import java.util.Iterator;
 public class KalmanFilter implements java.io.Serializable {
 
 	private HashMap dataModelMap;
-	public HashMap apriorEstimateMap = new HashMap(); 	   //Key: Crk+itemName, value: ArrayList Values
+	public HashMap apriorEstimateMap = new HashMap(); 		//Key: Crk+itemName, value: ArrayList Values
 	public HashMap aposteriorEstimateMap = new HashMap(); //Key: Crk+itemName, value: ArrayList Values
 
   public KalmanFilter(HashMap dataModelMap) {
@@ -39,7 +39,7 @@ public class KalmanFilter implements java.io.Serializable {
   }
 
 	public void timeUpdate(){
-			for(Iterator iterator = aposteriorEstimateMap.keySet().iterator();iterator.hasNext();) {
+			for(Iterator iterator = aposteriorEstimateMap.keySet().iterator();iterator.hasNext();){
 				String key = (String)iterator.next();
 				ArrayList postEstValuesList = (ArrayList)aposteriorEstimateMap.get(key);
 				ArrayList apriorEstValuesList = new ArrayList();
@@ -107,7 +107,7 @@ public class KalmanFilter implements java.io.Serializable {
 		timeUpdate();
 }
 
-	public double getApriorEstimate(CustomerRoleKey crk, String itemName, long endTime) {
+	public double getApriorEstimate(CustomerRoleKey crk, String itemName, long endTime){
 		if(!apriorEstimateMap.isEmpty()){
 			ArrayList kfValuesList = (ArrayList)apriorEstimateMap.get(crk+itemName);
 			for(Iterator iterator = kfValuesList.iterator();iterator.hasNext();){
@@ -142,7 +142,7 @@ public class KalmanFilter implements java.io.Serializable {
 		else return null;
 	}
 
-	public class KFValues {
+	public class KFValues implements java.io.Serializable {
 		private long endTime;
 		private double quantity;
 		private double error;

@@ -279,8 +279,8 @@ public class PredictorPlugin extends ComponentPlugin {
 				Asset as = task.getDirectObject();
 				String item_name = as.getTypeIdentificationPG().getNomenclature();
 				addAsset(as);
-				ArrayList assetList = getAssetList();
-				if (assetList.size()== 1) myBS.publishAdd(assetList); else myBS.publishChange(assetList);
+				//ArrayList assetList = getAssetList();
+				//if (assetList.size()== 1) myBS.publishAdd(assetList); else myBS.publishChange(assetList);
 
 				if (selectedPredictor == KalmanFilter) {
 					if (currentTime >= 0) {
@@ -527,5 +527,4 @@ public class PredictorPlugin extends ComponentPlugin {
 		long expTime;
 		long delay = 86400000;
 	};
-
 }

@@ -21,9 +21,9 @@
   * </copyright>
   *
   */
+//	Revision 1.2 by hgupta 06/24/04
 //  Revision 1.1 by hgupta 03/22/04
 //  Revision 1.0 by hgupta: Initial Revision
-
 
 package org.cougaar.tools.alf.sensor.plugin;
 
@@ -44,6 +44,7 @@ import org.cougaar.util.UnaryPredicate;
 
 import java.util.*;
 
+
 public class PredictorDataPlugin extends ComponentPlugin {
 
 	private String cluster;
@@ -60,7 +61,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 	private HashMap matchMap = new HashMap();
 	private int count_alarm = 0;
 	private boolean rehydrate_flag = false;
-
+	private int tick = 0;
 
 	UnaryPredicate relationPredicate = new UnaryPredicate() {
 		public boolean execute(Object o) {
@@ -172,9 +173,11 @@ public class PredictorDataPlugin extends ComponentPlugin {
 				boolean flag = uniqueMatch(cluster, org_name, role);
 				if (flag) {
 					if (org_name!= null && role!= null) {
+						tick++;
 						role = stringRevManipulation(role);
 						myLoggingService.debug("Supplier : " + cluster + "| Customer: " + org_name + "| SupplyClass "+role);
 						phm.addHashMap(org_name, role);
+						if(tick == 1) phm.setUID(myUIDService.nextUID());
 					}
 				}
 			}
@@ -185,6 +188,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
 		Task task;
 		HashMap hashmap;
+		boolean fireAlarm = true;
 		//long time = System.currentTimeMillis();
 		//myLoggingService.debug("getPlannedDemand() method time start" +  new Date(time));
 
@@ -192,12 +196,10 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
 		for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
 			task = (Task) e.nextElement();
+			fireAlarm = false;
 			String owner = task.getPrepositionalPhrase("For").getIndirectObject().toString();
 			String comp = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
 			if (comp!= null) {
-				if (alarm != null) alarm.cancel();
-				alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
-				as.addAlarm(alarm);
 				Asset as = task.getDirectObject();
 				String item_name = as.getTypeIdentificationPG().getNomenclature();
 				CustomerRoleKey crk = new CustomerRoleKey(owner, comp);
@@ -231,6 +233,11 @@ public class PredictorDataPlugin extends ComponentPlugin {
 					}
 				}
 			}
+		if(!fireAlarm) {
+			if (alarm != null) alarm.cancel();
+			alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
+			as.addAlarm(alarm);
+		}
 			//long end = System.currentTimeMillis();
 			//myLoggingService.debug("getPlannedDemand() method end time " +  new Date(end)
 		 	//+ " in milliseconds" +
@@ -242,7 +249,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
 		HashMap processedMap = null;
 		myBlackBoardService.publishAdd(phm);
-		phm.setUID(myUIDService.nextUID());
+		//phm.setUID(myUIDService.nextUID());
 		HashMap hashmap = phm.getMap();
 		ProcessHashData phd = new ProcessHashData(cluster, hashmap); //cluster added new
 		if (phd!= null) processedMap = phd.iterateList();
