@@ -1,6 +1,5 @@
 <plpconfig>
   <settings>
-	<PlanLogServer address="63.122.105.54"/>
         <PlanLogAgent identifier="PlanLogAgent"/>
         <LoggingActive value="true"/>
   </settings>
