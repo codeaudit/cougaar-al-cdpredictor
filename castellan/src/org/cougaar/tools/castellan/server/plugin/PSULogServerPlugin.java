@@ -315,6 +315,7 @@ public class PSULogServerPlugin extends ComponentPlugin
 
     private void flushBuffer()
     {
+        System.out.print("FB");
         if (buffer != null)
         {
             synchronized (buffer)
