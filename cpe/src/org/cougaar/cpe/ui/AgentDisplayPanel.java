@@ -6,9 +6,11 @@ import org.cougaar.cpe.agents.plugin.C2AgentPlugin;
 import org.cougaar.cpe.agents.plugin.WorldStateReference;
 import org.cougaar.cpe.relay.SourceBufferRelay;
 import org.cougaar.cpe.relay.TargetBufferRelay;
+import org.cougaar.cpe.unittests.MetricsGraphPanel;
 import org.cougaar.tools.techspecs.qos.MeasurementPoint;
 import org.cougaar.tools.techspecs.qos.DelayMeasurementPoint;
 import org.cougaar.tools.techspecs.qos.EventDurationMeasurementPoint;
+import org.cougaar.tools.techspecs.qos.TimePeriodMeasurementPoint;
 
 import javax.swing.*;
 import javax.swing.event.TableModelListener;
@@ -20,10 +22,7 @@ import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.relay.Relay;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * User: wpeng
@@ -253,6 +252,20 @@ public class AgentDisplayPanel extends JFrame {
         gbc.weighty = 100 ; gbc.weightx = 100 ;
         gbc.anchor = GridBagConstraints.CENTER ;
 
+        Collections.sort( measurementPoints, new Comparator() {
+            public int compare(Object o1, Object o2)
+            {
+                MeasurementPoint mp1 = (MeasurementPoint) o1, mp2 = (MeasurementPoint) o2 ;
+                if ( mp1.getName() == null ) {
+                    return 1 ;
+                }
+                if ( mp2.getName() == null ) {
+                    return 0 ;
+                }
+                return mp1.getName().compareTo( mp2.getName() ) ;
+            }
+        } ) ;
+
         for (int i = 0; i < measurementPoints.size(); i++) {
             MeasurementPoint measurementPoint = (MeasurementPoint)measurementPoints.get(i);
             if ( measurementPoint instanceof EventDurationMeasurementPoint ) {
@@ -278,8 +291,17 @@ public class AgentDisplayPanel extends JFrame {
                 mpDisplayPanels.add( panel ) ;
                 gridy ++ ;
             }
-
-            // Move to the next display element.
+            else if ( measurementPoint instanceof TimePeriodMeasurementPoint ) {
+                gbc.gridx = gridx; gbc.gridy = gridy ;
+                TimePeriodMeasurementPoint tmp = (TimePeriodMeasurementPoint) measurementPoint ;
+                MetricsGraphPanel panel = new MetricsGraphPanel( tmp ) ;
+                panel.setMinimumSize( panelSize ) ;
+                panel.setPreferredSize( panelSize ) ;
+                gbl.setConstraints( panel, gbc );
+                measurementPanel.add( panel ) ;
+                mpDisplayPanels.add( panel ) ;
+                gridy ++ ;
+            }
         }
 
         // Add an empty panel to take up any leftover space
@@ -303,20 +325,29 @@ public class AgentDisplayPanel extends JFrame {
     }
 
     private void updateMeasurementPanels() {
+
         for (int i = 0; i < mpDisplayPanels.size(); i++) {
             Object o = mpDisplayPanels.get(i) ;
-            if ( o instanceof DelayPlotPanel ) {
-                DelayPlotPanel delayPlotPanel = (DelayPlotPanel) o ;
-                delayPlotPanel.updateData();
+            if ( o instanceof  MPObserver ) {
+                MPObserver mp = (MPObserver) o ;
+                mp.updateData();
             }
-            else if ( o instanceof DelayPlotPanel2 ) {
-                DelayPlotPanel2 p = (DelayPlotPanel2) o ;
-                p.updateData();
-            }
-            else if ( o instanceof EventDurationPlotPanel ) {
-                EventDurationPlotPanel ep = (EventDurationPlotPanel) o ;
-                ep.updateData();
-            }
+//            if ( o instanceof DelayPlotPanel ) {
+//                DelayPlotPanel delayPlotPanel = (DelayPlotPanel) o ;
+//                delayPlotPanel.updateData();
+//            }
+//            else if ( o instanceof DelayPlotPanel2 ) {
+//                DelayPlotPanel2 p = (DelayPlotPanel2) o ;
+//                p.updateData();
+//            }
+//            else if ( o instanceof EventDurationPlotPanel ) {
+//                EventDurationPlotPanel ep = (EventDurationPlotPanel) o ;
+//                ep.updateData();
+//            }
+//            else if ( o instanceof MetricsGraphPanel ) {
+//                MetricsGraphPanel mp = (MetricsGraphPanel) o ;
+//                mp.updateData();
+//            }
         }
     }
 
