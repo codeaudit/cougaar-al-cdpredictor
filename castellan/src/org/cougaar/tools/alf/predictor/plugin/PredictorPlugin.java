@@ -89,6 +89,8 @@ public class PredictorPlugin extends ComponentPlugin {
 	private final int KalmanFilter = 3;
 	private int selectedPredictor = KalmanFilter;
 	private Collection taskColl = new ArrayList();
+	private String[] sClassNames = {"Ammunition","Subsistence","BulkPOL","PackagedPOL","Consumable"};
+	private HashMap maxEndTimePerSC = new HashMap();
 
 
 	UnaryPredicate taskPredicate = new UnaryPredicate() {
@@ -248,7 +250,7 @@ public class PredictorPlugin extends ComponentPlugin {
 	private void setDemandDataList(PredictorSupplyArrayList demandDataList) {
 		if(local_alist.isEmpty())	this.local_alist.addAll(demandDataList);
 		else {
-			local_alist.clear();
+			//local_alist.clear();
 			local_alist.addAll(demandDataList);
 		}
 	}
@@ -270,7 +272,11 @@ public class PredictorPlugin extends ComponentPlugin {
 			alarm = new TriggerFlushAlarm(currentTimeMillis());
 			as.addAlarm(alarm);
 			System.out.println("CurrentTimeMillisForPP "+new Date(currentTimeMillis()));
-			findLastSupplyTaskTime(taskColl, customerAgentName);
+			//findLastSupplyTaskTime(taskColl, customerAgentName);
+			for(int i = 0; i < sClassNames.length; i++) {
+				long endTime = findLastSupplyTaskTimePerSC(taskColl, sClassNames[i], customerAgentName);
+				maxEndTimePerSC.put(sClassNames[i],new Long(endTime));
+			}
 		} else {
 			commRestoreTime = cs.getCommRestoreTime();
 			time_gap = (int) (((commRestoreTime - commLossTime) / 86400000) * 4);
@@ -427,7 +433,7 @@ public class PredictorPlugin extends ComponentPlugin {
 							for (Iterator iterator2 = valueList.iterator(); iterator2.hasNext();) {
 								Values values = (Values) iterator2.next();
 								//long endTime = values.getEndTime();
-								long endTime = findLastSupplyTaskTimePerSC(taskColl, crk.getRoleName());
+								long endTime = findLastSupplyTaskTimePerSC(taskColl, crk.getRoleName(),customerAgentName );
 								//System.out.println("crk.getRoleName() "+crk.getRoleName());
 								long commitmentTime = values.getCommitmentTime();
 								double quantity = values.getQuantity();
@@ -489,7 +495,7 @@ public class PredictorPlugin extends ComponentPlugin {
 	}
 
 	public void publishPredictions() {
-	if (status)return;
+	if (status) return;
 	else {
 		if(!comm_restore_flag) {
 			if (alarm != null) alarm.cancel();
@@ -500,7 +506,15 @@ public class PredictorPlugin extends ComponentPlugin {
 			for (Iterator iterator = hashmap.keySet().iterator(); iterator.hasNext();) {
 				CustomerRoleKey customerRoleKey = (CustomerRoleKey) iterator.next();
 				if(customerRoleKey.getCustomerName().equalsIgnoreCase(customerAgentName)) {
-					long endTime = findLastSupplyTaskTimePerSC(taskColl, customerRoleKey.getRoleName());
+					long endTime = 0;
+					for(Iterator iter = maxEndTimePerSC.keySet().iterator();iter.hasNext();){
+						String key = (String)iter.next();
+						if(customerRoleKey.getRoleName().equalsIgnoreCase(key)){
+							endTime = ((Long)maxEndTimePerSC.get(key)).longValue();
+							break;
+						}
+					}
+					//long endTime = findLastSupplyTaskTimePerSC(taskColl, customerRoleKey.getRoleName(), customerAgentName);
 					long commitmentTime = endTime - 86400000; //hardcode as of now
 					long customer_lead_time = getCustomerLeadTime(endTime, commLossTime);
 					long pred_gap = getPredictorGap(endTime, customer_lead_time);
@@ -516,20 +530,26 @@ public class PredictorPlugin extends ComponentPlugin {
 							double quantity = values.getQuantity();
 							long execEndTime = -1;
 							double execQuantity = -1;
-							if (!getDemandDataList().isEmpty()) {
-								HashMap executionDataList = (HashMap)local_alist.get(0);
-								HashMap itemMap = (HashMap) executionDataList.get(customerRoleKey);
-								if(itemMap!= null){
-									ArrayList valueList1 = (ArrayList) itemMap.get(item_name);
-									if(valueList1!= null){
-										for (Iterator iter2 = valueList1.iterator(); iter2.hasNext();) {
-											Values values1 = (Values) iter2.next();
-											execEndTime = values1.getEndTime();
-											execQuantity = values1.getQuantity();
-											if(item_name.equalsIgnoreCase("JP8")) System.out.println("execEndTimeJP8 "+new Date(execEndTime)+" execQuantity "+execQuantity);
+							for(Iterator it = local_alist.iterator();it.hasNext();) {
+								HashMap executionDataList = (HashMap)it.next();
+								for (Iterator it1 = executionDataList.keySet().iterator(); it1.hasNext();) {
+									CustomerRoleKey crk = (CustomerRoleKey) it1.next();
+								//HashMap executionDataList = (HashMap)local_alist.get(0);
+									HashMap itemMap = (HashMap)executionDataList.get(crk);
+									if(itemMap!= null) {
+										ArrayList valueList1 = (ArrayList)itemMap.get(item_name);
+										//System.out.println("itemMAPexistsForItem "+item_name);
+										if(valueList1!= null) {
+											for (Iterator iter2 = valueList1.iterator(); iter2.hasNext();) {
+												Values values1 = (Values) iter2.next();
+												execEndTime = values1.getEndTime();
+												execQuantity = values1.getQuantity();
+												if(item_name.equalsIgnoreCase("JP8")) System.out.println("execEndTimeJP8 "+new Date(execEndTime)+" execQuantity "+execQuantity);
+											}
+											quantity = execQuantity;
+											System.out.println("execQuantityPrediction "+quantity+" itemname "+item_name);
+											if(item_name.equalsIgnoreCase("JP8")) System.out.println("QuantitySetJP8 "+quantity);
 										}
-										quantity = execQuantity;
-										if(item_name.equalsIgnoreCase("JP8")) System.out.println("QuantitySetJP8 "+quantity);
 									}
 								}
 							}
@@ -581,7 +601,7 @@ public class PredictorPlugin extends ComponentPlugin {
 				}
 			}
 			comm_restore_flag = false;
-			System.out.println("Number of Prediction tasks added "+number_of_prediction_items+" cluster "+cluster);
+			System.out.println("Number of Predictiontasks added "+number_of_prediction_items+" cluster "+cluster);
 		}
 	}
 
@@ -662,11 +682,24 @@ public class PredictorPlugin extends ComponentPlugin {
 		 return thunk.getMaxEndTime();
 	 }
 
-	private long findLastSupplyTaskTimePerSC(Collection tasks, String supplyClass) {
-		 MaxEndThunk thunk = new MaxEndThunk(supplyClass);
+	private long findLastSupplyTaskTimePerSC(Collection Alltasks, String supplyClass, String customerName) {
+		 MaxEndThunk thunk = new MaxEndThunk(customerName, supplyClass);
+		 Collection tasks = filterTasks(Alltasks, customerName);
 		 Collectors.apply(thunk, tasks);
 		 return thunk.getMaxEndTime(supplyClass);
 	 }
+
+	private Collection filterTasks(Collection tasks, String customerAgentName){
+		Collection c = new ArrayList();
+		for (Iterator iterator = tasks.iterator(); iterator.hasNext();) {
+			Task task = (Task) iterator.next();
+			String customer = (String) task.getPrepositionalPhrase("For").getIndirectObject();
+			if(customer.equalsIgnoreCase(customerAgentName)){
+				c.add(task);
+			}
+		}
+		return c;
+	}
 
 	public class TriggerFlushAlarm implements PeriodicAlarm {
 
@@ -709,6 +742,7 @@ public class PredictorPlugin extends ComponentPlugin {
 	private class MaxEndThunk implements Thunk {
 		 long maxEnd = Long.MIN_VALUE;
 		 String customerName;
+		 String supplyClass;
 		 Task lastTask;
 		 HashMap endTimes = new HashMap();
 
@@ -716,11 +750,16 @@ public class PredictorPlugin extends ComponentPlugin {
 			 this.customerName = customerName;
 		 }
 
+		public MaxEndThunk (String customerName, String supplyClass) {
+			 this.customerName = customerName;
+			 this.supplyClass = supplyClass;
+		 }
+
 		  public void apply(Object o) {
 			 if (o instanceof Task) {
 				 Task task = (Task) o;
 				 String supplyclass = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
-				 if(endTimes.containsKey(supplyclass)){
+				 if(endTimes.containsKey(supplyclass)) {
 					 Long endtime = (Long)endTimes.get(supplyclass);
 					 long endTime = TaskUtils.getEndTime(task);
 					 if (endTime > endtime.longValue()) {
@@ -743,7 +782,7 @@ public class PredictorPlugin extends ComponentPlugin {
 			 for (Iterator iterator = endTimes.keySet().iterator(); iterator.hasNext();) {
 				 String supplyClass = (String) iterator.next();
 				 Long endtime = (Long)endTimes.get(supplyClass);
-				 System.out.println("PredictorPluginLastTask " + lastTask+" MaxEndTime "+(new Date(endtime.longValue())).toString()+" Customer "+customerName+" Supplier "+cluster+
+				 System.out.println("PredictorPluginLastTask  MaxEndTime "+(new Date(endtime.longValue())).toString()+" Customer "+customerName+" Supplier "+cluster+
 							 " SupplyClass "+supplyClass);
 			 }
 			 return maxEnd;
@@ -752,8 +791,8 @@ public class PredictorPlugin extends ComponentPlugin {
 		 public long getMaxEndTime(String supplyClass){
 			 if(endTimes.containsKey(supplyClass)){
 				 Long endtime = (Long)endTimes.get(supplyClass);
-				 //System.out.println("PredictorPluginLastTask " + lastTask+" MaxEndTimeForSC "+(new Date(endtime.longValue())).toString()+" Customer "+customerName+" Supplier "+cluster
-				 //+" SupplyClass "+supplyClass);
+				 System.out.println("PredictorPluginLastTask MaxEndTimeForSC "+(new Date(endtime.longValue())).toString()+" Customer "+customerName+" Supplier "+cluster
+				 +" SupplyClass "+supplyClass);
 				 return endtime.longValue();
 			 }
 			 else return -1;

@@ -44,7 +44,7 @@ public class ExecutionDemandUpdate {
 			ArrayList valuesList = new ArrayList();
 			valuesList.add(values);
 			innerItemMap.put(item, valuesList);
-			if(item.equalsIgnoreCase("JP8")){
+			if(item.equalsIgnoreCase("JP8")) {
 				for (Iterator iterator = valuesList.iterator(); iterator.hasNext();) {
 					Values values1 = (Values) iterator.next();
 					System.out.println("FirstEntry addDemandData: "+" Item "+item+" "+new Date(values1.getCommitmentTime())+" "
@@ -65,7 +65,8 @@ public class ExecutionDemandUpdate {
 					}
 				}
 			}
-			else { valuesList = new ArrayList();
+			else {
+				valuesList = new ArrayList();
 				valuesList.add(values);
 				innerItemMap.put(item, valuesList);
 				if(item.equalsIgnoreCase("JP8")){
@@ -104,8 +105,7 @@ public class ExecutionDemandUpdate {
 				for(Iterator iter = itemMap.keySet().iterator();iter.hasNext();){
 					String itemName = (String)iter.next();
 					ArrayList valueList = (ArrayList)itemMap.get(itemName);
-					if((valueList!= null) && (!valueList.isEmpty()) && (valueList.size() >= 1)) {
-
+					if((valueList!= null) && (!valueList.isEmpty())) {
 						TimeSort(valueList);
 						if(itemName.equalsIgnoreCase("JP8")) {
 							for (Iterator iterator1 = valueList.iterator(); iterator1.hasNext();) {
@@ -129,7 +129,7 @@ public class ExecutionDemandUpdate {
 					//printList(itemName, valueList);
 				}
 			}
-			//retainAllItems();
+			retainAllItems();
 		}
 		psal.add(CRMap);
 		return psal;
@@ -156,16 +156,20 @@ public class ExecutionDemandUpdate {
 						tempQuantity = quantity;
 						tempPublishTime = publishTime;
 						tempCommitmentTime = commitmentTime;
-						if(!iterator.hasNext()){
+					/*	if(!iterator.hasNext()){
 							Values newValue1 = new Values(tempPublishTime, tempCommitmentTime, temptime, tempQuantity);
 							newValuesList.add(newValue1);
-						}
+						}*/
 					}
 					else {
 						temptime = endtime;
 						tempQuantity = tempQuantity + quantity;
 						tempPublishTime = publishTime;
 						tempCommitmentTime = commitmentTime;
+						if(!iterator.hasNext()){
+							Values newValue1 = new Values(tempPublishTime, tempCommitmentTime, temptime, tempQuantity);
+							newValuesList.add(newValue1);
+						}
 						continue;
 					}
 				} else {
@@ -181,7 +185,6 @@ public class ExecutionDemandUpdate {
 			}
 			values.clear();
 			values.addAll(newValuesList);
-
 		}
 	}
 
@@ -250,7 +253,7 @@ public class ExecutionDemandUpdate {
 			CustomerRoleKey crk = (CustomerRoleKey)iterator.next();
 			if(CRMap.containsKey(crk)) {
 				HashMap itemMap = (HashMap)lastDateMap.get(crk);
-				for(Iterator iter = itemMap.keySet().iterator();iter.hasNext();){
+				for(Iterator iter = itemMap.keySet().iterator();iter.hasNext();) {
 					String itemName = (String)iter.next();
 					HashMap crItemMap = (HashMap)CRMap.get(crk);
 					if(!crItemMap.containsKey(itemName)) {
