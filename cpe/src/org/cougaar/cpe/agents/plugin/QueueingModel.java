@@ -1,7 +1,3 @@
-/*
- * Created on May 20, 2004
- *
- */
 package org.cougaar.cpe.agents.plugin;
 
 /**
@@ -39,26 +35,17 @@ public class QueueingModel extends ComponentPlugin {
 
 	//get subscriptions of the measurements points - from BDEAgentPlugin, C2AgentPlugin, UnitAgentPlugin
 	protected void setupSubscriptions() {
-		logger =
-			(LoggingService) getServiceBroker().getService(
-				this,
-				LoggingService.class,
-				null);
+		logger = (LoggingService) getServiceBroker().getService(this, LoggingService.class, null);
 
 		baseTime = System.currentTimeMillis();
 
-		measurementPointSubscription =
-			(IncrementalSubscription) getBlackboardService()
-				.subscribe(new UnaryPredicate() {
+		measurementPointSubscription = (IncrementalSubscription) getBlackboardService().subscribe(new UnaryPredicate() {
 			public boolean execute(Object o) {
 				return o instanceof MeasurementPoint;
 			}
 		});
 
 		setupRelaySubscriptions();
-
-		// get a QMHelper instantiated
-
 	}
 
 	/**
@@ -69,17 +56,9 @@ public class QueueingModel extends ComponentPlugin {
 	private void setupRelaySubscriptions() {
 
 		csbr = new ControlSourceBufferRelay[SubordinateList.length];
-		UIDService service =
-			(UIDService) getServiceBroker().getService(
-				this,
-				UIDService.class,
-				null);
+		UIDService service = (UIDService) getServiceBroker().getService(this, UIDService.class, null);
 		for (int i = 0; i < SubordinateList.length; i++) {
-			csbr[i] =
-				new ControlSourceBufferRelay(
-					service.nextUID(),
-					MessageAddress.getMessageAddress(SubordinateList[i]),
-					getAgentIdentifier());
+			csbr[i] = new ControlSourceBufferRelay(service.nextUID(), MessageAddress.getMessageAddress(SubordinateList[i]), getAgentIdentifier());
 			getBlackboardService().publishAdd(csbr[i]);
 		}
 	}
@@ -104,15 +83,12 @@ public class QueueingModel extends ComponentPlugin {
 			//System.out.println(
 			//"Measurement points size " + measurementPoints.size());
 			for (int i = 0; i < measurementPoints.size(); i++) {
-				MeasurementPoint measurementPoint =
-					(MeasurementPoint) measurementPoints.get(i);
+				MeasurementPoint measurementPoint = (MeasurementPoint) measurementPoints.get(i);
 				//System.out.println(
 				//	"Measurement points name " + measurementPoint.getName());
 				long[] delays = new long[period];
-				if (measurementPoint
-					instanceof EventDurationMeasurementPoint) {
-					EventDurationMeasurementPoint dmp =
-						(EventDurationMeasurementPoint) measurementPoint;
+				if (measurementPoint instanceof EventDurationMeasurementPoint) {
+					EventDurationMeasurementPoint dmp = (EventDurationMeasurementPoint) measurementPoint;
 					iter = dmp.getMeasurements(period);
 				}
 				int typeOfDelayMeasurement = -1;
@@ -121,82 +97,54 @@ public class QueueingModel extends ComponentPlugin {
 					//first column is total delay, second column is number of delay points
 					count = 0;
 					while (iter.hasNext()) {
-						DelayMeasurement delayMeasurement =
-							(DelayMeasurement) iter.next();
+						DelayMeasurement delayMeasurement = (DelayMeasurement) iter.next();
 						long delay = 0;
 
-						//						System.out.println(
-						//							"DelayMeasurment " + delayMeasurement);
+						//	System.out.println(
+						//	"DelayMeasurment " + delayMeasurement);
 						if (delayMeasurement.getAction() != null) {
-							if ((delayMeasurement
-								.getAction()
-								.equals("ZonePlan"))
-								&& (total_delay[0][1] < period)) {
-								delay =
-									delayMeasurement.getLocalTime()
-										- delayMeasurement.getTimestamp();
+							if ((delayMeasurement.getAction().equals("ZonePlan")) && (total_delay[0][1] < period)) {
+								delay = delayMeasurement.getLocalTime() - delayMeasurement.getTimestamp();
 								total_delay[0][0] += delay;
 								total_delay[0][1]++;
 								typeOfDelayMeasurement = 0;
 								//System.out.println(
 								//	"DELAY   ZonePlan: " + delay);
-							} else if (
-								(delayMeasurement
-									.getAction()
-									.equals("ProcessUpdateBDE"))
-									&& (total_delay[1][1] < period)) {
-								delay =
-									delayMeasurement.getLocalTime()
-										- delayMeasurement.getTimestamp();
+							} else if ((delayMeasurement.getAction().equals("ProcessUpdateBDE")) && (total_delay[1][1] < period)) {
+								delay = delayMeasurement.getLocalTime() - delayMeasurement.getTimestamp();
 								total_delay[1][0] += delay;
 								total_delay[1][1]++;
 								//System.out.println(
 								//	"DELAY   ProcessUpdateBDE: " + delay);
 								typeOfDelayMeasurement = 1;
 							}
-						}
-						if (delay > 0) {
+							//if (delay > 0) {
 							delays[count] = delay;
 							count++;
+							//}
 						}
 					}
 
 					for (int ii = 0; ii < 7; ii++) {
 						if (total_delay[ii][1] > 0) {
-
-							avg_delays[ii][0] =
-								(double) (total_delay[ii][0]
-									/ total_delay[ii][1]);
+							avg_delays[ii][0] = (double) (total_delay[ii][0] / total_delay[ii][1]);
 						} else {
-
 							avg_delays[ii][0] = -1;
 						}
 					}
+					//broken code
 					if (count > 0) {
 						double sum = 0;
 						for (int p = 0; p < count; p++) {
-							double diffSq =
-								(double) Math.pow(
-									delays[p]
-										- avg_delays[typeOfDelayMeasurement][0],
-									2);
-
+							double diffSq = (double) Math.pow(delays[p] - avg_delays[typeOfDelayMeasurement][0], 2);
 							//System.out.println("diffSq: " + diffSq);					
 							sum += diffSq;
 							//System.out.println("sum: " + sum);
-
 						}
 						double variance = (double) (sum / count);
 						//System.out.println("count: " + count);
 						avg_delays[typeOfDelayMeasurement][1] = variance;
-					}
-
-					//TODO pass this variance as the second argument of avg_delays
-					//TODO rename avg_delays to stats
-					//should add a method in Measurement.java to return the last n by number or time.
-
-					//logger.shout(
-					//	"\n *--------------avg delays computed----------------* ");
+					}					
 				}
 			}
 			return avg_delays;
@@ -221,13 +169,10 @@ public class QueueingModel extends ComponentPlugin {
 		try {
 
 			measurementPoints.clear();
-			measurementPoints.addAll(
-				measurementPointSubscription.getCollection());
+			measurementPoints.addAll(measurementPointSubscription.getCollection());
 
 			//	Find the mean and variance
-			logger.shout(
-				"\n *------------------CALCULATING DELAY-------------* @"
-					+ this.getAgentIdentifier());
+			logger.shout("\n *------------------CALCULATING DELAY-------------* @" + this.getAgentIdentifier());
 			//get all delays
 			double[][] processingDelayStats = consolidateDelays(true);
 
@@ -243,9 +188,7 @@ public class QueueingModel extends ComponentPlugin {
 			}
 			//TODO REMOVE: TEST FOR SENDING MESSAGES BACK TO SUBORDINATES:
 			ControlMessage controlMsg = new ControlMessage("a", "b");
-			controlMsg.putControlParameter(
-				(Object) "BN1Replan",
-				new Integer(10));
+			controlMsg.putControlParameter((Object) "BN1Replan", new Integer(10));
 			for (int l = 0; l < SubordinateList.length; l++)
 				sendMessage((Serializable) controlMsg, csbr[l]);
 
@@ -255,8 +198,7 @@ public class QueueingModel extends ComponentPlugin {
 			// Reset the alarm service.
 			if (started) {
 				long nextTime = 10000;
-				getAlarmService().addRealTimeAlarm(
-					new MeasurementAlarm(nextTime));
+				getAlarmService().addRealTimeAlarm(new MeasurementAlarm(nextTime));
 			}
 
 		}
@@ -264,10 +206,9 @@ public class QueueingModel extends ComponentPlugin {
 
 	private void shipControlSet(HashMap h) {
 		//TODO from the HashMap choose which Control Set you want
-		
-		
+
 		//TODO convert them to opmodes
-		
+
 		ControlMessage controlMsg = new ControlMessage("a", "b");
 		controlMsg.putControlParameter((Object) "BN1Replan", new Integer(10));
 		for (int l = 0; l < SubordinateList.length; l++)
@@ -305,10 +246,8 @@ public class QueueingModel extends ComponentPlugin {
 							//									+ "  "
 							//									+ DlayFromSubs[i]
 							//									+ " millisecs.");
-							averageProcessingDelays[(currPos + 1) + (i - 2)][0] =
-								DlayFromSubs[i][0];
-							averageProcessingDelays[(currPos + 1) + (i - 2)][1] =
-								DlayFromSubs[i][1];
+							averageProcessingDelays[(currPos + 1) + (i - 2)][0] = DlayFromSubs[i][0];
+							averageProcessingDelays[(currPos + 1) + (i - 2)][1] = DlayFromSubs[i][1];
 						}
 					}
 				}
@@ -340,22 +279,16 @@ public class QueueingModel extends ComponentPlugin {
 								//										+ "  "
 								//										+ DlayFromSubs[i]
 								//										+ " millisecs.");
-								averageProcessingDelays[(currPos + 1)
-									+ (i - 5)][0] =
-									DlayFromSubs[i][0];
-								averageProcessingDelays[(currPos + 1)
-									+ (i - 5)][1] =
-									DlayFromSubs[i][1];
+								averageProcessingDelays[(currPos + 1) + (i - 5)][0] = DlayFromSubs[i][0];
+								averageProcessingDelays[(currPos + 1) + (i - 5)][1] = DlayFromSubs[i][1];
 							}
 						}
 					}
 				} else {
 					//System.out.println("No Delays from " + SubordinateList[l]);
 					for (int i = 5; i < 7; i++) {
-						averageProcessingDelays[(currPos + 1) + (i - 5)][0] =
-							-2;
-						averageProcessingDelays[(currPos + 1) + (i - 5)][1] =
-							-2;
+						averageProcessingDelays[(currPos + 1) + (i - 5)][0] = -2;
+						averageProcessingDelays[(currPos + 1) + (i - 5)][1] = -2;
 					}
 				}
 				currPos += 2;
@@ -388,8 +321,7 @@ public class QueueingModel extends ComponentPlugin {
 
 		if (c != null) {
 			c.addOutgoing((Serializable) msg);
-			this.getBlackboardService().publishChange(
-				(ControlSourceBufferRelay) c);
+			this.getBlackboardService().publishChange((ControlSourceBufferRelay) c);
 		}
 
 		if (getBlackboardService().isTransactionOpen() && !wasOpen) {
@@ -445,19 +377,6 @@ public class QueueingModel extends ComponentPlugin {
 	IncrementalSubscription measurementPointSubscription;
 	private boolean started = false;
 	private ControlSourceBufferRelay[] csbr;
-	private String[] SubordinateList =
-		{
-			"BN1",
-			"BN2",
-			"BN3",
-			"CPY1",
-			"CPY2",
-			"CPY3",
-			"CPY4",
-			"CPY5",
-			"CPY6",
-			"CPY7",
-			"CPY8",
-			"CPY9" };
+	private String[] SubordinateList = { "BN1", "BN2", "BN3", "CPY1", "CPY2", "CPY3", "CPY4", "CPY5", "CPY6", "CPY7", "CPY8", "CPY9" };
 
 }
