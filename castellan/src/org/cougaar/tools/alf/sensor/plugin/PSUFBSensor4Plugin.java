@@ -228,7 +228,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         }
         
         System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = "+((int)(loadIndex*100))/100.0+" ["+status+"]");
-	  alarm = new TriggerFlushAlarm( currentTimeMillis() + 200000 );
+	  alarm = new TriggerFlushAlarm( currentTimeMillis() + 60000 );
         as.addAlarm(alarm) ;	
     }
  
