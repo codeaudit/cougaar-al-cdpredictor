@@ -25,7 +25,7 @@ public class ControlMeasurementPoint extends MeasurementPoint {
 	public void toString(StringBuffer buf) {
 		super.toString(buf);
 		Iterator itr = this.getMeasurements(5);
-		String s = "\n";
+		String s = "\n\n";
 		if (itr != null) {
 			while (itr.hasNext()) {
 				ControlMeasurement cm = (ControlMeasurement) itr.next();
