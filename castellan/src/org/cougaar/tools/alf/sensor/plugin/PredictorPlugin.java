@@ -527,5 +527,4 @@ public class PredictorPlugin extends ComponentPlugin {
 		long expTime;
 		long delay = 86400000;
 	};
-
 }
