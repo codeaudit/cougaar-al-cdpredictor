@@ -1202,7 +1202,7 @@ public class PredictorPlugin extends ComponentPlugin {
         NewTask nt = pf.newTask();
 
         //Verb new_verb = new Verb("ForecastDemand");
-        Verb new_verb = new Verb("ForecastDemand");
+        Verb new_verb = new Verb("Supply");
         nt.setVerb(new_verb);
 
         NewPrepositionalPhrase npp = pf.newPrepositionalPhrase();
@@ -1261,7 +1261,7 @@ public class PredictorPlugin extends ComponentPlugin {
         PlanningFactory pf = (PlanningFactory) myDomainService.getFactory("planning");
         NewTask nt = pf.newTask();
 
-        Verb new_verb = new Verb("ForecastDemand");
+        Verb new_verb = new Verb("Supply");
         nt.setVerb(new_verb);
 
         NewPrepositionalPhrase npp = pf.newPrepositionalPhrase();
