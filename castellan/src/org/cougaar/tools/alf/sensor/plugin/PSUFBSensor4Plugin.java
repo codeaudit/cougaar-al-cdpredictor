@@ -230,7 +230,6 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         }
         
         System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = "+((int)(loadIndex*100))/100.0+" ["+status+"]");
-	    as = getAlarmService() ;
 		alarm = new TriggerFlushAlarm( currentTimeMillis() + 200000 );
         as.addAlarm(alarm) ;	
     }
@@ -291,6 +290,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         }
         
         System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = -1"+" ["+status+"]");
+		alarm.cancel();
     }
 
     IncrementalSubscription allocationSubscription;   
