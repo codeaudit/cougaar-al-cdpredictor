@@ -13,6 +13,8 @@ import org.w3c.dom.NodeList;
 import org.cougaar.cpe.agents.messages.*;
 import org.cougaar.cpe.agents.Constants;
 import org.cougaar.cpe.model.*;
+import org.cougaar.cpe.model.events.CPEEventListener;
+import org.cougaar.cpe.model.events.CPEEvent;
 import org.cougaar.cpe.relay.GenericRelayMessageTransport;
 import org.cougaar.cpe.relay.MessageSink;
 import org.cougaar.cpe.relay.TargetBufferRelay;
@@ -35,6 +37,7 @@ import java.text.DecimalFormat;
 
 public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     private IncrementalSubscription relaySubscription;
+    private IncrementalSubscription controlRelaySubscription;
     private double advanceRate = 1.0;
     private long lastTime ;
     private long baseTime;
@@ -48,8 +51,11 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     private float zoneGridSize = 2;
     private ZoneWorld initialZoneWorld;
     private int numInitialTargetGenerationDeltas = 110 ;
-    private TargetGeneratorModel targetGeneratorModel;
+    private TargetGenerator targetGenerator;
     private DecimalFormat format;
+    private String targetGeneratorClassName;
+    private String targetGeneratorConfigFile;
+    private CPEEventListener worldEventListener;
 
     protected void execute() {
         // First, check to see if there are any new client relays.
@@ -354,15 +360,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
 
     protected void generateNewTargets() {
         // Generate any new targets
-        targetGeneratorModel.execute();
-    }
-
-    private void placeTarget() {
-        double targetLocation = targetGenerator.nextDouble() *
-                referenceWorldState.getBoardWidth() ;
-        TargetEntity t = referenceWorldState.addTarget( targetLocation, referenceWorldState.getBoardHeight(),
-                0, -VGWorldConstants.getTargetMoveRate() ) ;
-        System.out.println("WorldState:: GENERATED TARGET AT " + t );
+        targetGenerator.execute(referenceWorldState);
     }
 
     public boolean isConfigured() {
@@ -466,7 +464,44 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                 }
             }
 
-            targetGeneratorModel = new TargetGeneratorModel(referenceWorldState, 0xcafebabe, 4, 0.5f) ;
+
+            if ( targetGeneratorClassName != null ) {
+                Class c = Class.forName( targetGeneratorClassName ) ;
+                if ( TargetGenerator.class.isAssignableFrom( c ) ) {
+                    targetGenerator = (TargetGenerator) c.newInstance() ;
+                    File f = getConfigFinder().locateFile( targetGeneratorConfigFile ) ;
+
+                    // DEBUG -- Replace by call to log4j
+                    System.out.println("\n---------------------------------" ) ;
+                    System.out.println( "LOADING TARGET GENERATOR \nGenerator Class \t\t" + c.getName() +
+                            "\nConfiguration File \t\t " + targetGeneratorConfigFile );
+
+                    if ( f != null && f.exists() ) {
+                        Document doc = getConfigFinder().parseXMLConfigFile( targetGeneratorConfigFile ) ;
+                        targetGenerator.initialize( doc );
+                        System.out.println("Target generator \t\t" + targetGenerator);
+                    }
+                    else {
+                        log.error( "Could not load " + targetGeneratorConfigFile + " target generation config file.");
+                    }
+                    System.out.println("-----------------------------------\n");
+                }
+            }
+            else {
+                targetGenerator = new TargetGeneratorModel(referenceWorldState, 0xcafebabe, 4, 0.5f) ;
+                System.out.println("\n---------------------------------" ) ;
+                System.out.println("LOADING DEFAULT TARGET GENERATOR\n" + targetGenerator);
+            }
+
+            // Add an event listener so that I can broadcast interesting events to the world
+            referenceWorldState.addEventListener( worldEventListener = new CPEEventListener() {
+                public void notify(CPEEvent e)
+                {
+
+                }
+            });
+
+            // Add one to measure and track the data for display purposes.
 
             // Populate board with initial setup.
             doPopulateTargets();
@@ -494,9 +529,13 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
 
     protected void doPopulateTargets() {
         // Populate the board with targets
+        if ( targetGenerator == null ) {
+            return ;
+        }
+
         WorldStateModel temp = new WorldStateModel( referenceWorldState, false, false, false ) ;
         for (int i=0;i<numInitialTargetGenerationDeltas;i++) {
-            targetGeneratorModel.execute( temp );
+            targetGenerator.execute( temp );
             temp.updateWorldState();
         }
 
@@ -509,7 +548,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             referenceWorldState.addEntity( ( Entity ) entity.clone() );
         }
         // Now, reset back to the initial time.
-        targetGeneratorModel.resetTime( referenceWorldState.getTime() );
+        targetGenerator.resetTime( referenceWorldState.getTime() );
 
         // Update the sensors since we added the targets outside of execution.
         referenceWorldState.updateSensors();
@@ -601,6 +640,17 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             }
         }) ;
 
+        controlRelaySubscription = ( IncrementalSubscription )
+                getBlackboardService().subscribe( new UnaryPredicate() {
+            public boolean execute(Object o) {
+                Class c = o.getClass() ;
+                if ( c.getName().equals( "org.cougaar.cpe.relay.ControlTargetBufferRelay") ) {
+                    return true ;
+                }
+                return false ;
+            }
+        }) ;
+
         mt = new GenericRelayMessageTransport( this, getServiceBroker(), getAgentIdentifier(),
                 this, getBlackboardService() ) ;
 
@@ -617,10 +667,22 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                 getServiceBroker().getService( this, LoggingService.class, null ) ;
 
         String fileName = null ;
-        if ( paramVector.size() > 0 ) {
+
+        // Process the world configuration.
+        if ( paramVector.size() >= 1 ) {
             fileName = ( String ) paramVector.elementAt(0) ;
+            loadWorldConfiguration(fileName, log);
         }
 
+        // Load the target generator.
+        if ( paramVector.size() >= 3 ) {
+            targetGeneratorClassName = (String) paramVector.elementAt(1) ;
+            targetGeneratorConfigFile = (String) paramVector.elementAt(2) ;
+        }
+    }
+
+    private void loadWorldConfiguration(String fileName, LoggingService log)
+    {
         ConfigFinder finder = getConfigFinder() ;
         // ServiceBroker sb = getServiceBroker() ;
 
@@ -744,7 +806,6 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
         } catch ( Exception e ) {
             e.printStackTrace() ;
         }
-
     }
 
     private String getNodeValueForTag(Document doc, String tagName, String namedItem ) {
@@ -811,7 +872,6 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
      * Arrival rate.
      */
     double targetPopupProb = 0.2 ;
-    Random targetGenerator = new Random(0) ;
 
     ReferenceWorldState referenceWorldState ;
     HashMap clientRelays = new HashMap() ;
