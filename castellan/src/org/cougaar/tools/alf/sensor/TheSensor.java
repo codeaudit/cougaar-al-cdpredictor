@@ -315,13 +315,33 @@ public class TheSensor {
 					}
 
 					// for load forecasting
+//					System.out.println(tpdu.getSource()+","+s);
 					info tinfo = (info) TallyTableMap.get(tpdu.getSource());
+					if (tinfo==null) return;
+
+					System.out.println(tpdu.getSource()+","+s);
+
+					String t = tpdu.getDirectObject();
+
+					if (t.equalsIgnoreCase("10") != true) {
+
+						System.out.println(tpdu.getSource()+","+s+","+t+"second");
+
+						if (((Long)(tinfo.stime).get(t)).intValue() == 0) {
+							tinfo.stime.put(t, new Long(tpdu.getTime()));
+							printout("\nA: class "+ t+ ", " + tpdu.getSource() + "'s start time = " + (tinfo.StartTime - starttime), ForecastResult,true);
+							forecast(tpdu.getSource(),(tinfo.StartTime - starttime),t);
+						}
+					}
 
 					if (tinfo.StartTime == 0 )
 					{
 
 						if (tpdu.getAction() == 0 && tpdu.getDirectObject() != null)
 						{
+							tinfo.StartTime = tpdu.getTime();
+							System.out.println(tpdu.getSource()+","+s+","+t+"second" + tinfo.StartTime);
+/*		June 12, 2002							
 							if ((tpdu.getDirectObject()).equalsIgnoreCase("1") == true)
 							{
 								tinfo.StartTime = tpdu.getTime();
@@ -329,6 +349,7 @@ public class TheSensor {
 
 								forecast(tpdu.getSource(),(tinfo.StartTime- starttime));
 							}
+*/
 						}
 					} else {
 
@@ -347,6 +368,7 @@ public class TheSensor {
 						return;
 					}
 					info tinfo = (info) TallyTableMap.get(ppdu.getSource());
+					if (tinfo==null) return;
 					tinfo.getAverageWaitingTime((UIDStringPDU) ppdu.getParentTask(), ppdu.getTime(), ppdu.getSource() );
 				} else if (p instanceof AggregationPDU)	{
 					AggregationPDU ppdu = (AggregationPDU) p;
@@ -354,6 +376,7 @@ public class TheSensor {
 						return;
 					}
 					info tinfo = (info) TallyTableMap.get(ppdu.getSource());
+					if (tinfo==null) return;
 					tinfo.getAverageWaitingTime((UIDStringPDU) ppdu.getTask(), ppdu.getTime(), ppdu.getSource() );
 				} else if (p instanceof AllocationPDU)	{
 					AllocationPDU ppdu = (AllocationPDU) p;
@@ -361,34 +384,37 @@ public class TheSensor {
 						return;
 					}
 					info tinfo = (info) TallyTableMap.get(ppdu.getSource());
+					if (tinfo==null) return;
 					tinfo.getAverageWaitingTime((UIDStringPDU) ppdu.getTask(), ppdu.getTime(), ppdu.getSource() );
 				}
 		 	}
     }
 
-	private void forecast(String agentname, long time) {
+	private void forecast(String agentname, long time, String t) {
 		
-		if (agentname.equalsIgnoreCase("123-MSB") == true)
-		{
+		if (t.equalsIgnoreCase("1") == true) {
+			if (agentname.equalsIgnoreCase("123-MSB") == true)
+			{
 
-			printout("F, DLAHQ, start time =, " + (1.2431*time + 30.57),ForecastResult,true);
-			printout("F, 227-SupplyCo, start time =, " + (1.1597*time + 19.378),ForecastResult,true);
-			printout("F, 343-SupplyCo, start time =, " + (1.2205*time + 23.153),ForecastResult,true);
+				printout("F, class "+ t+ ", " + "DLAHQ, start time =, " + (1.2431*time + 30.57),ForecastResult,true);
+				printout("F, class "+ t+ ", " + "227-SupplyCo, start time =, " + (1.1597*time + 19.378),ForecastResult,true);
+				printout("F, class "+ t+ ", " + "343-SupplyCo, start time =, " + (1.2205*time + 23.153),ForecastResult,true);
 
-		} 
-		else if (agentname.equalsIgnoreCase("47-FSB") == true)
-		{
+			} 
+			else if (agentname.equalsIgnoreCase("47-FSB") == true)
+			{
 
-			printout("F, 227-SupplyCo, start time =, " + (26.676*Math.pow((double) time, 0.6217)),ForecastResult,true);
-			printout("F, 343-SupplyCo, start time =, " + (27.895*Math.pow((double) time, 0.6237)),ForecastResult,true);
-			printout("F, DLAHQ, start time =, " + (29.447*Math.pow((double) time, 0.6188)),ForecastResult,true);
-			printout("F, 123-MSB, start time =, " + (26.65*Math.pow((double) time, 0.5852)),ForecastResult,true);
+				printout("F, class "+ t+ ", " + "227-SupplyCo, start time =, " + (26.676*Math.pow((double) time, 0.6217)),ForecastResult,true);
+				printout("F, class "+ t+ ", " + "343-SupplyCo, start time =, " + (27.895*Math.pow((double) time, 0.6237)),ForecastResult,true);
+				printout("F, class "+ t+ ", " + "DLAHQ, start time =, " + (29.447*Math.pow((double) time, 0.6188)),ForecastResult,true);
+				printout("F, class "+ t+ ", " + "123-MSB, start time =, " + (26.65*Math.pow((double) time, 0.5852)),ForecastResult,true);
 
-		} 
-		else if (agentname.equalsIgnoreCase("1-35-ARBN") == true || agentname.equalsIgnoreCase("1-6-INFBN") == true )
-		{
-			printout("F, 47-FSB, start time =, " + (4.6449*time + 17.341),ForecastResult,true);
-		} 
+			} 
+			else if (agentname.equalsIgnoreCase("1-35-ARBN") == true || agentname.equalsIgnoreCase("1-6-INFBN") == true )
+			{
+				printout("F, class "+ t+ ", " + "47-FSB, start time =, " + (4.6449*time + 17.341),ForecastResult,true);
+			} 
+		}
 	}
 	
 	private void printout(String s, java.io.BufferedWriter bw, boolean flag ){
@@ -442,7 +468,16 @@ public class TheSensor {
 			{
 				over=true;
 			}
+			
+			stime = new Hashtable();
 
+			stime.put("1",new Long("0"));
+			stime.put("2",new Long("0"));
+			stime.put("3",new Long("0"));
+			stime.put("4",new Long("0"));
+			stime.put("5",new Long("0"));
+			stime.put("9",new Long("0"));
+			stime.put("10",new Long("0"));
 		}
 
 		public void add(TaskPDU tpdu) {
@@ -470,6 +505,8 @@ public class TheSensor {
 		public void getAverageWaitingTime(UIDStringPDU uid, long time1, String source) {
 
 			if (over) {	return;	}
+
+			System.out.print("Hari !");
 
 			long time = time1 - StartTime;
 
@@ -601,6 +638,7 @@ public class TheSensor {
 		public long unittime;
 		public long timelimit;
 		private Hashtable TaskList;	
+		public Hashtable stime; // Start time of each logistic item
 		private Vector lookup;	
 		private int NoFinish;
 		private long CTFinish;  // Cumulative waiting time;

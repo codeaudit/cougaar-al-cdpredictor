@@ -98,10 +98,11 @@ public abstract class PlanToPDUTranslator
 				directObject = "5";
 			} else if (doAsset instanceof ClassIXRepairPart)
 			{
-				directObject = "9";
-			} else {
-				directObject = doAsset.toString();
-			}
+				directObject = "9";  
+			} //else {
+//				directObject = "null;
+//				directObject = doAsset.toString();
+//			}
 ///////
         }
 

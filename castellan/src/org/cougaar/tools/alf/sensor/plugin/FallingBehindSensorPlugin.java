@@ -18,9 +18,14 @@ import org.cougaar.tools.castellan.pdu.PDU;
 import org.cougaar.tools.castellan.pdu.EventPDU;
 // import falling behind sensor class.
 import org.cougaar.tools.alf.sensor.FallingBehindSensor;
+import org.cougaar.core.adaptivity.InterAgentOperatingMode;
+import org.cougaar.core.agent.ClusterIdentifier;
 import java.util.Iterator;
 import java.util.Collection;
 import java.util.Properties;
+
+import org.cougaar.core.adaptivity.InterAgentOperatingMode;
+import org.cougaar.core.adaptivity.OMCRangeList;
 
 public class FallingBehindSensorPlugin extends ComponentPlugin
 {
@@ -98,14 +103,27 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
         ServiceBroker broker = getServiceBroker();
         log = (LoggingService) broker.getService(this, LoggingService.class, null);
 
-        BlackboardService bs = getBlackboardService();
+        bs = getBlackboardService();
         pduBufferSubscription = (IncrementalSubscription) bs.subscribe(pduBufferPredicate);
 
         // Create a falling behind sensor.
         fbsensor = new FallingBehindSensor() ;
-
+	  int n=fbsensor.clusters;
+	  ServiceBroker sb=getServiceBroker();
+	  UIDService us=(UIDService) sb.getService(this, UIDService.class, null);
+	  psu_fb = new InterAgentOperatingMode[n];
+        int[] result =new int[2];
+        result[0]=0; result[1]=1;
+	  int i;
+	  for (i=0; i<=n-1; i++) {
+		psu_fb[i]= new InterAgentOperatingMode("PSU_Sensor_1", new OMCRangeList(result),new Integer(0));
+		psu_fb[i].setTarget(new ClusterIdentifier(fbsensor.cluster[i]));
+		psu_fb[i].setUID(us.nextUID());
+		bs.publishAdd(psu_fb[i]);
+	  }
         AlarmService as = getAlarmService() ;
         as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
+	  status= new int[n];
     }
 
 
@@ -137,6 +155,7 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
                 // Now, flush out the buffer into an FallingBehindSensor object
                 if (buffer.getSize() > 0)
                 {
+			  int i;
                     PDU pdu;
                     for (Iterator iter = buffer.getIncoming() ; iter.hasNext() ;)
                     {
@@ -146,6 +165,13 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
                     }
                     // Update sensor status after PDUs in buffer are all added.
                     fbsensor.update();
+			  for (i=0; i<=fbsensor.clusters-1; i++) {
+				if (status[i]!=fbsensor.state[i]) {
+				    status[i]=fbsensor.state[i]; 
+				    psu_fb[i].setValue(new Integer(status[i]));
+				    bs.publishChange(psu_fb[i]);
+				}
+			  }
                 }
                 buffer.clearIncoming();
             }
@@ -157,4 +183,7 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
     IncrementalSubscription pduBufferSubscription;
     // Declare Falling Behind Seensor.
     FallingBehindSensor fbsensor;
+    InterAgentOperatingMode[] psu_fb;
+    int[] status;
+    BlackboardService bs;
 }

@@ -199,7 +199,7 @@ public class FallingBehindSensor
      * Extract time series from PDU.
      */
           
-    public void add (PDU pdu) {
+    public synchronized void add (PDU pdu) {
 
         TaskPDU tpdu;
         AllocationPDU apdu;
@@ -252,7 +252,7 @@ public class FallingBehindSensor
      * Update falling behind status.
      */
     
-    public void update() {
+    public synchronized void update() {
         int i, n1, n2;
         double x=0, y=0;
         Object[] a;  
@@ -274,7 +274,9 @@ public class FallingBehindSensor
                  if (n1>2 && n2>2) {
                      if (n1>n2) {
 				//check[i].setState(false);
-				 state[i]=0; continue;}
+				 state[i]=0;
+				 continue;
+			   }
                      a=time_series[i][2].values().toArray();
                      Arrays.sort(a);
                      y=(((Long)a[n1-1]).longValue()-((Long)a[0]).longValue())/1000.0;
@@ -287,7 +289,7 @@ public class FallingBehindSensor
                      else {
 			//	check[i].setState(false);
 				state[i]=0;}
-                     System.out.print(cluster[i]+" "+n2+"(G) "+n1+"(A) "+x+"sec. "+y+"sec. \n");
+                     System.out.print("\n"+cluster[i]+" "+n2+"(G) "+n1+"(A) "+x+"sec. "+y+"sec. ");
 			   if (state[i]==1) System.out.print("Falling Behind\n");
 			   else System.out.print("\n");
 
@@ -298,10 +300,10 @@ public class FallingBehindSensor
     }
 
     Hashtable[][] time_series;
-    int clusters;
-    String[] cluster;
+    public int clusters;
+    public String[] cluster;
     int[] change;
-    int[] state;
+    public int[] state;
  //   JFrame fbframe;
  //   Container fbcontainer ;
  //   Checkbox[] check;

@@ -32,7 +32,7 @@ import org.cougaar.tools.castellan.ldm.*;
 import org.cougaar.tools.castellan.server.ServerBlackboardMTImpl;
 import org.cougaar.tools.castellan.planlog.PDUBuffer;
 import org.cougaar.tools.castellan.planlog.InMemoryEventLog;
-import org.cougaar.tools.castellan.planlog.PersistentEventLog;
+import org.cougaar.tools.castellan.planlog.DBEventLog;
 import org.cougaar.tools.castellan.pdu.PDU;
 import org.cougaar.tools.castellan.pdu.EventPDU;
 import org.cougaar.tools.alf.sensor.TheSensor;
@@ -155,7 +155,7 @@ public class SensorPlugin extends ComponentPlugin
         {
 //            memoryLog = new InMemoryEventLog();
 //            getBlackboardService().publishAdd(memoryLog);
-			sensor = new TheSensor(this);			// Hong
+   		  sensor = new TheSensor(this);			// Hong
         }
 
         if (logToDatabase)
@@ -163,7 +163,7 @@ public class SensorPlugin extends ComponentPlugin
             String databaseName = getDatabaseName();
             try
             {
-                persistentLog = new PersistentEventLog(databaseName, props);
+                DBLog = new DBEventLog(databaseName, props);
             }
             catch (Exception e)
             {
@@ -225,11 +225,11 @@ public class SensorPlugin extends ComponentPlugin
                     }
                     if (logToDatabase)
                     {
-                        if (persistentLog != null)
+                        if (DBLog != null)
                         {
                             for (Iterator iter = buffer.getIncoming() ; iter.hasNext() ;)
                             {
-                                persistentLog.add((PDU) iter.next());
+                                DBLog.add((PDU) iter.next());
                             }
                         }
                     }
@@ -243,7 +243,7 @@ public class SensorPlugin extends ComponentPlugin
     boolean logToMemory = true, logToDatabase = false;
 	TheSensor sensor;		
 //    InMemoryEventLog memoryLog;
-    PersistentEventLog persistentLog;
+    DBEventLog DBLog;
     PDUBuffer buffer;
     LoggingService log ;
     IncrementalSubscription pduBufferSubscription;
