@@ -28,7 +28,8 @@ public class PlanLogConfig implements java.io.Serializable
 {
     public String toString() {
         return "[ PlanLogConfig targetAgent= "+ getLogCluster() + 
-            ",isActive=" + isActive() + ",node=" + getNodeIdentifier() + ",isServer=" + isServer() + "] " ;
+            ",isActive=" + isActive() + ",node=" + getNodeIdentifier() + ",isServer=" + isServer()
+                + ",logAllocationResults=" + logAllocationResults + ",logTaskRemoves=" + logTaskRemoves + "] " ;
     }
     
     public boolean isActive() {
@@ -97,9 +98,28 @@ public class PlanLogConfig implements java.io.Serializable
         this.nodeIdentifier = nodeIdentifier;
     }
 
+    public boolean isLogAllocationResults() {
+        return logAllocationResults;
+    }
+
+    public void setLogAllocationResults(boolean logAllocationResults) {
+        this.logAllocationResults = logAllocationResults;
+    }
+
+    public boolean isLogTaskRemoves() {
+        return logTaskRemoves;
+    }
+
+    public void setLogTaskRemoves(boolean logTaskRemoves) {
+        this.logTaskRemoves = logTaskRemoves;
+    }
+
     protected String logCluster ;
     protected String nodeIdentifier ;
     protected int arLogLevel ;
+
+    protected boolean logAllocationResults = true ;
+    protected boolean logTaskRemoves = true ;
     protected boolean logEpochs ;
     protected boolean isActive = false ;
     protected boolean logPluginTriggers ;
