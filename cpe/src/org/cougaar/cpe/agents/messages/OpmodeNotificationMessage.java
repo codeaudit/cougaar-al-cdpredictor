@@ -8,6 +8,8 @@ import org.cougaar.core.mts.MessageAddress;
  * User: Nathan Gnanasambandam
  * Date: July 15, 2004
  * Time: 11:03:30 AM
+ * 
+ * subordinate nodes use this to notify superior of their opmodes
  */
 public class OpmodeNotificationMessage extends MessageEvent {
 
