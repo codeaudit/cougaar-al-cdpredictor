@@ -9,6 +9,7 @@
     <MaxUnitFuelLoad value="50.0" />
     <MaxUnitAmmoLoad value="40" />
     <TargetMoveRate value="0.04" />
+    <TargetXMoveRate value="0.01" />
     <TargetSuppressedMovementFactor value="0.25" />
     <TargetRoutStrength value="20.0" />
     <TargetSuppressedTime value="50000" />
