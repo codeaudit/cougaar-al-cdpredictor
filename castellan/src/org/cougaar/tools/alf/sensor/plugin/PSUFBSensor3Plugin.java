@@ -162,6 +162,7 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 			    else
 				{
 					count_window++;
+					System.out.println("Window Number:"+" for"+cluster+" is "+count_window);
 					flag = true;					
 					compute2(count_ps,count_pw);
 					count_ps=0;
@@ -181,6 +182,8 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 						if(flag==false)
 						{
 							count_window1++;
+					System.out.println("Window Number:"+" for"+cluster+" is "+count_window1);
+
 							count_window=count_window1;
 							compute2(count_ps,count_pw);
 						}
@@ -227,7 +230,8 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 		  String t1 = Integer.toString(t);
 		  String st1 = t1.concat(s1);
 		  a = num/3;
-		  num2 = num2 +  num;	 
+		  num2 = num2 +  num;	
+		  System.out.println("Episode Count:"+" for"+cluster+" is "+num2); 
 		  num=0;
 		  dispToggle=true;
 		  ValueRef(st1,a,num2);
