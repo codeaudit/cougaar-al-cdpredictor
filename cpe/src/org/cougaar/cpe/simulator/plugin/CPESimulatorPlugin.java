@@ -59,6 +59,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     private WorldStateReference refToWorldState;
     private String worldParamConfigFileName;
     private byte[] worldParamBytes;
+    private boolean autoResupply;
 
     protected void execute() {
         // First, check to see if there are any new client relays.
@@ -337,6 +338,16 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             System.out.println("\nWorldStateExecutor: STOPPING SIMULATION");
             mt.clearAlarm( TIME_ADVANCE_ALARM_ID );
             stopTimeAdvance();
+        }
+
+        if ( autoResupply ) {
+            Iterator iter = referenceWorldState.getUnits() ;
+            log.shout( "AUTO RESUPPLY");
+            while (iter.hasNext()) {
+                UnitEntity entity = (UnitEntity) iter.next();
+                entity.setAmmoQuantity( VGWorldConstants.getMaxUnitAmmoLoad() );
+                entity.setFuelQuantity( VGWorldConstants.getMaxUnitFuelLoad() );
+            }
         }
 
 //        if ( lastTime < baseTime + simulationLength ) {
@@ -903,6 +914,16 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                                 String simulationLengthValue = getNodeValueForTag( doc, "SimulationDuration", "value" ) ;
                                 if ( simulationLengthValue != null ) {
                                     simulationLength = Long.parseLong( simulationLengthValue ) ;
+                                }
+
+                                String autoResupplyValue = getNodeValueForTag( doc, "AutoResupply", "value") ;
+                                if ( autoResupplyValue != null ) {
+                                    try {
+                                        autoResupply = Boolean.valueOf( autoResupplyValue ).booleanValue()  ;
+                                    }
+                                    catch ( Exception e ) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
                             else {
