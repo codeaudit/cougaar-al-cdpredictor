@@ -835,6 +835,12 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         for ( Enumeration e = allElements.getAddedList(); e.hasMoreElements(); )
         {
             Object o = e.nextElement();
+            if ( o instanceof Task ) {
+                Task temp = ( Task ) o ;
+                // Just count these UIDs up.
+                debugTaskUIDMap.put( temp.getUID(), temp.getUID() ) ;
+                stats.setNumTasksSeenDebug( debugTaskUIDMap.size() );
+            }
             processObject( ( UniqueObject ) o, EventPDU.ACTION_ADD );
         }
 
@@ -848,6 +854,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         mtImpl.execute();
     }
 
+    protected HashMap debugTaskUIDMap = new HashMap() ;
     protected HashMap taskUIDMap = new HashMap() ;
     protected PlanLogStats stats ;
     protected FlushThread flushThread ;

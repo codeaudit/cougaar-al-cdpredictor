@@ -122,6 +122,12 @@ public class PlanStatsViewerServlet extends HttpServlet  {
         out.println( "       <td >" + stats.getNumTaskRemoves() + "<br>" ) ;
         out.println( "       </td>" ) ;
         out.println( "     </tr>" ) ;
+        out.println( "     <tr>" ) ;
+        out.println( "       <td ># Tasks seen at execute method<br>" ) ;
+        out.println( "       </td>" ) ;
+        out.println( "       <td >" + stats.getNumTasksSeenDebug() + "<br>" ) ;
+        out.println( "       </td>" ) ;
+        out.println( "     </tr>" ) ;
         out.println( "" ) ;
         out.println( "  </tbody>" ) ;
         out.println( "</table>" ) ;

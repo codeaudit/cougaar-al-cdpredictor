@@ -101,6 +101,16 @@ public class PlanLogStats implements java.io.Serializable {
         this.numRelayMsgsSent = numRelayMsgsSent;
     }
 
+    public int getNumTasksSeenDebug ()
+    {
+        return numTasksSeenDebug;
+    }
+
+    public void setNumTasksSeenDebug ( int numTasksSeenDebug )
+    {
+        this.numTasksSeenDebug = numTasksSeenDebug;
+    }
+
     /**
      * Batched and wrapped messages sent.
      */
@@ -120,6 +130,9 @@ public class PlanLogStats implements java.io.Serializable {
     protected int numTaskChanges = 0 ;
     protected int numTaskAdds = 0 ;
     protected int numTaskRemoves = 0 ;
+
+    // DEBUG
+    protected int numTasksSeenDebug = 0 ;
 
     protected static final long serialVersionUID = 0L ;
 }
