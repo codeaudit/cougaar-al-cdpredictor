@@ -184,9 +184,8 @@ public class LogPlanBuilder implements PDUSink {
 
 
         if ( (o != null) && !(o instanceof MPTaskLog) ) {
-            System.out.println( "Unexpected error: message for UID "
+            throw new RuntimeException( "Unexpected error: message for UID "
             + m.getUID() + " does not match existing TaskLog object." ) ;
-            return null ;
         }
 
         long time = -1, executionTime = -1 ;
@@ -429,8 +428,10 @@ public class LogPlanBuilder implements PDUSink {
         }
 
         if ( (o != null) && !(o instanceof AssetLog) ) {
-            ServerApp.instance().println( "Unexpected error: message for UID "
-            + am.getUID() + " does not match existing Log object." ) ;
+            if ( ServerApp.instance() != null ) {
+                ServerApp.instance().println( "Unexpected error: message for UID "
+                + am.getUID() + " does not match existing Log object." ) ;
+            }
         }
 
         long time = -1, executionTime = -1 ;
@@ -438,7 +439,7 @@ public class LogPlanBuilder implements PDUSink {
             time = am.getTime() ; executionTime = am.getExecutionTime() ;
         }
 
-        if ( ServerApp.instance().isVerbose() ) {
+        if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
             System.out.println( "Adding asset log " + am.getUID() + " of type " + am.getAssetTypeId() ) ;
         }
         AssetLog assetLog = new AssetLog( am.getUID(), am.getSource(),
@@ -487,7 +488,7 @@ public class LogPlanBuilder implements PDUSink {
     }
 
     private void processExpansionPDU( ExpansionPDU m ) {
-        if ( ServerApp.instance().isVerbose() ) {
+        if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
             System.out.println( "\nPROCESSING expansion message " + m  ) ;
         }
 
@@ -503,7 +504,7 @@ public class LogPlanBuilder implements PDUSink {
             return ;
         }
 
-        if ( ServerApp.instance().isVerbose() ) {
+        if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
             System.out.println( "\nPROCESSING aggregation message " + m ) ;
         }
 
@@ -518,7 +519,7 @@ public class LogPlanBuilder implements PDUSink {
     }
 
     private void processMPTaskPDU( MPTaskPDU tm ) {
-        if ( ServerApp.instance().isVerbose() ) {
+        if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
             System.out.println( "\nPROCESSING MPTASK message:  " + tm ) ;
         }
 
@@ -527,7 +528,7 @@ public class LogPlanBuilder implements PDUSink {
     }
 
     private void processTaskPDU( TaskPDU tm ) {
-        if ( ServerApp.instance().isVerbose() ) {
+        if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
             System.out.println( "\nPROCESSING TASK message:  " + tm ) ;
         }
 
@@ -540,7 +541,7 @@ public class LogPlanBuilder implements PDUSink {
     }
 
     private void processAllocationPDU( AllocationPDU am ) {
-        if ( ServerApp.instance().isVerbose() ) {
+        if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
             System.out.println( "\nPROCESSING ALLOCATION MESSAGE " + am ) ;
         }
 
