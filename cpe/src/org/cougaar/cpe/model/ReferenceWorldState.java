@@ -216,18 +216,44 @@ public class ReferenceWorldState extends WorldState
     /**
      *
      * @param scoringZone The name of the associated scoring zone.  This is useful primarily for testing purposes.
+     * @param integrationPeriod The number of ms to integrate over in recording the measurements.
      * @param zs
      */
-    public void addScoringZoneSchedule( String scoringZone, Plan zs ) {
+    public void setScoringZoneSchedule( String scoringZone, Plan zs, int integrationPeriod ) {
         MeasuredWorldMetrics metrics;
-        nameToMetricsMap.put( scoringZone, metrics = new MeasuredWorldMetrics( scoringZone, this, defaultIntegrationPeriod ) ) ;
+        if ( scoringZone == null ) {
+            throw new RuntimeException( "ScoringZone must be non null." ) ;
+        }
+
+        if ( zoneNameToMetricsMap == null ) {
+            zoneNameToMetricsMap = new HashMap() ;
+        }
+        // Create the scoring zone plan
+        if ( ( metrics = (MeasuredWorldMetrics) zoneNameToMetricsMap.get(scoringZone) ) == null ) {
+            zoneNameToMetricsMap.put( scoringZone, metrics = new MeasuredWorldMetrics( scoringZone, this, integrationPeriod ) ) ;
+        }
+
         metrics.setZoneSchedule( zs );
         addEventListener( metrics );
     }
 
-    private HashMap nameToZoneScheduleMap = new HashMap() ;
+    /**
+     * A set of entry sets for scoring zones by
+     * @return
+     */
+    public Set getScoringZones() {
+        return zoneNameToMetricsMap.entrySet() ;
+    }
 
-    private HashMap nameToMetricsMap = new HashMap() ;
+    public void removeScoringZone( String s ) {
+        zoneNameToMetricsMap.remove( s ) ;
+    }
+
+    public MeasuredWorldMetrics getScoringZone( String name ) {
+        return (MeasuredWorldMetrics) zoneNameToMetricsMap.get( name ) ;
+    }
+
+    private transient HashMap zoneNameToMetricsMap ;
 
     private ArrayList inactiveTargets = new ArrayList() ;
 
