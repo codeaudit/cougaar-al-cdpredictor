@@ -145,14 +145,14 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
             System.out.println("\n"+cluster+" ["+sensorname+"]: TimestampService is NOT available.\n");
         }
 	        AlarmService as = getAlarmService() ;
-        as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 60000 ) ) ;		
+	
     }
 
 
     public void execute()
     {
 
-
+            if (alarm != null) alarm.cancel();
 		if (myTimestampService == null) {
             myTimestampService = (BlackboardTimestampService) getBindingSite().getServiceBroker().getService(this, BlackboardTimestampService.class, null);
             if (myTimestampService == null) {
@@ -172,7 +172,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         long tevent_time, pevent_time;
 
         if (allocationSubscription.size()<3) return;
-	  if (allocationSubscription.size() == size) return;
+	  if (allocationSubscription.size() == size && access == 1) return;
 	  size = allocationSubscription.size();
         
         queue = new long[2][2*allocationSubscription.size()];
@@ -231,6 +231,10 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         }
         
         System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = "+((int)(loadIndex*100))/100.0+" ["+status+"]");
+	  alarm = new TriggerFlushAlarm( currentTimeMillis() + 60000 );
+        as.addAlarm(alarm) ;	
+	  access=0;
+
 
     }
  
@@ -289,6 +293,8 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
             }
         }
         System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = -1"+" ["+status+"]");
+	  alarm.cancel();
+	  access = 1;
     }
 
     IncrementalSubscription allocationSubscription;   
@@ -299,6 +305,9 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
     private BlackboardService myBlackboardService;
     private LoggingService myLoggingService;
     private UIDService myUIDService;
+    AlarmService as;
+    TriggerFlushAlarm alarm = null;	
     int size = 0;
+    int access = 0;
     
 }

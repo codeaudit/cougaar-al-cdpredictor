@@ -22,14 +22,63 @@ import java.util.Hashtable;
 import org.cougaar.core.service.community.CommunityService;
 import org.cougaar.multicast.AttributeBasedAddress;
 import org.cougaar.logistics.plugin.manager.LoadIndicator;  
-
+import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import java.io.File;
 import java.io.*;
 import java.util.Date;
 
 public class PSUFBSensor3Plugin extends ComponentPlugin
 {   
-    UnaryPredicate taskPredicate = new UnaryPredicate()
+ 
+    class TriggerFlushAlarm implements PeriodicAlarm
+    {
+        public TriggerFlushAlarm(long expTime)
+        {
+            this.expTime = expTime;
+        }
+
+        public void reset(long currentTime)
+        {
+            expTime = currentTime + delay;
+            expired = false;
+        }
+
+        public long getExpirationTime()
+        {
+            return expTime;
+        }
+
+        public void expire()
+        {
+            expired = true;
+		getBlackboardService().openTransaction();
+            setNormal();
+		getBlackboardService().closeTransaction();
+			cancel();
+
+        }
+
+        public boolean hasExpired()
+        {
+            return expired;
+        }
+
+        public boolean cancel()
+        {
+            boolean was = expired;
+            expired = true;
+            return was;
+        }
+
+        boolean expired = false;
+        long expTime;
+        long delay = 60000;
+    }
+
+
+
+
+   UnaryPredicate taskPredicate = new UnaryPredicate()
     {
         public boolean execute(Object o)
         {
@@ -92,6 +141,7 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 		{
 		System.out.println("TimestampService for"+" "+sensorname+" "+"in"+" "+cluster+" "+"not available");
 		}
+		as = getAlarmService() ;
     }
 
 
@@ -100,7 +150,7 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
         Iterator iter;
         String verb, source;    
         Task task;
-
+        if (alarm != null) alarm.cancel();
 	if (myTimestampService == null) {
             myTimestampService = (BlackboardTimestampService) getBindingSite().getServiceBroker().getService(this, BlackboardTimestampService.class, null);
             if (myTimestampService == null) {
@@ -203,6 +253,8 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 			}
 			
 		}
+		alarm = new TriggerFlushAlarm( currentTimeMillis() + 60000 );
+		as.addAlarm(alarm) ;	
      }
         	   
     boolean match(String s1, String s2)
@@ -329,9 +381,26 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 					System.out.println("\n"+"["+sensorname+"]"+" "+"indicates"+" "+cluster+" "+"is under"+" "+status2+" "+"Load");
 
 					}
+	  		
 				}
 			
 	}
+
+    void setNormal () {
+        Iterator iter;
+        String status = LoadIndicator.NORMAL_LOAD;
+        for (iter = sensorSubscription.getCollection().iterator(); iter.hasNext();) {
+            LoadIndicator loadIndicator = (LoadIndicator) iter.next();
+            status = LoadIndicator.NORMAL_LOAD;
+            if (!match(loadIndicator.getLoadStatus(), status)) {
+                loadIndicator.setLoadStatus(status);
+                myBlackboardService.publishChange(loadIndicator);
+            }
+        }
+        
+        System.out.println("\n"+cluster+" ["+sensorname+"]: -1"+" ["+status+"]");
+	  alarm.cancel();
+    }
 
     IncrementalSubscription taskSubscription;  
     IncrementalSubscription sensorSubscription; 
@@ -354,7 +423,9 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
     UID uid;
     long starttime=0;
     int span=5000;
-    int endtime=0;	
+    int endtime=0;
+    AlarmService as;
+    TriggerFlushAlarm alarm = null;	
 	
 }
 
