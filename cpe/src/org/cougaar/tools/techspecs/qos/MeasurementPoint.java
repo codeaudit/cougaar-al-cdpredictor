@@ -97,7 +97,7 @@ public abstract class MeasurementPoint implements java.io.Serializable
         }
         return (Record) history.getLast() ;
     }
-    private int maxSize = 3000 ;
+    private int maxSize = 20000 ;
     protected LinkedList history = new LinkedList() ;
     private String name;
 
