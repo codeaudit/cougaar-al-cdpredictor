@@ -214,8 +214,8 @@ public class TheSensor {
 	  // TRANSPORT
         agent[129]="TheaterGround";
         agent[130]="GlobalSea";
-	    agent[131]="CONUSGround";
-	    agent[132]="TRANSCOM";
+	  agent[131]="CONUSGround";
+	  agent[132]="TRANSCOM";
 
 	  UIDService us=(UIDService) sensorplugin.getUIDService();
 
@@ -460,35 +460,20 @@ public class TheSensor {
 					// for load forecasting
 //					System.out.println(tpdu.getSource()+","+s);
 					info tinfo = (info) TallyTableMap.get(tpdu.getSource());
-
 					if (tinfo==null) return;
 
-					System.out.println(tpdu.getSource()+","+s);
+//					System.out.println(tpdu.getSource()+","+s);
 
 					String t = tpdu.getDirectObject();
-
-					if (t.equalsIgnoreCase("10") != true) {
-
-						System.out.println(tpdu.getSource()+","+s+","+t+"second");
-
-						if (((Long)(tinfo.stime).get(t)).intValue() == 0) {
-							tinfo.stime.put(t, new Long(tpdu.getTime()));
-							printout("\nA: class "+ t+ ", " + tpdu.getSource() + "'s start time = " + (tinfo.StartTime - starttime), ForecastResult,true);
-							forecast(tpdu.getSource(),(tinfo.StartTime - starttime),t);
-						}
-					}
 
 					if (tinfo.StartTime == 0 )
 					{
 						if (tpdu.getAction() == 0 && tpdu.getDirectObject() != null)
 						{
 							tinfo.StartTime = tpdu.getTime();
-							System.out.println(tpdu.getSource()+","+s+","+t+"second" + tinfo.StartTime);
-/*		June 12, 2002							
-							if ((tpdu.getDirectObject()).equalsIgnoreCase("1") == true)
-							{
-								tinfo.StartTime = tpdu.getTime();
-								printout("\nA: "+ tpdu.getSource() + "'s start time = " + (tinfo.StartTime - starttime), ForecastResult,true);
+						//	printout("\nA: " + tpdu.getSource() + "'s start time = " + ((float)(tinfo.StartTime - starttime)/1000), ForecastResult,true);
+						
+
 						}
 					}
 
@@ -503,7 +488,6 @@ public class TheSensor {
 								printout("\nA: class "+ t+ ", " + tpdu.getSource() + "'s start time = " + ((float)(tpdu.getTime() - starttime)/1000), ForecastResult,true);
 								forecast(tpdu.getSource(),(tpdu.getTime() - starttime)/1000,t);
 							}
-*/
 						}
 					}
 
@@ -597,6 +581,8 @@ public class TheSensor {
 				hari = 1;
 			}
 		}
+
+
 	}
 	
 	private void printout(String s, java.io.BufferedWriter bw, boolean flag ){
@@ -713,8 +699,6 @@ public class TheSensor {
 		public void getAverageWaitingTime(UIDStringPDU uid, long time1, String source) {
 
 			if (over) {	return;	}
-
-			System.out.print("Hari !");
 
 			long time = time1 - StartTime;
 
