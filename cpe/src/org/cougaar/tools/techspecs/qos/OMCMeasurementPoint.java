@@ -24,20 +24,27 @@ public class OMCMeasurementPoint extends MeasurementPoint {
 
         OMCMeasurement om = (OMCMeasurement) m ;
         // Check to see whether this OMCMeasurement is allowable.
-        if ( om.getRange() instanceof OMCPoint ) {
-            OMCPoint p = (OMCPoint) om.getRange() ;
-            // See if the point is allowable.
-            OMCRange[] ranges = list.getAllowedValues() ;
-            for (int i = 0; i < ranges.length; i++) {
-                OMCRange range = ranges[i];
-                if ( range.contains( p.getMax() ) ) {
-                    super.addMeasurement( om );
-                }
-            }
-            throw new IllegalArgumentException( "Measurement " + m + " cannot be added." ) ;
+        if ( list.isAllowed( om.getValue() ) ) {
+            super.addMeasurement( om );
         }
         else {
-            throw new IllegalArgumentException( "Range measurements are not supported." ) ;
+            throw new IllegalArgumentException( "Measurement " + m + " cannot be added to measurementPoint " + getName() ) ;
         }
+
+//        if ( om.getRange() instanceof OMCPoint ) {
+//            OMCPoint p = (OMCPoint) om.getRange() ;
+//            // See if the point is allowable.
+//            OMCRange[] ranges = list.getAllowedValues() ;
+//            for (int i = 0; i < ranges.length; i++) {
+//                OMCRange range = ranges[i];
+//                if ( range.contains( p.getMax() ) ) {
+//                    super.addMeasurement( om );
+//                }
+//            }
+//            throw new IllegalArgumentException( "Measurement " + m + " cannot be added." ) ;
+//        }
+//        else {
+//            throw new IllegalArgumentException( "Range measurements are not supported." ) ;
+//        }
     }
 }
