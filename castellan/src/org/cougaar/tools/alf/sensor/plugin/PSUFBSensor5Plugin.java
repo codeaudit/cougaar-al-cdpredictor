@@ -88,7 +88,7 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 
 	BlackboardService bs;
    	UIDService uidservice;
-
+    private LoggingService myLoggingService;
    	String cluster;  // the current agent's name
 	
 	RbfRidgeRegression rbfnn = null;
@@ -104,7 +104,7 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 	java.io.BufferedWriter rst = null;
 
     public void setupSubscriptions()   {
-
+		myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null);
         bs = getBlackboardService();
 		cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
 
@@ -120,7 +120,7 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 		}
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't write file, io error" );
+		    myLoggingService.shout("can't write file, io error" );
 	    }						
 
 		if (bs.didRehydrate() == false)
@@ -130,7 +130,7 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 
 			// num_hidden1, lamda1, increment1, count_limit1, dimension1
 			rbfnn.setParameters(15, 10, 0.1, 20, 6);
-			System.out.println("next check time " + nextTime);
+			myLoggingService.shout("next check time " + nextTime);
 
 			ConfigFinder finder = getConfigFinder();
 			String inputName = "ulmodel.txt";
@@ -141,10 +141,10 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 
 					File inputFile = finder.locateFile( inputName ) ;
 					if ( inputFile != null && inputFile.exists() ) {
-						System.out.println("Load Input model.");
+						myLoggingService.shout("Load Input model.");
 						rbfnn.readModel(inputFile);
 			        } else {
-						System.out.println("Input model error.");
+						myLoggingService.shout("Input model error.");
 					}
 				}
 
@@ -160,7 +160,7 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 			internalState.setalCommunities(alCommunities);
 
 			bs.publishAdd(internalState);
-			System.out.println("PSUFBSensor5Plugin start at " + cluster); 
+			myLoggingService.shout("PSUFBSensor5Plugin start at " + cluster); 
 		}
 
 		bs.setShouldBePersisted(false);
@@ -189,7 +189,7 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 		        internalState = (InternalState) iter.next();
 				// debug
 				internalState.show();
-				System.out.println("PSUFBSensor5Plugin start at " + cluster +" again"); 
+				myLoggingService.shout("PSUFBSensor5Plugin start at " + cluster +" again"); 
 				break;
 			}
 		} 
@@ -291,11 +291,11 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 						if (peEstResult != null) {
 							 double estConf = peEstResult.getConfidenceRating();
 //				             if (peEstResult.isSuccess()) {
-									if (estConf > 0.99) {
+//									if (estConf > 0.99) {
 					                  // 100% success
-									} else {					  	
+//									} else {					  	
 								      nUnconfidentTasks++;
-									}
+//									}
 //							 } else {
 //				                nFailedTasks++;   // Most of the case is success. No meaning
 //			                 }
@@ -358,7 +358,7 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 			}
 			catch (java.io.IOException ioexc)
 			{
-				System.err.println ("can't write file, io error" );
+				myLoggingService.shout("can't write file, io error" );
 		    }					
 	}
 
@@ -378,7 +378,7 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 			bs.publishChange(loadIndicator);
 		}	
 
-		System.out.println(cluster + ": adding loadIndicator to be sent to " + loadIndicator.getTargets());
+		myLoggingService.shout(cluster + ": adding loadIndicator to be sent to " + loadIndicator.getTargets());
 	}
 
 

@@ -1,5 +1,5 @@
 /*
-* $Header: /opt/rep/cougaar.cvs/al-cdpredictor/castellan/src/org/cougaar/tools/castellan/planlog/DBEventLog.java,v 1.2 2002-08-20 04:50:50 abucus96 Exp $
+* $Header: /opt/rep/cougaar.cvs/al-cdpredictor/castellan/src/org/cougaar/tools/castellan/planlog/DBEventLog.java,v 1.3 2003-10-06 01:29:16 abucus96 Exp $
 *
 * $Copyright$
 *
@@ -10,7 +10,10 @@
 
 /*
 * $Log: DBEventLog.java,v $
-* Revision 1.2  2002-08-20 04:50:50  abucus96
+* Revision 1.3  2003-10-06 01:29:16  abucus96
+* *** empty log message ***
+*
+* Revision 1.2  2002/08/20 04:50:50  abucus96
 * *** empty log message ***
 *
 * Revision 1.1  2002/06/12 17:03:31  abucus96
@@ -252,7 +255,7 @@ public class DBEventLog implements EventLog
                 conn.close();
             }
             catch ( Exception e ) {
-                // Die silently
+                e.printStackTrace();// Die silently
             }
         }
     }
@@ -286,7 +289,7 @@ public class DBEventLog implements EventLog
         }
 
     }
-
+/*
     private void disconnect() {
         if ( conn != null ) {
             try {
@@ -297,7 +300,7 @@ public class DBEventLog implements EventLog
             conn = null ;
         }
     }
-
+*/
     /**
      * Does this database exist?
      */
@@ -326,7 +329,7 @@ public class DBEventLog implements EventLog
 
     public void clear()
     {
-       System.out.println( "Not implemented yet!" );
+//       System.out.println( "Not implemented yet!" );
 
     }
 
@@ -337,7 +340,7 @@ public class DBEventLog implements EventLog
                 conn.close();
             }
         }
-        catch ( Exception e ) {
+        catch ( Exception e ) {	e.printStackTrace();
         }
     }
 
@@ -358,7 +361,7 @@ public class DBEventLog implements EventLog
     private synchronized void dropDatabase() {
         Statement stmt = null;
         try {
-            System.out.println("Dropping existing database.");
+//            System.out.println("Dropping existing database.");
             stmt = conn.createStatement() ;
             stmt.executeQuery( "DROP DATABASE " + myDbName ) ;
         }
@@ -409,7 +412,7 @@ public class DBEventLog implements EventLog
     public synchronized void add(PDU pdu)
     {
 
-        int Type = 0;
+//        int Type = 0;
         if ( pdu instanceof TaskPDU ) {
             myTaskPDUTable.add( (TaskPDU)pdu );
         }
@@ -555,11 +558,11 @@ public class DBEventLog implements EventLog
         // Tester must populate props with own database settings
 
 
-        ArrayList result = DBEventLog .getValidDatabases( "jdbc:mysql://localhost/", "sysdba",  "masterkey" ) ;
+        ArrayList result = DBEventLog.getValidDatabases( "jdbc:mysql://localhost/", "sysdba",  "masterkey" ) ;
 
-        for (int i=0;i<result.size();i++) {
-            System.out.println( result.get(i) ) ;
-        }
+//        for (int i=0;i<result.size();i++) {
+//            System.out.println( result.get(i) ) ;
+//        }
     }
 
     /**
