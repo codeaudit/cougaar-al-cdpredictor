@@ -19,16 +19,21 @@ import java.util.HashMap;
  */
 public class RelationshipSpec implements Serializable
 {
+    public static int CARDINALITY_N = -1 ;
+
+    public static int CARDINALITY_UNKNOWN = 0 ;
 
     /**
      * Specifies a role participating within the relationship.
      */
     public static final class RoleInfo implements Serializable {
-        public static final int CARDINALITY_N = -1 ;
 
         public RoleInfo(int cardinality, String roleName, boolean required)
         {
             this.cardinality = cardinality;
+            if ( cardinality < -1 ) {
+                throw new RuntimeException( "Cardinality " + cardinality + " not valid.  Must be >= -1." ) ;
+            }
             this.roleName = roleName;
             this.required = required;
         }
@@ -63,6 +68,11 @@ public class RelationshipSpec implements Serializable
          * The cardinality of the role within the
          */
         private int cardinality ;
+    }
+
+    public RelationshipSpec(String relationshipName)
+    {
+        this.relationshipName = relationshipName;
     }
 
     public String getRelationshipName()

@@ -11,10 +11,10 @@ public class DelayMeasurement extends TimestampMeasurementImpl {
     public DelayMeasurement(String action, String name, MessageAddress source, long timestamp, long localTime ) {
         super(action, name, source, timestamp);
         this.localTime = localTime ;
-        if ( localTime < timestamp ) {
-            throw new IllegalArgumentException(
-                    "Local time precedes timestamp. Negative delays are not allowed." ) ;
-        }
+//        if ( localTime < timestamp ) {
+//            throw new IllegalArgumentException(
+//                    "Local time precedes timestamp. Negative delays are not allowed." ) ;
+//        }
     }
 
     public void toString(StringBuffer buf) {

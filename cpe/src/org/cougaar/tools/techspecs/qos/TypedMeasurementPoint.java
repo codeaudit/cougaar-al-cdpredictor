@@ -10,11 +10,13 @@ import org.cougaar.tools.techspecs.measurement.MeasurementSpec;
 public class TypedMeasurementPoint extends MeasurementPoint
 {
     private MeasurementSpec mspec;
+    private Class type;
 
-    public TypedMeasurementPoint(String name, MeasurementSpec mspec )
+    public TypedMeasurementPoint(String name, Class type, MeasurementSpec mspec )
     {
         super(name);
         this.mspec = mspec ;
+        this.type = type ;
     }
 
     public MeasurementSpec getMeasurementSpec()
@@ -24,6 +26,6 @@ public class TypedMeasurementPoint extends MeasurementPoint
 
     public boolean isValidMeasurement(Measurement m)
     {
-        return false ;
+        return m.getClass().equals( type );
     }
 }
