@@ -41,7 +41,7 @@ import java.util.Iterator;
 import java.util.Collection;
 import java.util.Properties;
 
-public class LogServerPlugin extends ComponentPlugin
+public class SensorPlugin extends ComponentPlugin
 {
     class TriggerFlushAlarm implements PeriodicAlarm
     {

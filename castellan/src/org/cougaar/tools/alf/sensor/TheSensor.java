@@ -27,6 +27,7 @@ package org.cougaar.tools.alf.sensor;
 import org.cougaar.core.util.UID;
 import org.cougaar.tools.castellan.pdu.* ;
 import org.cougaar.tools.castellan.util.* ;
+import org.cougaar.tools.alf.sensor.plugin.SensorPlugin;
 import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.lib.aggagent.test.TestRelay;
 
@@ -50,7 +51,7 @@ public class TheSensor {
 
 	}
 
-	public TheSensor(LogServerPlugin plugin) {
+	public TheSensor(SensorPlugin plugin) {
 
 			String [] agent = { "1-35-ARBN",
 								"1-6-INFBN",
