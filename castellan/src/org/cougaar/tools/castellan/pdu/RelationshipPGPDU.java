@@ -1,20 +1,27 @@
 /*
-* $Header: /opt/rep/cougaar.cvs/al-cdpredictor/castellan/src/org/cougaar/tools/castellan/pdu/RelationshipPGPDU.java,v 1.1 2002-05-22 21:14:38 cvspsu Exp $
-*
-* $Copyright$
-*
-* This file contains proprietary information of Intelligent Automation, Inc.
-* You shall use it only in accordance with the terms of the license you
-* entered into with Intelligent Automation, Inc.
-*/
-
-/*
-* $Log: RelationshipPGPDU.java,v $
-* Revision 1.1  2002-05-22 21:14:38  cvspsu
-* *** empty log message ***
-*
-*
-*/
+  * <copyright>
+  *  Copyright 2001 (Intelligent Automation, Inc.)
+  *  under sponsorship of the Defense Advanced Research Projects
+  *  Agency (DARPA).
+  *
+  *  This program is free software; you can redistribute it and/or modify
+  *  it under the terms of the Cougaar Open Source License as published by
+  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
+  *
+  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
+  *  PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
+  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
+  *  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, AND WITHOUT
+  *  ANY WARRANTIES AS TO NON-INFRINGEMENT.  IN NO EVENT SHALL COPYRIGHT
+  *  HOLDER BE LIABLE FOR ANY DIRECT, SPECIAL, INDIRECT OR CONSEQUENTIAL
+  *  DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE OF DATA OR PROFITS,
+  *  TORTIOUS CONDUCT, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+  *  PERFORMANCE OF THE COUGAAR SOFTWARE.
+  *
+  * </copyright>
+  *
+  * CHANGE RECORD
+  */
 package org.cougaar.tools.castellan.pdu;
 
 import java.io.ObjectInputStream;

@@ -17,7 +17,7 @@ import java.lang.*;
 public class EventPDUTable extends Table{
 
     // ATTRIBUTES
-    PreparedStatement GetEventsStmt; 
+    PreparedStatement GetEventsStmt;
     PreparedStatement GetEventsByTypeStmt;
     PreparedStatement GetEventsByTypeAndTimeIntervalStmt;
     PreparedStatement GetEventsByTimeIntervalStmt;
@@ -29,7 +29,7 @@ public class EventPDUTable extends Table{
     PreparedStatement GetNumEventsByTimeIntervalStmt;
     PreparedStatement GetNumUIDsStmt;
     PreparedStatement SetEventStmt;
-    
+
    // CONSTRUCTORS
    public EventPDUTable( Connection conn ){
       super(conn);
@@ -40,7 +40,7 @@ public class EventPDUTable extends Table{
     public void add( PDU pdu ){
        if( pdu instanceof EventPDU ){
           EventPDU evpdu = ( EventPDU )pdu;
-          int artype;
+          int artype = 0 ;
           UIDStringPDU uid;
           if ( evpdu.getType() == EventPDU.TYPE_ALLOCATION_RESULT )
           {
@@ -48,11 +48,13 @@ public class EventPDUTable extends Table{
               uid = (UIDStringPDU) ARPDU.getPlanElementUID();
               artype = ARPDU.getARType();
           }
-          else
-          {
+          else if ( pdu instanceof DeclarePDU ) {
+              DeclarePDU dpdu = ( DeclarePDU ) pdu ;
+              uid = new UIDStringPDU( dpdu.getSource(), 0 ) ;
+          }
+          else {
               UniqueObjectPDU UOPDU = (UniqueObjectPDU) evpdu;
               uid = (UIDStringPDU) UOPDU.getUID();
-              artype = 0;
           }
           // Add field values to the prepared statement: EventPDUStmt.
           try
@@ -113,8 +115,8 @@ public class EventPDUTable extends Table{
             printSQLException( e );
             e.printStackTrace();
         }
-    }    
-    
+    }
+
     // Null return indicates no entries in result set
     public Iterator getEvents( int type ){
        ResultSet rs = null;
@@ -130,7 +132,7 @@ public class EventPDUTable extends Table{
        }
        return new PDUList( rs );
     }
-    
+
     public Iterator getEvents(){
        ResultSet rs = null;
        try{
@@ -175,7 +177,7 @@ public class EventPDUTable extends Table{
        }
        return new PDUList( rs );
     }
-    
+
     public Iterator getEvents( UID uid )
     {
        ResultSet rs = null;
@@ -232,8 +234,8 @@ public class EventPDUTable extends Table{
          printSQLException( ex );
       }
       return firstTime;
-    }    
-    
+    }
+
     public long getLastEventTime() {
       long lastTime = 0;
       try
@@ -259,9 +261,9 @@ public class EventPDUTable extends Table{
        int numEvents = -1;
        try{
           // Make the query.
-          rs = GetNumEventsStmt.executeQuery();         
+          rs = GetNumEventsStmt.executeQuery();
           if( rs == null ) return 0;
-          // Result is in the   
+          // Result is in the
           rs.first();
           numEvents = rs.getInt( 1 );
        }
@@ -277,11 +279,11 @@ public class EventPDUTable extends Table{
        try{
           // Add field values for prepared statement.
           GetNumEventsByTimeIntervalStmt.setLong( 1, start );
-          GetNumEventsByTimeIntervalStmt.setLong( 2, end );          
+          GetNumEventsByTimeIntervalStmt.setLong( 2, end );
           // Make the query.
-          rs = GetNumEventsByTimeIntervalStmt.executeQuery();         
+          rs = GetNumEventsByTimeIntervalStmt.executeQuery();
           if( rs == null ) return 0;
-          // Result is in the   
+          // Result is in the
           rs.first();
           numEvents = rs.getInt( 1 );
        }
@@ -300,13 +302,13 @@ public class EventPDUTable extends Table{
           // Make the query.
           rs = GetNumEventsByTypeStmt.executeQuery();
           if( rs == null ) return 0;
-          // Result is in the   
+          // Result is in the
           rs.first();
           numEvents = rs.getInt( 1 );
        }
        catch ( SQLException ex ){
           printSQLException( ex );
-       }       
+       }
        return numEvents;
     }
 
@@ -320,24 +322,24 @@ public class EventPDUTable extends Table{
           GetNumEventsByTypeAndTimeIntervalStmt.setLong( 3, end );
           // Make the query.
           rs = GetNumEventsByTypeAndTimeIntervalStmt.executeQuery();
-          // Result is in the   
+          // Result is in the
           if( rs == null ) return 0;
           rs.first();
           numEvents = rs.getInt( 1 );
        }
        catch ( SQLException ex ){
           printSQLException( ex );
-       }       
+       }
        return numEvents;
     }
 
     public int getNumUIDs(){
-       System.out.println( "Not implemented yet!" );
+       System.out.println( "EventPDUTable:: getNumUIDs: Not implemented yet!" );
        return -1;
     }
 
     public int getNumUIDs( long start, long end ){
-       System.out.println( "Not implemented yet!" );
+       System.out.println( "EventPDUTable:: getNumUIDs: Not implemented yet!" );
        return -1;
        /*
        ResultSet rs = null;
@@ -348,17 +350,17 @@ public class EventPDUTable extends Table{
          GetNumUniqueUIDsStmt.setLong( 2, end );           // STOPTIME
           // Make the query.
           rs = GetNumUniqueUIDsStmt.executeQuery();
-          // Result is in the   
+          // Result is in the
           rs.first();
           numEvents = rs.getInt( 1 );
        }
        catch ( SQLException ex ){
           printSQLException( ex );
-       }       
+       }
        return numEvents;
         */
     }
-    
+
     public void loadPreparedStatements( Connection conn ){
       try{
          SetEventStmt = conn.prepareStatement(
@@ -376,18 +378,18 @@ public class EventPDUTable extends Table{
          GetEventsByUIDAndTimeIntervalStmt = conn.prepareStatement(
                  "SELECT * FROM EVENTPDU WHERE ID = ? AND OWNER = ? " +
                  "AND TIME >= ? AND TIME <= ? " );
-         GetNumEventsStmt = conn.prepareStatement( 
+         GetNumEventsStmt = conn.prepareStatement(
                  "SELECT COUNT(*) FROM EVENTPDU" );
-         GetNumEventsByTimeIntervalStmt = conn.prepareStatement( 
+         GetNumEventsByTimeIntervalStmt = conn.prepareStatement(
                  "SELECT COUNT(*) FROM EVENTPDU WHERE TIME >= ? AND TIME <= ? " );
-         GetNumEventsByTypeStmt = conn.prepareStatement( 
+         GetNumEventsByTypeStmt = conn.prepareStatement(
                  "SELECT COUNT(*) FROM EVENTPDU WHERE TYPE = ? " );
-         GetNumEventsByTypeAndTimeIntervalStmt = conn.prepareStatement( 
-                 "SELECT COUNT(*) FROM EVENTPDU WHERE TYPE = ? AND TIME >= ? " + 
+         GetNumEventsByTypeAndTimeIntervalStmt = conn.prepareStatement(
+                 "SELECT COUNT(*) FROM EVENTPDU WHERE TYPE = ? AND TIME >= ? " +
                  "AND TIME <= ? " );
-         GetNumUIDsStmt = conn.prepareStatement( 
+         GetNumUIDsStmt = conn.prepareStatement(
                  "SELECT COUNT(*) FROM EVENTPDU WHERE TIME >= ? AND TIME <= ? " +
-                 "AND OWNER = ? AND ID = ? " );        
+                 "AND OWNER = ? AND ID = ? " );
         }
         catch ( SQLException ex )
         {

@@ -24,6 +24,10 @@ public interface EventLog {
 
     public void close() ;
 
+    /** Returns all agents found in ExecutionPDUs.
+     */
+    public  Collection getAgents() ;
+
     /** Returns all asset events.
      */
     public  Iterator getAssetEvents() ;
@@ -57,6 +61,11 @@ public interface EventLog {
     * Find number of events from HashSet.size(). Get iterator from HashSet.iterator().
     **/
     public Iterator getExecutionsActiveSometime( long start, long end );
+
+    /**
+    * Returns all execution events for a given AgentName.
+    **/
+    public  Iterator getExecutionsByAgent( String theAgentName );
 
     /**
     * Returns all execution events that started in the given time interval.

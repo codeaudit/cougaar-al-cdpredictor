@@ -51,9 +51,10 @@ public class AssetPDU extends UniqueObjectPDU {
 
     public void outputParamString( StringBuffer buf ) {
        super.outputParamString( buf ) ;
-       buf.append( ',' ).append( assetClass ).append( ' ' ) ;
+       buf.append( ",assetClass=" ).append( assetClass ).append( ' ' ) ;
        buf.append( ",assetType=" ).append( assetTypeId ) ;
-       buf.append( ",itemId=" ).append( itemId ) ;
+        buf.append( ",assetTypeNomeclature=" ).append( assetTypeNomenclature ) ;
+        buf.append( ",itemId=" ).append( itemId ) ;
 
         if ( pgPDUs != null ) {
             buf.append( ",pgs=[" ) ;

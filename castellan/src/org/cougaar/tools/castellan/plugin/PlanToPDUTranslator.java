@@ -325,6 +325,18 @@ public abstract class PlanToPDUTranslator
         return am;
     }
 
+    public static final ClusterPGPDU makeClusterPDU( ClusterPG cluster ) {
+        if ( cluster == null ) {
+            throw new IllegalArgumentException( "PropertyGroup must be non-null." ) ;
+        }
+        String clusterId = null ;
+        if ( cluster.getClusterIdentifier() != null ) {
+            clusterId = cluster.getClusterIdentifier().cleanToString() ;
+        }
+        ClusterPGPDU pgpdu = new ClusterPGPDU( clusterId ) ;
+        return pgpdu ;
+    }
+
     public static final RelationshipPGPDU makeRelationshipPDU( long executionTime, long time,
                                                                           RelationshipPG pg )
     {

@@ -6,7 +6,7 @@ import java.util.* ;
  *  Base class for all logs corresponding (1-1) with UniqueObjects.
  */
 public abstract class UniqueObjectLog implements Loggable {
-    
+
    UniqueObjectLog( UIDPDU uid ) {
       this.uid = uid ;
    }
@@ -18,7 +18,7 @@ public abstract class UniqueObjectLog implements Loggable {
       this.createdExecution = createdExecution ;
       isFull = true;
    }
-   
+
    public int hashCode() {
         return uid.hashCode() ;
    }
@@ -52,6 +52,14 @@ public abstract class UniqueObjectLog implements Loggable {
         buf.append( ']' ) ;
     }
 
+    public long getCreatedTime() {
+        return created;
+    }
+
+    public long getCreatedExecutionTime() {
+        return createdExecution;
+    }
+
     void outputParamString( StringBuffer buf ) {
         buf.append( getLogType( getClass() ) ) ;
         buf.append( ",uid=" ).append( uid ) ;
@@ -60,7 +68,7 @@ public abstract class UniqueObjectLog implements Loggable {
         //java.text.DateFormat.getDateInstance( DateFormat.SHORT ).format(
         //    new java.util.Date( getTime() ), buf, new FieldPosition( DateFormat.MILLISECOND_FIELD )  ) ;
     }
-    
+
    public void setCluster( String cluster) { this.cluster = cluster ; }
 
    public void setCreatedTimestamp( long created, long createdExecution ) {
@@ -70,11 +78,11 @@ public abstract class UniqueObjectLog implements Loggable {
    public void setRescindedTimestamp( long rescinded, long rescindedExecution ) {
       this.removed = rescinded ; this.removedExecution = rescindedExecution ;
    }
-   
+
    public long getRescindedTimestamp() {
         return removed ;
    }
-   
+
    public long getRescindedExecutionTimestamp() {
         return removedExecution ;
    }

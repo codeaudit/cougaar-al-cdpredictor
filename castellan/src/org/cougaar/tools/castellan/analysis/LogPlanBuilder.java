@@ -1,10 +1,27 @@
+/*
+  * <copyright>
+  *  Copyright 2002 (Intelligent Automation, Inc.)
+  *  under sponsorship of the Defense Advanced Research Projects
+  *  Agency (DARPA).
+  *
+  *  This program is free software; you can redistribute it and/or modify
+  *  it under the terms of the Cougaar Open Source License as published by
+  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
+  *
+  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
+  *  PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
+  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
+  *  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, AND WITHOUT
+  *  ANY WARRANTIES AS TO NON-INFRINGEMENT.  IN NO EVENT SHALL COPYRIGHT
+  *  HOLDER BE LIABLE FOR ANY DIRECT, SPECIAL, INDIRECT OR CONSEQUENTIAL
+  *  DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE OF DATA OR PROFITS,
+  *  TORTIOUS CONDUCT, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+  *  PERFORMANCE OF THE COUGAAR SOFTWARE.
+  *
+  * </copyright>
+  *
+  */
 
-//Title:        Hydra
-//Version:      
-//Copyright:    Copyright (c) 1999
-//Author:       
-//Company:      
-//Description:  Your description
 package org.cougaar.tools.castellan.analysis;
 
 
@@ -26,7 +43,7 @@ public class LogPlanBuilder implements PDUSink {
     public PlanLogDatabase getDatabase() { return pld ; }
 
     public Iterator getAssets() { return pld.getAssets() ; }
-    
+
     public ArrayList getRootTasks() {
         ArrayList results = new ArrayList() ;
         for ( Iterator iter = pld.getTasks().iterator();
@@ -49,6 +66,26 @@ public class LogPlanBuilder implements PDUSink {
         return results ;
     }
 
+    /**
+     * Note: Process allocation result PDUs should be processed a second pass, after
+     * all the processing is done for the standard PDUs.
+     */
+    public void processARPDU( AllocationResultPDU arpdu ) {
+
+        UIDStringPDU uid = ( UIDStringPDU ) arpdu.getUID() ;
+        PlanElementLog pel = getPlanElementForTask( uid ) ;
+        if ( pel != null ) {
+            pel.addAR( arpdu );
+        }
+    }
+
+    public boolean acceptTask( TaskPDU pdu ) {
+        if ( pdu.getTaskVerb().equals( "ReportForDuty" ) || pdu.getTaskVerb().equals( "ReportForService" ) ) {
+            return false ;
+        }
+        return true ;
+    }
+
     public void processPDU( PDU m ) {
         try {
             if ( m instanceof AssetPDU ) {
@@ -65,7 +102,9 @@ public class LogPlanBuilder implements PDUSink {
             }
             else if ( m instanceof TaskPDU ) {
                 System.out.print( "T" ) ;
-                processTaskPDU( ( TaskPDU ) m ) ;
+                if ( acceptTask( ( TaskPDU ) m ) ) {
+                    processTaskPDU( ( TaskPDU ) m ) ;
+                }
             }
             else if ( m instanceof ExpansionPDU ) {
                 System.out.print( "X" ) ;
@@ -86,7 +125,7 @@ public class LogPlanBuilder implements PDUSink {
         PlanElementLog pel = pld.getPlanElementLogForTask( taskUID ) ;
         return ( PlanElementLog ) pel ;
     }
-    
+
     protected AllocationLog getAllocationForTask( UIDPDU taskUID ) {
         PlanElementLog pel = pld.getPlanElementLogForTask( taskUID ) ;
         if ( pel instanceof AllocationLog ) {
@@ -94,7 +133,7 @@ public class LogPlanBuilder implements PDUSink {
         }
         return null ;
     }
-    
+
     protected AggregationLog getAggregationForTask( UIDPDU taskUID ) {
         PlanElementLog pel = pld.getPlanElementLogForTask( taskUID ) ;
         if ( pel instanceof AggregationLog ) {
@@ -102,7 +141,7 @@ public class LogPlanBuilder implements PDUSink {
         }
         return null ;
     }
-    
+
     protected ExpansionLog getExpansionForTask( UIDPDU taskUID ) {
         PlanElementLog pel = pld.getPlanElementLogForTask( taskUID ) ;
         if ( pel instanceof ExpansionLog ) {
@@ -111,9 +150,9 @@ public class LogPlanBuilder implements PDUSink {
         return null ;
     }
 
-    private MPTaskLog checkMPTaskForMessage( MPTaskPDU m ) {
+    protected MPTaskLog checkMPTaskForMessage( MPTaskPDU m ) {
         Loggable o = pld.getLog( m.getUID() ) ;
-        
+
         // Handle previously empty TaskLog instances
         if ( o != null && o instanceof MPTaskLog ) {
             MPTaskLog tl = ( MPTaskLog ) o ;
@@ -124,17 +163,17 @@ public class LogPlanBuilder implements PDUSink {
                 //tl.setParent( m.getParent() ) ;
                 //tl.setParentType( m.getParentType() ) ;
                 tl.setCluster( m.getSource() ) ;
-                
+
                 // If a parent task has been shadowed, remove it if the message indicates
                 // a parent task which is non-null, indicating that the parent is either
                 // a task or an expansion.
                 // checkTaskForShadowedParentAsset( m.getParent(), tl ) ;
-                
+
                 //if ( m.getParent() != null ) {
                 //    tl.setParent( m.getParent() );
                 //    tl.setParentType( m.getType() );
                 //}
-                
+
                 tl.setFull( true );
             }
             else if ( m.getAction() == EventPDU.ACTION_REMOVE ) {
@@ -142,19 +181,19 @@ public class LogPlanBuilder implements PDUSink {
             }
             return tl ;
         }
-        
-        
+
+
         if ( (o != null) && !(o instanceof MPTaskLog) ) {
             System.out.println( "Unexpected error: message for UID "
             + m.getUID() + " does not match existing TaskLog object." ) ;
             return null ;
         }
-        
+
         long time = -1, executionTime = -1 ;
         if ( m.getAction() == EventPDU.ACTION_ADD ) {
             time = m.getTime() ; executionTime = m.getExecutionTime() ;
         }
-        
+
         //System.out.println( "Adding asset log " + m.getUID() + " of type " + m.getAssetTypeId() ) ;
         MPTaskLog log = new MPTaskLog( m.getUID(), m.getSource(), m.getTaskVerb().toString(), time, executionTime ) ;
         addLog( log ) ;
@@ -170,11 +209,11 @@ public class LogPlanBuilder implements PDUSink {
         else if ( am.getAction() == EventPDU.ACTION_REMOVE ) {
             al.setRescindedTimestamp( am.getTime(), am.getExecutionTime() ) ;
         }
-        
+
         addLog( al ) ;
         return al ;
     }
-    
+
     public static boolean isSourceAsset( UIDPDU uid ) {
         if ( uid instanceof UIDStringPDU ) {
             UIDStringPDU updu = ( UIDStringPDU ) uid ;
@@ -192,8 +231,8 @@ public class LogPlanBuilder implements PDUSink {
     }
 
     public static final String SOURCEASSET = "SOURCEASSET" ;
-    public static final String SINKASSET = "SINKASSET " ;    
-    
+    public static final String SINKASSET = "SINKASSET " ;
+
     public AssetLog getSourceAsset( TaskLog taskLog ) {
         UIDStringPDU updu = ( UIDStringPDU ) taskLog.getUID() ;
         UIDStringPDU sourceAssetUID = new UIDStringPDU( updu.getOwner(), UIDPDU.SOURCE_ASSET ) ;
@@ -201,12 +240,12 @@ public class LogPlanBuilder implements PDUSink {
         alog.setAssetTypeId( SOURCEASSET ) ;
         return alog ;
     }
-    
+
     public AssetLog getSinkAsset( TaskLog taskLog ) {
         UIDStringPDU updu = ( UIDStringPDU ) taskLog.getUID() ;
         UIDStringPDU sinkAssetUID = new UIDStringPDU( updu.getOwner(), UIDPDU.SINK_ASSET ) ;
         AssetLog alog = checkAsset( sinkAssetUID ) ;
-        alog.setAssetTypeId( SINKASSET ) ; 
+        alog.setAssetTypeId( SINKASSET ) ;
         return alog ;
     }
 
@@ -238,7 +277,7 @@ public class LogPlanBuilder implements PDUSink {
         return pld.getLog( uid ) ;
     }
 
-    private ExpansionLog checkExpansionForMessage( ExpansionPDU m ) {
+    protected ExpansionLog checkExpansionForMessage( ExpansionPDU m ) {
         Object tmp = getLog( m.getUID() ) ;
         if ( tmp != null && !( tmp instanceof ExpansionLog ) ) {
             System.out.println( "UNEXPECTED ERROR: checkExpansionForMessage " + tmp + " is not an expansion log." ) ;
@@ -256,18 +295,18 @@ public class LogPlanBuilder implements PDUSink {
                 o.setRescindedTimestamp( m.getTime(), m.getExecutionTime() ) ;
             }
         }
-        
+
         if ( o == null ) {
             o = new ExpansionLog( m.getParentTask(), m.getTasks(), m.getUID(),
             m.getSource(), m.getTime(), m.getExecutionTime() ) ;
             addLog( o );
         }
-        
+
         // System.out.println( "Expansion log is " + o ) ;
         return o ;
     }
-    
-    private TaskLog checkTask( UIDPDU uid ) {
+
+    protected TaskLog checkTask( UIDPDU uid ) {
         UniqueObjectLog o = getLog( uid ) ;
         if ( o != null && o instanceof TaskLog ) {
             return ( TaskLog ) o ;
@@ -285,11 +324,11 @@ public class LogPlanBuilder implements PDUSink {
     private void fillInParentTask( TaskPDU m, TaskLog tl ) {
         if ( m.getParentTask() != null ) {
             tl.setParent( m.getParentTask() );
-            
+
             UniqueObjectLog pl = ( UniqueObjectLog ) getLog( m.getParentTask() ) ;
             PlanElementLog pel = getPlanElementForTask(m.getParentTask() ) ;
             if ( pel != null ) {
-                
+
             }
             else {
                 tl.setParentType( TaskLog.TYPE_UNKNOWN ) ;
@@ -311,14 +350,14 @@ public class LogPlanBuilder implements PDUSink {
             }
         }
     }
-    
+
     /** Create and/or return a task log for a task message.  Each task is parented to either
      *  another task (by intercluster forwarding), If the parent of the task is known,
      *  fill in the parent information at this point.
      */
-    private TaskLog checkTaskForMessage( TaskPDU m ) {
+    protected TaskLog checkTaskForMessage( TaskPDU m ) {
         Loggable o = pld.getLog( m.getUID() ) ;
-        
+
         // Handle previously empty TaskLog instances
         if ( o != null && o instanceof TaskLog ) {
             TaskLog tl = ( TaskLog ) o ;
@@ -335,18 +374,18 @@ public class LogPlanBuilder implements PDUSink {
             }
             return tl ;
         }
-        
+
         if ( (o != null) && !(o instanceof TaskLog) ) {
             System.out.println( "Unexpected error: message for UID "
             + m.getUID() + " does not match existing TaskLog object." ) ;
             return null ;
         }
-        
+
         long time = -1, executionTime = -1 ;
         if ( m.getAction() == EventPDU.ACTION_ADD ) {
             time = m.getTime() ; executionTime = m.getExecutionTime() ;
         }
-        
+
         //System.out.println( "Adding asset log " + m.getUID() + " of type " + m.getAssetTypeId() ) ;
         TaskLog log =
         new TaskLog( m.getUID(), m.getSource(), m.getTaskVerb().toString().intern() , time, executionTime ) ;
@@ -355,7 +394,7 @@ public class LogPlanBuilder implements PDUSink {
         addLog( log ) ;
         return log ;
     }
-    
+
     private AssetLog checkAsset( UIDPDU uid ) {
         Loggable o = pld.getLog( uid ) ;
         if ( o != null && o instanceof AssetLog ) {
@@ -376,31 +415,45 @@ public class LogPlanBuilder implements PDUSink {
             am.getAction() == EventPDU.ACTION_CHANGE ) {
                 // Fixup hollow and/or changed
                 al.setAssetTypeId( am.getAssetTypeId() );
+                if ( am.getPropertyGroups() != null ) {
+                    al.setPropertyGroups( am.getPropertyGroups() );
+                }
+                al.setItemId( am.getItemId() );
+                al.setAssetTypeNomenclature( am.getAssetTypeNomenclature() );
+                al.setClassName( am.getAssetClass().toString() );
                 al.setCreatedTimestamp( am.getTime(), am.getExecutionTime() );
                 al.setCluster( am.getSource() );
                 al.setFull(true);
             }
             return al ;
         }
-        
+
         if ( (o != null) && !(o instanceof AssetLog) ) {
             ServerApp.instance().println( "Unexpected error: message for UID "
             + am.getUID() + " does not match existing Log object." ) ;
         }
-        
+
         long time = -1, executionTime = -1 ;
         if ( am.getAction() == AssetPDU.ACTION_ADD ) {
             time = am.getTime() ; executionTime = am.getExecutionTime() ;
         }
-        
+
         if ( ServerApp.instance().isVerbose() ) {
             System.out.println( "Adding asset log " + am.getUID() + " of type " + am.getAssetTypeId() ) ;
         }
-        AssetLog assetLog = new AssetLog( am.getUID(), am.getSource() ,am.getItemId(), am.getAssetTypeId(), am.getAssetTypeNomenclature(), time, executionTime ) ;
+        AssetLog assetLog = new AssetLog( am.getUID(), am.getSource(),
+                am.getItemId(), am.getAssetTypeId(), am.getAssetTypeNomenclature(), time, executionTime ) ;
+        assetLog.setClassName( am.getAssetClass().toString() );
+        if ( am.getPropertyGroups() != null ) {
+            assetLog.setPropertyGroups( am.getPropertyGroups() );
+        }
+        if ( am.getAction() == EventPDU.ACTION_ADD ) {
+            assetLog.setFull( true );
+        }
         addLog( assetLog ) ;
         return assetLog ;
     }
-    
+
     private AllocationLog checkAllocationForMessage( AllocationPDU am ) {
         Loggable o = pld.getLog( am.getUID() ) ;
         if ( o != null && o instanceof AllocationLog ) {
@@ -422,12 +475,12 @@ public class LogPlanBuilder implements PDUSink {
             }
             return l ;
         }
-        
+
         if ( (o != null) && !(o instanceof AllocationLog) ) {
             System.out.println( "Unexpected error: message for UID "
             + am.getUID() + " does not match existing Log object." ) ;
         }
-        
+
         AllocationLog log = new AllocationLog( am.getUID(), am.getTask(), am.getAsset(), am.getAllocTask() ) ;
         addLog( log ) ;
         return log ;
@@ -437,10 +490,10 @@ public class LogPlanBuilder implements PDUSink {
         if ( ServerApp.instance().isVerbose() ) {
             System.out.println( "\nPROCESSING expansion message " + m  ) ;
         }
-        
+
         // Make an expansion log only when the message is add.
         ExpansionLog el = checkExpansionForMessage( m ) ;
-    }    
+    }
 
     private synchronized void processAggregationPDU( AggregationPDU m ) {
         UIDPDU mpTask = m.getCombinedTask() ;
@@ -449,11 +502,11 @@ public class LogPlanBuilder implements PDUSink {
             enqueueMessage( mpTask, m ) ;
             return ;
         }
-        
+
         if ( ServerApp.instance().isVerbose() ) {
             System.out.println( "\nPROCESSING aggregation message " + m ) ;
         }
-        
+
         AggregationLog log = checkAggregationLogForMessage( m ) ;
         //TaskLog tl = ( TaskLog ) getLog( log.getParent() ) ;
         l.addParent( m.getTask() ) ;
@@ -468,7 +521,7 @@ public class LogPlanBuilder implements PDUSink {
         if ( ServerApp.instance().isVerbose() ) {
             System.out.println( "\nPROCESSING MPTASK message:  " + tm ) ;
         }
-        
+
         MPTaskLog mp = checkMPTaskForMessage( tm ) ;
         processQueuedMessages(tm.getUID()) ;
     }
@@ -477,11 +530,11 @@ public class LogPlanBuilder implements PDUSink {
         if ( ServerApp.instance().isVerbose() ) {
             System.out.println( "\nPROCESSING TASK message:  " + tm ) ;
         }
-        
+
         if ( tm instanceof MPTaskPDU ) {
-           System.out.println( "!" ) ;   
+           System.out.println( "!" ) ;
         }
-        
+
         TaskLog log = checkTaskForMessage( tm ) ;
         PlanElementLog pel = getPlanElementForTask( tm.getUID() ) ;
     }
@@ -490,12 +543,12 @@ public class LogPlanBuilder implements PDUSink {
         if ( ServerApp.instance().isVerbose() ) {
             System.out.println( "\nPROCESSING ALLOCATION MESSAGE " + am ) ;
         }
-        
+
         AllocationLog allocationLog = checkAllocationForMessage(am) ;
         UIDStringPDU assetUID = ( UIDStringPDU ) am.getAsset() ;
         TaskLog taskLog = ( TaskLog ) getLog( am.getTask() ) ;
-    }    
-    
+    }
+
     private void enqueueMessage( UIDPDU uid, PDU m ) {
         if ( ServerApp.instance().isVerbose() ) {
             System.out.println( "Enqueuing " + m + " on UID " + uid ) ;
@@ -503,19 +556,19 @@ public class LogPlanBuilder implements PDUSink {
         System.out.print( "+" ) ;
         delayedSet.put( uid, m ) ;
     }
-    
+
     private void processQueuedMessages( UIDPDU uid ) {
         Object[] messages = delayedSet.removeObjects( uid ) ;
         if ( messages == null ) {
             return ;
         }
-        
+
         if ( messages.length > 0 ) {
             if ( ServerApp.instance().isVerbose() ) {
                 System.out.println( "\tRemoving " + messages.length + " objects from the delayed processing queue for " + uid ) ;
             }
         }
-        
+
         for (int i=0;i<messages.length;i++) {
             if ( ServerApp.instance().isVerbose() ) {
                 System.out.println( "Processing " + messages[i] ) ;
@@ -523,8 +576,8 @@ public class LogPlanBuilder implements PDUSink {
             System.out.print( '-' ) ;
             processPDU( ( PDU ) messages[i] ) ;
         }
-    }    
+    }
 
     protected MultiHashSet delayedSet = new MultiHashSet() ;
     PlanLogDatabase pld ;
-} 
+}

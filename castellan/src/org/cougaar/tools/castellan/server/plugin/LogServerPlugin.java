@@ -215,7 +215,7 @@ public class LogServerPlugin extends ComponentPlugin
                 {
                     if (logToMemory)
                     {
-                        for (Iterator iter = buffer.iterator() ; iter.hasNext() ;)
+                        for (Iterator iter = buffer.getIncoming() ; iter.hasNext() ;)
                         {
                             memoryLog.add((PDU) iter.next());
                         }
@@ -224,14 +224,14 @@ public class LogServerPlugin extends ComponentPlugin
                     {
                         if (persistentLog != null)
                         {
-                            for (Iterator iter = buffer.iterator() ; iter.hasNext() ;)
+                            for (Iterator iter = buffer.getIncoming() ; iter.hasNext() ;)
                             {
                                 persistentLog.add((PDU) iter.next());
                             }
                         }
                     }
                 }
-                buffer.clear();
+                buffer.clearIncoming();
             }
         }
     }

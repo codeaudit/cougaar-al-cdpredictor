@@ -28,6 +28,7 @@ import org.cougaar.core.util.UID;
 import org.cougaar.tools.castellan.pdu.* ;
 import org.cougaar.tools.castellan.util.* ;
 import java.util.* ;
+import java.lang.* ;
 
 /**
  *
@@ -122,7 +123,7 @@ public class InMemoryEventLog  implements EventLog {
    /** Get all events.
      */
     public synchronized Iterator getEvents() {
-        throw new UnsupportedOperationException() ;
+       return allEvents.subMap( allEvents.firstKey(), allEvents.lastKey() );
     }
 
     /** Get all events between a start time and end time.
@@ -166,7 +167,21 @@ public class InMemoryEventLog  implements EventLog {
     }
 
     public  Iterator getEvents( UID uid, long start, long end ) {
-        throw new UnsupportedOperationException() ;
+       System.out.println( "not implemented yet!" );
+//       Iterator eventsInIntervalIter = getEvents( start, end );
+//       EventPDU event = null;
+//       Vector events = new Vector();
+//       while( eventsInIntervalIter.hasNext() ){
+//          event = (EventPDU)eventsInIntervalIter.next();
+//          if ( event instanceof UniqueObjectPDU ) {
+//             UniqueObjectPDU updu = (UniqueObjectPDU)event;
+//             if( updu.getUID() == uid ){
+//                events.add( event );
+//             }
+//          }
+//       }
+//       return events.iterator();
+       return null;
     }
     /**
     * Returns the union of the set of all plugin executions that started and
@@ -293,20 +308,26 @@ public class InMemoryEventLog  implements EventLog {
     }
 
     public synchronized int getNumUIDs() {
-        throw new UnsupportedOperationException() ;
+       // bbowles - Not sure if this is just the size of eventsByUID???
+        Iterator iter = allEvents.subMap( allEvents.firstKey(), allEvents.lastKey() );
+        int cntUIDs = 0;
+        while ( iter.hasNext() ) {
+            iter.next() ;
+            cntUIDs++;
+        }
+        return cntUIDs;
     }
 
     public synchronized int getNumUIDs(long start, long end) {
+       // bbowles - AND WHAT ABOUT THIS ONE? 
+       // Not sure if this is just the size of eventsByUID??? for a given time interval
         Iterator iter = allEvents.subMap( new Long( start ), new Long( end ) ) ;
-        HashMap map = new HashMap() ;
+        int cntUIDs = 0;
         while ( iter.hasNext() ) {
-            EventPDU pdu = ( EventPDU ) iter.next() ;
-            if ( pdu instanceof UniqueObjectPDU ) {
-                UniqueObjectPDU updu = ( UniqueObjectPDU ) pdu ;
-                map.put( updu.getUID(), updu.getUID() ) ;
-            }
+            iter.next() ;
+            cntUIDs++;
         }
-        return map.size() ;
+        return cntUIDs;
     }
 
     /**
@@ -320,5 +341,50 @@ public class InMemoryEventLog  implements EventLog {
           count ++ ;
        }
        return count ;
+    }
+    
+    /**
+     * Returns all execution events for a given AgentName.
+     */
+    public synchronized Iterator getExecutionsByAgent(String theAgentName) {
+       System.out.println( "not implemented yet!" );
+//       Vector executions = new Vector();
+//       Iterator iter = eventsByPlugIn.iterator();
+//       ExecutionPDU epdu = null;
+//       while( iter.hasNext() ){
+//          epdu = (ExecutionPDU)iter.next();
+//          if( epdu.getClusterIdentifier() == theAgentName ){
+//             executions.add( epdu );
+//          }
+//       }
+//       return executions.iterator();
+       return null;
+    }
+    
+    /** Returns all agents found in ExecutionPDUs, i.e. agents that had
+     * plugin(s) that executed.
+     */
+    public synchronized Collection getAgents(){
+       System.out.println( "not implemented yet!" );
+//       Vector executions = new Vector();
+//       Iterator iter = eventsByPlugIn.iterator();
+//       ExecutionPDU epdu = null;
+//       String agentName = null;
+//       while( iter.hasNext() ){
+//          epdu = (ExecutionPDU)iter.next();
+//          agentName = epdu.getClusterIdentifier();
+//          boolean nameIsUnique = true;
+//          // test if name already exists in executions Vector
+//          for( int cnt = 0; cnt < executions.size(); cnt++ ){
+//             if( agentName == (String) executions(cnt).get() ){
+//                nameIsUnique = false;
+//             }
+//          }
+//          if( nameIsUnique ){
+//             executions.add( agentName );
+//         }
+//       }
+//       return executions.iterator();
+       return null;
     }
 }

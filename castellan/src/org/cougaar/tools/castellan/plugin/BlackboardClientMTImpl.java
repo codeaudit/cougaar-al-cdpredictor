@@ -27,7 +27,6 @@
 package org.cougaar.tools.castellan.plugin;
 
 import org.cougaar.tools.castellan.pdu.*;
-import org.cougaar.tools.castellan.pdu.WrappedMessage;
 import org.cougaar.tools.castellan.ldm.*;
 import org.cougaar.tools.castellan.server.*;
 import org.cougaar.core.service.*;

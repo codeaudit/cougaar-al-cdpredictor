@@ -31,10 +31,13 @@ import org.cougaar.core.agent.*;
 import org.cougaar.core.agent.service.alarm.*;
 import org.cougaar.core.blackboard.*;
 import org.cougaar.core.service.*;
+import org.cougaar.core.component.ServiceBroker;
+import org.cougaar.core.node.NodeIdentificationService;
 import org.cougaar.util.*;
 import org.w3c.dom.*;
 import org.cougaar.tools.castellan.planlog.*;
 import org.cougaar.tools.castellan.ldm.*;
+import org.cougaar.tools.castellan.pdu.EventPDU;
 
 import java.util.*;
 import java.io.*;
@@ -45,6 +48,58 @@ import java.io.*;
  */
 public class PlanLogConfigPlugin extends ComponentPlugin
 {
+    class FlushAlarm implements PeriodicAlarm {
+        public FlushAlarm( long expTime )
+        {
+            this.expTime = expTime;
+        }
+
+        public void reset( long currentTime )
+        {
+            expTime = currentTime + delay ;
+            expired = false ;
+        }
+
+        public long getExpirationTime()
+        {
+            return expTime ;
+        }
+
+        public void expire()
+        {
+            expired = true ;
+            BlackboardService bs = getBlackboardService() ;
+            bs.openTransaction();
+            FlushObject fo = null ;
+            if ( flushedObject == null ) {
+                flushedObject = new FlushObject( System.currentTimeMillis() ) ;
+                bs.publishAdd( flushedObject ) ;
+            }
+            flushedObject.setTime( System.currentTimeMillis() );
+            bs.publishChange( flushedObject ) ;
+            bs.closeTransaction();
+        }
+
+        public boolean hasExpired()
+        {
+            return expired ;
+        }
+
+        public boolean cancel()
+        {
+            boolean was = expired;
+            expired=true;
+            return was;
+        }
+
+        FlushObject flushedObject ;
+        boolean stop = false ;
+        boolean expired = false ;
+        long expTime ;
+        long delay = 5000L ;
+    }
+
+
     class TimerThread extends Thread {
         public void run()
         {
@@ -72,23 +127,34 @@ public class PlanLogConfigPlugin extends ComponentPlugin
 
     public void setupSubscriptions()
     {
+        ServiceBroker broker = getServiceBroker() ;
+        log = ( LoggingService ) broker.getService( this, LoggingService.class, null ) ;
+
+        //BlackboardTimestampService bts =
+        //        ( BlackboardTimestampService ) broker.getService( this, BlackboardTimestampService.class, null ) ;
+
+        //if ( bts == null ) {
+        //     System.out.println("BlackboardTimestampService does not exist.");
+        //}
+
+        // Publish configuration information.
         config = getConfigInfo() ;
 
         if ( config != null ) {
             BlackboardService b = getBlackboardService() ;
-            System.out.println( "PlanLogConfigPlugIn:: Publishing configuration information for cluster " + getClusterIdentifier() );
+            System.out.println( "PlanLogConfigPlugIn:: Publishing configuration file for cluster " + getClusterIdentifier() );
             b.publishAdd( config ) ;
         }
         else {
-            System.out.println( "PlanLogConfigPlugIn:: No plan log configuration information available." );
+            System.out.println( "PlanLogConfigPlugIn:: No plan log configuration file available." );
         }
 
         // Disable batching
         // Publish periodic flush messages to the LP
-        Thread t = new TimerThread() ;
-        t.start();
+        //Thread t = new TimerThread() ;
+        //t.start();
         // Set up a timer to fire every 5 seconds.
-        // getAlarmService().addRealTimeAlarm( );
+        getAlarmService().addRealTimeAlarm( new FlushAlarm( System.currentTimeMillis() + 5000 ) ) ;
     }
 
     protected PlanLogConfig getConfigInfo() {
@@ -107,6 +173,11 @@ public class PlanLogConfigPlugin extends ComponentPlugin
         ClusterIdentifier clusterId = null ;
         PlanLogConfig config = new PlanLogConfig() ;
 
+        ServiceBroker sb = getServiceBroker() ;
+        NodeIdentificationService nis = ( NodeIdentificationService )
+                sb.getService( this, NodeIdentificationService.class, null ) ;
+        config.setNodeIdentifier( nis.getNodeIdentifier().cleanToString() ) ;
+
         try {
             String clusterName = null ;
             if ( fileName != null && finder != null ) {
@@ -115,7 +186,10 @@ public class PlanLogConfigPlugin extends ComponentPlugin
                 File f = finder.locateFile( fileName ) ;
 
                 // DEBUG -- Replace by call to log4j
-	            System.out.println( "PlanLogConfigPlugin:: Configuring PlanLogConfig from " + f ) ;
+                if ( log != null && log.isInfoEnabled() ) {
+                    log.info( "PlanLogConfigPlugin:: Configuring PlanLogConfig from " + f );
+                }
+                System.out.println( "PlanLogConfigPlugin:: Configuring PlanLogConfig from " + f ) ;
 
                 if ( f != null && f.exists() ) {
                     //
@@ -161,6 +235,9 @@ public class PlanLogConfigPlugin extends ComponentPlugin
                             }
                         }
                         catch ( Exception e ) {
+                            if ( log.isErrorEnabled() ) {
+                                log.error( "Exception thrown parsing configuration file " + f );
+                            }
                             System.out.println( e ) ;
                         }
                     }
@@ -192,6 +269,7 @@ public class PlanLogConfigPlugin extends ComponentPlugin
     {
     }
 
+    protected transient LoggingService log ;
     protected PlanLogConfig config ;
 
     protected long flushInterval = 7500L ;

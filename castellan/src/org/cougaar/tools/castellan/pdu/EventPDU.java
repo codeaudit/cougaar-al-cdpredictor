@@ -40,7 +40,7 @@ import java.io.*;
  * @author wpeng
  * @version 0.1
  */
-public abstract class EventPDU extends PDU implements EventPDUInterface {
+public abstract class EventPDU extends PDU implements EventPDUConstants {
 
     /** Creates new EventPDU.
      *  @param newType  One of TYPE_DIRECTIVE, TYPE_TASK, TYPE_ALLOCATION, etc.
@@ -87,7 +87,11 @@ public abstract class EventPDU extends PDU implements EventPDUInterface {
              return STRING_EXPANSION ;
            case TYPE_AGGREGATION :
              return STRING_AGGREGATION ;
-            case TYPE_NONE :
+           case TYPE_ALLOCATION_RESULT :
+             return STRING_ALLOCATION_RESULT ;
+           case TYPE_DECLARE_AGENT :
+             return STRING_DECLARE_AGENT ;
+           case TYPE_NONE :
              return STRING_NONE ;
            default :
              return "UNKNOWN" ;

@@ -98,4 +98,5 @@ public class ExecutionPDU extends PDU
     protected long seqId ;
     protected long transactionId ;
     protected long startTime, stopTime ;
+    protected static final long serialVersionUID = 3897690940363528222L;
 }

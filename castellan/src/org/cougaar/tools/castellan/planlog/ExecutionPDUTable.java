@@ -17,8 +17,10 @@ import java.lang.*;
 public class ExecutionPDUTable extends Table{
    
    // ATTRIBUTES
+    PreparedStatement GetAgentsStmt;
     PreparedStatement GetExecutionsActiveOnlyStmt;
     PreparedStatement GetExecutionsActiveSometimeStmt;
+    PreparedStatement GetExecutionsByAgentStmt;
     PreparedStatement GetExecutionsStartedStmt;
     PreparedStatement GetExecutionsStoppedStmt;
     PreparedStatement GetFirstExecutionTimeStmt;
@@ -84,6 +86,34 @@ public class ExecutionPDUTable extends Table{
         }
     }
     
+    public Collection getAgentNames(){
+       ResultSet rs = null;
+       Vector agentNames = null;
+       String agentName = null;
+       try{
+          // Make the query.
+          rs = GetAgentsStmt.executeQuery();
+       }
+       catch ( SQLException ex ){
+          printSQLException( ex );
+       }
+       if( rs == null ) return null;
+       else{
+          agentNames = new Vector();
+          try{
+             while( !rs.isLast() ){
+                rs.next();
+                agentName = rs.getString( 1 );
+                agentNames.add( agentName );
+             }
+          }
+          catch ( SQLException ex ){
+             printSQLException( ex );
+          }
+          return agentNames;
+       }
+    }
+    
     public Iterator getExecutionsActiveOnly(long start, long end){
        ResultSet rs = null;
        try{
@@ -115,7 +145,21 @@ public class ExecutionPDUTable extends Table{
        }
        return new PDUList( rs );
     }
-
+    public  Iterator getExecutionsByAgent( String theAgentName ){
+       ResultSet rs = null;
+       try{
+          // Add values for prepared statement.
+          GetExecutionsByAgentStmt.setString( 1, theAgentName );
+          // Make the query
+          rs = GetExecutionsByAgentStmt.executeQuery();
+          if( rs == null ) return null;
+       }
+       catch ( SQLException ex ){
+          printSQLException( ex );
+       }
+       return new PDUList( rs );
+    }
+          
     public Iterator getExecutionsStarted(long start, long end){
        ResultSet rs = null;
        try{
@@ -230,10 +274,14 @@ public class ExecutionPDUTable extends Table{
 
     public void loadPreparedStatements( Connection conn ){
       try{         
+         GetAgentsStmt = conn.prepareStatement(
+                 "SELECT DISTINCT AGENTNAME FROM EXECUTIONPDU" );
          GetExecutionsActiveOnlyStmt = conn.prepareStatement(
                  "SELECT * FROM EXECUTIONPDU WHERE STARTTIME >= ? AND STOPTIME <= ? " );
          GetExecutionsActiveSometimeStmt = conn.prepareStatement(
                  "SELECT * FROM EXECUTIONPDU WHERE STARTTIME >= ? OR STOPTIME <= ? " );
+         GetExecutionsByAgentStmt = conn.prepareStatement(
+                 "SELECT * FROM EXECUTIONPDU WHERE AGENTNAME = ? " ); 
          GetExecutionsStartedStmt = conn.prepareStatement(
                  "SELECT * FROM EXECUTIONPDU WHERE STARTTIME >= ? AND STARTTIME <= ? " );
          GetExecutionsStoppedStmt = conn.prepareStatement(
