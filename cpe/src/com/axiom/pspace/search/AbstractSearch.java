@@ -126,6 +126,11 @@ import java.util.* ;
                 state = GraphSearch.NO_MORE_NODES ;
                 break ;
             }
+            else if ( numNodes == -1 ) {
+                // Time limit reached.
+                state = GraphSearch.TIME_LIMIT_REACHED ;
+                break ;
+            }
 
             if ( maxExpandedNodes > 0 && count >= maxExpandedNodes ) {
                 state = GraphSearch.MAX_NODES_EXPANDED ;
@@ -233,17 +238,17 @@ import java.util.* ;
 
     /**
      *  Returns the number of nodes on the open list.  If the list reaches empty
-     *  before any goal node is found, the mplan has not been able to locate any
+     *  before any goal node is found, the graphsearch instance has not been able to locate any
      *  paths to the goal.
      *
-     *  @return The number of nodes on the open list.
+     *  @return The number of nodes on the open list or -1 if the time limit has been reached.
      */
     public abstract int getNumOpenNodes();
 
     /**
      *  Get the best node as determined by the current Strategy's comparator
      *  method and heuristics.  It is neccessary that this function be
-     *  implemented correctly; otherwise, the mplan algorithm may have suboptimal
+     *  implemented correctly; otherwise, the search algorithm may have suboptimal
      *  results.
      */
     public abstract GraphNode getFirstOpenNode();
@@ -276,7 +281,7 @@ import java.util.* ;
     /**
      *  Remove from open list.  This is used in case a node's
      *  location in the open list is related to its heuristic value f(n).
-     *  In these cases, the mplan algorithm may remove n from the open list
+     *  In these cases, the graphsearch algorithm may remove n from the open list
      *  and reintroduce it later.
      *
      *  @param If n is on the open list, return true; false otherwise.
