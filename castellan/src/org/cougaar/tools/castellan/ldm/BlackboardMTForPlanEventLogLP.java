@@ -34,7 +34,6 @@ import org.cougaar.core.domain.*;
 import org.cougaar.core.relay.*;
 import org.cougaar.util.*;
 import org.cougaar.planning.ldm.*;
-import org.cougaar.glm.execution.eg.ClusterInfo;
 import org.cougaar.core.mts.*;
 import java.util.*;
 import java.io.*;
@@ -75,9 +74,9 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
     public void execute() {
 
        //if (( cluster.currentTimeMillis() - lastAddTime ) > maximumDelay) {
-       Object ob = (Object) self.toString();
-       ClusterInfo ci = (ClusterInfo)ob;
-       if ((ci.theExecutionTimeStatus.theExecutionTime - lastAddTime ) > maximumDelay) {
+       //Object ob = (Object) self.toString();
+       //ClusterInfo ci = (ClusterInfo)ob;
+       if ((System.currentTimeMillis() - lastAddTime ) > maximumDelay) {
             flush();
         }
     }
