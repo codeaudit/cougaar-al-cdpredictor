@@ -1,5 +1,5 @@
 /*
- *  This plugin is a falling behind sensor for specific agents based on the frequent tasks 
+ *  This plugin is a falling behind sensor for specific agents based on the frequent episodes 
  *  that occur in a cluster
  *  
  */
@@ -25,6 +25,7 @@ import org.cougaar.logistics.plugin.manager.LoadIndicator;
 
 import java.io.File;
 import java.io.*;
+import java.util.Date;
 
 public class PSUFBSensor3Plugin extends ComponentPlugin
 {   
@@ -58,8 +59,8 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
         myBlackboardService = getBlackboardService();
         myUIDService = (UIDService) getBindingSite().getServiceBroker().getService(this, UIDService.class, null); 
         myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null); 
-	  cluster = getBindingSite().getAgentIdentifier().toString();
-	  taskSubscription = (IncrementalSubscription) myBlackboardService.subscribe(taskPredicate);
+	    cluster = getBindingSite().getAgentIdentifier().toString();
+	    taskSubscription = (IncrementalSubscription) myBlackboardService.subscribe(taskPredicate);
         sensorSubscription = (IncrementalSubscription) myBlackboardService.subscribe(sensorPredicate);
 
         if (myBlackboardService.didRehydrate()==false)
@@ -100,16 +101,20 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
         String verb, source;    
         Task task;
 
-	if(myTimestampService==null)
-		{
-		return;
-		}
-
+	if (myTimestampService == null) {
+            myTimestampService = (BlackboardTimestampService) getBindingSite().getServiceBroker().getService(this, BlackboardTimestampService.class, null);
+            if (myTimestampService == null) {
+                return;
+            }
+            else {
+                System.out.println("\n"+cluster+" ["+sensorname+"]: TimestampService is available.\n");
+            }
+        }
    
         for (iter = taskSubscription.getCollection().iterator() ; iter.hasNext() ;)
         {
 			long t;
-			long newTime;
+			long newTime=0;
             task = (Task)iter.next();
             verb = task.getVerb().toString();
             source = cluster;
@@ -127,6 +132,10 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 			if (match(verb,"GetLogSupport") && parity==false)
 			{
 				starttime = myTimestampService.getCreationTime(uid);
+				if (starttime<=0) 
+				{
+				starttime = new Date().getTime(); 
+				}
 				System.out.println("PSUFBSensor3Plugin in"+" "+cluster+" "+"Executing:"+" " +verb);
 				parity = true;
 				endtime=endtime+span;
@@ -134,7 +143,10 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 			if (parity==true)
 			{
 			    t = myTimestampService.getCreationTime(uid);
+				if(t!=-1)
+				{
 				newTime = t - starttime;
+				}
 				if(newTime<=endtime)
 				{
 				    if (match(verb, "ProjectSupply"))
@@ -146,93 +158,43 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 				    {
 				        count_pw++;
 				    }
-				   /* if (match(verb, "MaintainInventory"))
-				    {
-				        count_mi++;
-				    }
-				    if (match(verb, "Withdraw"))
-				    {
-				        count_w++;
-				    }
-				    if (match(verb, "Transport"))
-				    {
-				        count_to++;
-				    }
-					if (match(verb, "Supply"))
-				    {
-				        count_s++;
-				    }*/
 				}
 			    else
 				{
 					count_window++;
-					flag = true;
-										
+					flag = true;					
 					compute2(count_ps,count_pw);
-					//compute3(count_ps,count_pw,count_mi);
-
 					count_ps=0;
 					count_pw=0;
-					/*count_w=0;
-					count_s=0;
-					count_gls=0;
-					count_to=0;
-					count_ti=0;	
-					count_mi=0;*/
- 
                     if (match(verb, "ProjectSupply"))
 				    {
 				        count_ps++;
-				    }
-				    
+				    }				    
 				    if (match(verb, "ProjectWithdraw"))
 				    {
 				        count_pw++;
 				    }
-				    /*if (match(verb, "MaintainInventory"))
-				    {
-				        count_mi++;
-				    }
-				    if (match(verb, "Withdraw"))
-				    {
-				        count_w++;
-				    }
-				    if (match(verb, "Transport"))
-				    {
-				        count_to++;
-				    }
-					if (match(verb, "Supply"))
-				    {
-				        count_s++;
-				    }*/
 					endtime=endtime+span;
-							
-						while((newTime-endtime)>endtime)
+					
+					while((newTime-endtime)>endtime)
+					{
+						if(flag==false)
 						{
-							if(flag==false)
-							{
-								count_window1++;
-								count_window=count_window1;
-								compute2(count_ps,count_pw);
-								//compute3(count_ps,count_pw,count_mi);
-							}
-								
-							count_ps=0;
-							count_pw=0;
-							/*count_s=0;
-							count_w=0;
-							count_mi=0;
-							count_gls=0;
-							count_to=0;
-							count_ti=0;*/
-								
-							if(flag==true)
-								{
-									count_window1 = count_window;
-								}
-							flag=false;								
-							endtime=endtime+span;
+							count_window1++;
+							count_window=count_window1;
+							compute2(count_ps,count_pw);
 						}
+								
+						count_ps=0;
+						count_pw=0;
+						
+						if(flag==true)
+							{
+								count_window1 = count_window;
+							}
+						flag=false;								
+						endtime=endtime+span;
+					}
 				}			     
 				
 			}
@@ -273,32 +235,6 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 		return a;
 	}
 
-  /*int compute3(int x, int y, int z)
-	{	   	   
-	  int s = 2;
-	  int i; 
-	  int j;
-	  int a=0;
-	  i = Math.min(x,y);
-	  j = Math.min(i,z);
-	  num1 = num1 + j;
-	  l++;	 
-	  if(Math.IEEEremainder(l,3)==0)
-		{		  
-		  int t;
-		  t=l;
-		  t=t/3;
-		  String s1 = Integer.toString(s);
-		  String t1 = Integer.toString(t);
-		  String st1 = t1.concat(s1);
-		  a = num1/3;
-		  num3 = num3 + num1;
-		  dispToggle=true;
-		  ValueRef(st1,a,num3);
-		}
-		return a;
-	}*/
-
   void ValueRef(String rf, int ab, int u)
 	{
 	  myTableMap = new Hashtable();
@@ -332,7 +268,7 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 						  String temp = is.readLine();	
 						  a1 = temp.indexOf(" ", b);	
 						  int refTable[] = new int[10];
-						  id =  (Integer.valueOf(temp.substring(b,a1))).intValue(); //String nnt = temp.substring(b,a-1);						  
+						  id =  (Integer.valueOf(temp.substring(b,a1))).intValue(); 					  
 						  b=a1+1;					  			  
 						  a1 = temp.indexOf(" ", b);
 						  refTable[0] = (Integer.valueOf(temp.substring(b,a1))).intValue();
@@ -343,18 +279,9 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 						  a1 = temp.indexOf(" ", b);
 						  refTable[2]=(Integer.valueOf(temp.substring(b,a1))).intValue();
 						  b=a1+1;
-						  //a1 = temp.indexOf(" ", b);
 						  refTable[3]=(Integer.valueOf(temp.substring(b))).intValue();
-						  //b=a1+1;
-						  //a1 = temp.indexOf(" ", b);
-						  //refTable[4]=(Long.valueOf(temp.substring(b,a1))).longValue();
-						  //b=a1+1;				  
-						  //refTable[5]=(Long.valueOf(temp.substring(b))).longValue();
-						  myTableMap.put(new Integer(id),refTable);
-                                      
-                                      
+						  myTableMap.put(new Integer(id),refTable);                                                                      
 					  }
-
                              is.close();				  				  
 				  }
 				  catch (java.io.IOException ioexc)
@@ -414,20 +341,11 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
     private boolean flag = false;
     private  int count_ps=0;
     private  int count_pw=0;
-    /*private  int count_mi=0;
-    private  int count_s=0;
-    private  int count_w=0;
-    private  int count_gls=0;
-    private  int count_to=0;
-	private  int count_ti=0;*/
     private  int count_window=0;
     private  int count_window1=0;
     private int num;
-	//private int num1;
     private int num2;
-	//private int num3;
     private int k;
-	//private int l;
     boolean parity = false;
     UID uid;
     long starttime=0;
