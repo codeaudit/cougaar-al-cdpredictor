@@ -55,6 +55,7 @@ public class PredictorPlugin extends ComponentPlugin {
 	private IncrementalSubscription taskSubscription;
 	private IncrementalSubscription commstatusSubscription;
 	private IncrementalSubscription salSubscription;
+	private IncrementalSubscription palSubscription;
 
 	private String cluster;
 	private String customerAgentName;
@@ -67,7 +68,7 @@ public class PredictorPlugin extends ComponentPlugin {
 	private final Verb forecastVerb = org.cougaar.logistics.ldm.Constants.Verb.Supply;
 
 	private HashMap hashmap = null;
-	private ArrayList asset_list = new ArrayList();
+	private PredictorArrayList asset_list = new PredictorArrayList(new ArrayList());
 
 	private boolean toggle = false;
 	private boolean flag = false;
@@ -123,6 +124,12 @@ public class PredictorPlugin extends ComponentPlugin {
 		}
 	};
 
+	UnaryPredicate predictorArrayListPredicate = new UnaryPredicate() {
+		public boolean execute(Object o) {
+			return o instanceof PredictorArrayList;
+		}
+	};
+
 	UnaryPredicate commstatusPredicate = new UnaryPredicate() {
 		public boolean execute(Object o) {
 			return o instanceof CommStatus;
@@ -141,10 +148,16 @@ public class PredictorPlugin extends ComponentPlugin {
 		if (selectedPredictor == KalmanFilter) {
 			salSubscription = (IncrementalSubscription) myBS.subscribe(supplyArrayListPredicate);
 			dataModelMapSubscription = (IncrementalSubscription) myBS.subscribe(dataModelMapPredicate);
-			if (myBS.didRehydrate() == false) myBS.setShouldBePersisted(false);
+			palSubscription = (IncrementalSubscription) myBS.subscribe(predictorArrayListPredicate);
+			if (myBS.didRehydrate() == false) {
+				myBS.setShouldBePersisted(false);
+				System.out.println("PluginNotRehydrated");
+			}
 			else {
 				rehydrate_flag = true;
+				System.out.println("rehydrate_flagsettrue");
 				retrieveExecutionDataListFromBB();
+				retrieveAssetListFromBB();
 				if (hashmap == null)	retrievePlanningDataListFromBB();
 			}
 		} else {
@@ -158,7 +171,17 @@ public class PredictorPlugin extends ComponentPlugin {
 			Collection c = myBS.query(supplyArrayListPredicate);
 			for (Iterator iter = c.iterator(); iter.hasNext();) {
 				local_alist = (PredictorSupplyArrayList) iter.next();
-				//myLoggingService.debug("PredictorSupplyArrayList Rehydrated "+local_alist.getList().size());
+				System.out.println("PredictorSupplyArrayList Rehydrated "+local_alist.getList().size());
+			}
+		}
+	}
+
+	public void retrieveAssetListFromBB() {
+		if (asset_list == null) {
+			Collection c = myBS.query(predictorArrayListPredicate);
+			for (Iterator iter = c.iterator(); iter.hasNext();) {
+				asset_list = (PredictorArrayList) iter.next();
+				System.out.println("PredictorAssetArrayList Rehydrated "+asset_list.getList().size());
 			}
 		}
 	}
@@ -223,11 +246,15 @@ public class PredictorPlugin extends ComponentPlugin {
 		if (!commstatusSubscription.isEmpty()) {
 			Enumeration e1 = commstatusSubscription.getAddedList();
 			Enumeration e2 = commstatusSubscription.getChangedList();
-			if (e1.hasMoreElements() == true) {
-				getCommStatusObject(e1);
-			} else if (e2.hasMoreElements() == true) {
-				getCommStatusObject(e2);
-			}
+			if(!myBS.didRehydrate()) {
+				if (e1.hasMoreElements() == true) {
+					getCommStatusObject(e1);
+					System.out.println("CommStatusObjectAdded ");
+				} else if ((e2.hasMoreElements() == true)) {
+					getCommStatusObject(e2);
+					System.out.println("CommStatusObjectChanged ");
+				}
+			} else return;
 		}
 	}
 
@@ -268,11 +295,13 @@ public class PredictorPlugin extends ComponentPlugin {
 			commLossTime = cs.getCommLossTime();
 			//PredictorSupplyArrayList executionDataList = edu.getExecutionDemandPerDay();
 			ArrayList executionDataList = edu.getExecutionDemandPerDay();
-			kf.measurementUpdate(executionDataList);
-			setDemandDataList(executionDataList);
-			alarm = new TriggerFlushAlarm(currentTimeMillis());
-			as.addAlarm(alarm);
+			if(!executionDataList.isEmpty()) {
+				kf.measurementUpdate(executionDataList);
+				setDemandDataList(executionDataList);
+				alarm = new TriggerFlushAlarm(currentTimeMillis());
+				as.addAlarm(alarm);
 			//findLastSupplyTaskTime(taskColl, customerAgentName);
+			}
 			for(int i = 0; i < sClassNames.length; i++) {
 				long endTime = findLastSupplyTaskTimePerSC(taskColl, sClassNames[i], customerAgentName);
 				maxEndTimePerSC.put(sClassNames[i],new Long(endTime));
@@ -281,8 +310,11 @@ public class PredictorPlugin extends ComponentPlugin {
 			commRestoreTime = cs.getCommRestoreTime();
 			time_gap = (int) (((commRestoreTime - commLossTime) / 86400000) * 4);
 			cutOffTime = commRestoreTime / 86400000;
-			if (alarm.hasExpired() == false) {
-				alarm.cancel();
+			try {
+				//if(rehydrate_flag)
+					if (alarm.hasExpired() == false)	alarm.cancel();
+			} catch(java.lang.NullPointerException npe){
+				System.err.println(npe);
 			}
 		}
 	}
@@ -304,9 +336,11 @@ public class PredictorPlugin extends ComponentPlugin {
 		Task task;
 		long currentTime = currentTimeMillis()/86400000; //Time in terms of days
 		if(status) {
-			Collection e = taskSubscription.getCollection();
-			for (Iterator iter = e.iterator(); iter.hasNext();) {
-				task = (Task)iter.next();
+			//Collection e = taskSubscription.getCollection();
+			//for (Iterator iter = e.iterator(); iter.hasNext();) {
+				//task = (Task)iter.next();
+			for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
+				task = (Task) e.nextElement();
 				taskColl.add(task);
 				String customer = (String) task.getPrepositionalPhrase("For").getIndirectObject();
 				String supplyclass = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
@@ -361,27 +395,33 @@ public class PredictorPlugin extends ComponentPlugin {
 		//String itemname = as.getTypeIdentificationPG().getNomenclature();
 		String itemname = as.getTypeIdentificationPG().getTypeIdentification();
 		boolean isPresent = false;
-		if (asset_list.isEmpty())	asset_list.add(as);
+		if (asset_list.getList().isEmpty())	{
+			asset_list.add(as);
+			myBS.publishAdd(asset_list);
+		}
 		else {
-			for (int i = 0; i < asset_list.size(); i++) {
+			for (int i = 0; i < asset_list.getList().size(); i++) {
 				//String test = ((Asset) asset_list.get(i)).getTypeIdentificationPG().getNomenclature();
-				String test = ((Asset) asset_list.get(i)).getTypeIdentificationPG().getTypeIdentification();
+				String test = ((Asset) asset_list.getList().get(i)).getTypeIdentificationPG().getTypeIdentification();
 				if (test.equalsIgnoreCase(itemname) == true) {
 					isPresent = true;
 					break;
 				}
 			}
-			if (!isPresent) asset_list.add(as);
+			if (!isPresent) {
+				asset_list.add(as);
+				myBS.publishChange(asset_list);
+			}
 		}
 	}
 
 	public ArrayList getAssetList() {
-		return asset_list;
+		return asset_list.getList();
 	}
 
 	public Asset getAsset(String itemName) {
-		for (int i = 0; i < asset_list.size(); i++) {
-			Asset asset = (Asset) asset_list.get(i);
+		for (int i = 0; i < asset_list.getList().size(); i++) {
+			Asset asset = (Asset) asset_list.getList().get(i);
 			//String item_name = asset.getTypeIdentificationPG().getNomenclature();
 			String item_name = asset.getTypeIdentificationPG().getTypeIdentification();
 			if (item_name.equalsIgnoreCase(itemName)) return asset;

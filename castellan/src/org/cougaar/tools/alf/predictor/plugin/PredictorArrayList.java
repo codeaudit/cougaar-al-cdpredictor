@@ -3,32 +3,51 @@
 package org.cougaar.tools.alf.predictor.plugin;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
-public class PredictorArrayList extends ArrayList implements java.io.Serializable {
+public class PredictorArrayList implements java.io.Serializable {
 
-    public PredictorArrayList(String name){
-      super();
+	private ArrayList list;
+	private String name;
+
+   public PredictorArrayList(String name){
+     // super();
       this.name = name;
     }
 
     public PredictorArrayList(String name, int capacity){
-      super(capacity);
+    //  super(capacity);
       this.name = name;
+    }
+
+	public PredictorArrayList(ArrayList list){
+     // super();
+      this.list = list;
     }
 
    public String getName() {       //change
     return name;
   }
 
-   public final int hashCode() {      //change
-    return name.hashCode();
-  }
+   //public final int hashCode() {      //change
+   // return name.hashCode();
+ // }
 
-  public final boolean equals(Object o) {       //change
+ /* public final boolean equals(Object o) {       //change
     return (o == this) ||
       (o instanceof PredictorArrayList &&
     ((PredictorArrayList)o).getName().equals(this.name));
-  }
+  }*/
 
-    public String name;
+	public ArrayList getList(){
+		return list;
+	}
+
+	public void add(Object o){
+		this.list.add(o);
+	}
+
+	public void addAll(Collection c){
+		this.list.addAll(c);
+	}
 }
