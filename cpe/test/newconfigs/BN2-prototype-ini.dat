@@ -7,3 +7,7 @@ Superior        "BDE1"    ""
 
 [ClusterPG]
 MessageAddress	MessageAddress "BN2"
+
+[OrganizationPG]
+Roles                Collection<Role>   "Combat"
+
