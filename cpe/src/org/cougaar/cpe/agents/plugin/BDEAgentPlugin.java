@@ -477,6 +477,9 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
             agg.setZonePlan( zonePlan );
         }
 
+        // Notify any observers that we have changed.
+        getBlackboardService().publishChange( worldStateRef );
+
         plans = zonePlanner.getPlans( true ) ;
 
         for (int i = 0; i < plans.length; i++)
