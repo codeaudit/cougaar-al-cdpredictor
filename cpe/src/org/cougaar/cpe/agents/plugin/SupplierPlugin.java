@@ -210,8 +210,11 @@ public class SupplierPlugin extends ComponentPlugin implements MessageSink {
             // Use the new manuever plan to replan the sustainment plan.
             if ( mp == null ) {
                 UnitEntity ue = (UnitEntity) wsm.getEntity( customerName ) ;
-                if ( ue.getManueverPlan() == null ) {
-                    System.out.println("Warning: No existing maneuver plan for customer " + ue.getId() );
+                if ( ue == null ) {
+                    logger.error("No unit entity for customer " + customerName + " found.");
+                }
+                else if ( ue.getManueverPlan() == null ) {
+                    logger.warn("Warning: No existing maneuver plan for customer " + ue.getId() );
                 }
                 else {
                     Plan p = ue.getManueverPlan() ;
