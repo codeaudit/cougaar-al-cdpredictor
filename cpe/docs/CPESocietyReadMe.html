@@ -1,0 +1,495 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="content-type"
+ content="text/html; charset=ISO-8859-1">
+  <title>CPE Society Installation and User's Guide</title>
+</head>
+<body>
+<div style="text-align: center;">
+<h1>CPE Society Version 1.0 Release Notes</h1>
+</div>
+<h1>1. Summary</h1>
+The CPE (Continuous Planning and Execution) society is intended to
+provide a Cougaar-based testbed for demonstrating TechSpecs and
+experimentation and research in modeling and control. This release of
+CPE has been tested with Cougaar 11.<br>
+<br>
+This version of the CPESociety includes:<br>
+<ul>
+  <li>Zone planning</li>
+  <li>Manuever planning</li>
+  <li>Supply planning</li>
+</ul>
+It includes a baseline society configuration consisting of a total of
+14 agents, including<br>
+<ul>
+  <li>1 BDE ("Brigade") agent</li>
+  <li>3 BN ("Battalion) agents</li>
+  <li>9 CPY ("Company") agents</li>
+</ul>
+Future enhancements will include:<br>
+<ul>
+  <li>Top level controllable postures (e.g. different scoring functions
+and MAU curves)</li>
+  <li>Local planning at the CPY agents, controllable through operating
+modes.</li>
+  <li>More interesting engagement models that reward optimal
+positioning of the CPY units.</li>
+  <li>Integration with ACME.<br>
+  </li>
+</ul>
+<h2>1.1 Known Issues and Bugs<br>
+</h2>
+<ul>
+  <li>Zone planning is not very smart.&nbsp; It does not estimate the
+effects of multiple CPY entities covering large areas.<br>
+  </li>
+  <li>The default target generation parameters do not provide a very
+interesting distribution of targets. <br>
+  </li>
+</ul>
+<h1>2. Installation</h1>
+In the sections that follow, we assume that the <code>COUGAAR_INSTALL_PATH</code>
+environment is <code>&lt;CIP&gt;</code>.<br>
+<br>
+Installation consists of the following steps.<br>
+<ul>
+  <li>Install the CPE society into the <code>&lt;CPE&gt;</code>
+directory.&nbsp; Either unzip the provided ZIP file or checkout the CPE
+module from CVS.</li>
+  <li>Copy the <code>cpe.jar</code> file from <code>&lt;CPE&gt;\classes</code>
+into the <code>&lt;CIP&gt;\lib</code> directory.</li>
+  <li>Copy the support libraries <code>jgl3.1.0.jar, jfreechart-0.9.18,</code>
+and<code> jcommon-0.9.3</code> from <code>&lt;CPE&gt;\lib</code> to the<code>
+&lt;CIP&gt;\sys</code> directory.<br>
+  </li>
+  <li>Modify the Cougaar batch files found in <code>&lt;CIP&gt;\bin</code>.&nbsp;
+It is preferable that the "<code>-server</code>" flag be set on the
+Java VM's command line arguments.&nbsp; Add this to the&nbsp;
+setarguments.bat file in <code>&lt;CIP&gt;\bin</code> so that the
+HotSpot Server VM will be used. Also, increase the maximum heap size by
+adding the <code>-mx768m</code> parameter to the MYMEMORY environment
+variable.<br>
+  </li>
+</ul>
+For example, modify <code>setarguments.bat<br>
+<br>
+</code>
+<table cellpadding="1" cellspacing="1" border="1"
+ style="text-align: left; width: 100%;">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"><code>s</code><code>et
+MYPROPERTIES=-server
+-Xbootclasspath/p:"%COUGAAR_INSTALL_PATH%\lib\javaiopatch.jar" <br>
+&nbsp;&nbsp;&nbsp; -Dorg.cougaar.system.path="%COUGAAR3RDPARTY%"
+-Dorg.cougaar.install.path="%COUGAAR_INSTALL_PATH%" <br>
+&nbsp;&nbsp;&nbsp; -Duser.timezone=GMT
+-Dorg.cougaar.core.agent.startTime="08/10/2005 00:05:00" <br>
+&nbsp;&nbsp;&nbsp; -Dorg.cougaar.class.path=%COUGAAR_DEV_PATH%
+-Dorg.cougaar.workspace=%COUGAAR_WORKSPACE% <br>
+&nbsp;&nbsp;&nbsp;
+-Dorg.cougaar.config.path="%COUGAAR_INSTALL_PATH%\configs\common\;%COUGAAR_INSTALL_PATH%\configs\glmtrans\;"<br>
+set MYMEMORY=-Xms256m -Xmx768m</code><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<code><br>
+</code>
+<ul>
+  <li>If you wish to run the nodes distributed across multiple nodes
+using the provided *.ini files,&nbsp; insure that the <code>alpreg.ini</code>
+file has the correct name server, i.e. <code>address=&lt;ipaddress or
+host name&gt;</code>.&nbsp; This must be done for each installation of
+Cougaar. The <code>alpreg.ini</code> file is found in <code>&lt;CIP&gt;\configs\common.</code></li>
+  <li>If you are installing and running this on multiple nodes, it is
+desirable that all of the system clocks for each node are synchronized
+so that the timestamps on the messages will be comparable.</li>
+</ul>
+<h2>2.1 Building the CPE Society</h2>
+If you need to rebuild the CPE jar file after making modifications, an
+Ant build script ( <code>build.xml</code> ) is&nbsp; provided in the <code>&lt;CPE&gt;</code>
+directory.&nbsp; The default target "jar" builds the jar file, while the
+"copy" target&nbsp; builds the jar file and copies it into <code>&lt;CIP&gt;/lib</code>
+directory. For example, invoke "ant jar" from the<code> &lt;CPE&gt;</code>
+directory in order to build the JAR file.<br>
+<h1>3 Using the CPE Society</h1>
+<h2>3.1 Running the Simulator</h2>
+The <code>&lt;CPE&gt;\bin </code>directory contains the runtest.bat
+file which launches a test program for the manuever planning and supply
+planning logic.&nbsp; It does not execute a distributed Cougaar
+society; rather it exercise the various planners and visualization
+display engines.&nbsp; It also serves as a testbed for obtaining
+scoring and performance curves for planning and execution.<br>
+<br>
+<div style="text-align: center;"><img src="simulator.jpg" title=""
+ alt="CPE Simulator" style="width: 634px; height: 627px;"><br>
+<br>
+<span style="font-weight: bold;">Example Simulator Unit Display</span><br>
+<br>
+<div style="text-align: left;">The simulator can be started as follows:<br>
+<ul>
+  <li>Select File-&gt;Configure targets.&nbsp; This will initialize the
+playing field with targets.</li>
+  <li>Select Run-&gt;Run.&nbsp; This will start time advancing.</li>
+</ul>
+The Zone Tab show the zones generated by the zone planner.<br>
+The Inspector Tab is not used.<br>
+The Metrics Tab shows various scoring metrics as a function of time.<br>
+</div>
+</div>
+<h2>3.2 The CPE Society Configuration<br>
+</h2>
+A society comprised of nine "companies" (CPY1-9), one "brigade" (BDE1)
+and three "battalion" (BN1,BN2,BN3) and one "Supply1" agent is
+specified in the <code>&lt;CPE&gt;\test\newconfigs</code> directory. <br>
+<br>
+The following plugins are of interest.<br>
+<table cellpadding="2" cellspacing="0" border="1"
+ style="text-align: left; width: 100%;">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top; text-align: center;"><span
+ style="font-weight: bold;">Plugin Name</span><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><span
+ style="font-weight: bold;">Description</span><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><code>org.cougaar.cpe.agents.plugin.UnitAgentPlugin</code></td>
+      <td style="vertical-align: top;">Implements CPY agent
+functionality.&nbsp; Used in <code>CPY1.ini</code>, etc.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><code>org.cougaar.cpe.agents.plugin.C2AgentPlugin</code></td>
+      <td style="vertical-align: top;">Implements BN agent
+functionality. Used in BN1.ini, BN2.ini, BN3.ini<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><code>org.cougaar.cpe.agents.plugin.BDEAgentPlugin</code></td>
+      <td style="vertical-align: top;">Implements BDE agent
+functionality.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><code>org.cougaar.cpe.ui.AgentDisplayPlugin</code><br>
+      </td>
+      <td style="vertical-align: top;">Displays agent state.
+Optional.&nbsp; May be attached to any BDE, CPY, or BDE agent<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><code>org.cougaar.cpe.simulator.plugin.CPESimulator</code><br>
+      </td>
+      <td style="vertical-align: top;">Runs the WorldState agent.&nbsp;
+It also creates a user interface for starting and configurating the
+simulation.<br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+The WorldState agent contains the reference world model against which
+the CPE society execution is actually performed.&nbsp; All execution of
+both manuever and supply plans are performed on&nbsp; the WorldState
+agent.&nbsp; The WorldState should be privileged&nbsp; with access to
+low latency, infinite bandwidth messaging.&nbsp; This is since
+communication between all agents and the world state ought to be
+logically&nbsp; instantaneous within the capabilities of the agent. In
+most experimental configurations, is is preferable that the WorldState
+agent will run on its own node or one with minimal load. <br>
+<br>
+Some guidelines for configuration are outlined below.<br>
+<ol>
+  <li>The current implementation of the BDE agent performs zone
+planning and distributes the zone plan to subordinate BN agents.&nbsp;
+The current implementation is not CPU intensive.<br>
+  </li>
+  <li>The BN agents take substantial amounts of processing power and
+memory to make manuever plans and should not usually share hosts.<br>
+  </li>
+  <li>The CPY agents can be aggregated on multiple hosts without
+difficulty unless the "simulated" consumption of CPU is set to high
+levels. <br>
+  </li>
+  <li>The Supply agent also does not consume signficant CPU and can be
+grouped with the BDE agent.</li>
+</ol>
+A minimum of 5-6 machines is typical for running the society.<br>
+<h3>3.2.1 Node Configuration Files</h3>
+A typical set of node configuration files are included for convenience.<br>
+<br>
+<table cellpadding="2" cellspacing="0" border="1"
+ style="text-align: left; width: 70%; margin-left: auto; margin-right: auto;">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top; text-align: center;"><span
+ style="font-weight: bold;">File</span><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><span
+ style="font-weight: bold;">Description</span><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">NodeWorld.ini</td>
+      <td style="vertical-align: top;">Contains the WorldState agent.</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">NodeBDE.ini <br>
+      </td>
+      <td style="vertical-align: top;">Contains both BDE and Supply1
+agent.</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">NodeBN1.ini <br>
+      </td>
+      <td style="vertical-align: top;">Contains the BN1 agent<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">NodeBN2.ini<br>
+      </td>
+      <td style="vertical-align: top;">Contains the BN2 agent<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">NodeBN3.ini<br>
+      </td>
+      <td style="vertical-align: top;">Contains the BN3 agent<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">NodeCPY19.ini <br>
+      </td>
+      <td style="vertical-align: top;">Contains all CPY units.&nbsp;
+These may be split up as needed across multiple nodes.<br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+These agents can be split up or combined based on convenience or
+experimental requirements.<br>
+<h3>3.2.2 Agent Parameters Files</h3>
+The agent parameters files are parsed by the plugins and used to set
+simulation and planning parameters.<br>
+<br>
+The WorldState agent is configured from the WorldStateConfig.xml
+file.&nbsp; This file contains world&nbsp; configuration data as well
+as the society parameters that must match the society configuration
+(i.e. number of BN agents and the number of CPY agents for each BN
+should match the .ini values.<br>
+<br>
+<code></code>
+<table cellpadding="2" cellspacing="2" border="1"
+ style="text-align: left; width: 100%;">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"><code>&lt;WorldStateConfig&gt;<br>
+&nbsp; &lt;settings&gt;<br>
+&nbsp; &lt;BoardWidth value="36"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// Size of the board<br>
+&nbsp; &lt;BoardHeight value="25"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// Height of the board<br>
+&nbsp; &lt;PenaltyHeight value="4"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// Penalty marker<br>
+&nbsp; &lt;NumberOfBNUnits
+value="3"/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// Number of BN agents, should match society configuration<br>
+&nbsp; &lt;NumberOfCPYUnitsPerBN
+value="3"/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Number of CPY
+subordinates per BN, should match society configuration<br>
+&nbsp; &lt;ZoneGridSize value="2"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// Size of the zone for planning<br>
+&nbsp; &lt;RecoveryHeight value="-1.5"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Distance for
+Supply units to travel.&nbsp; Should be negative. <br>
+&nbsp; &lt;NumberOfSupplyVehicles value="8" /&gt;&nbsp;&nbsp;&nbsp; //
+Number of resupply vehicles<br>
+&nbsp; &lt;NumberOfSupplyUnits value="1"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Number of supply
+units.&nbsp; Should be 1.<br>
+&nbsp; &lt;DeltaT value="5"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// Seconds per DeltaT.&nbsp; Should be 5.<br>
+&nbsp; &lt;SimulationDuration value="3600000" /&gt;&nbsp; // Total
+amount of time to run in ms<br>
+&nbsp; &lt;/settings&gt;<br>
+&lt;/WorldStateConfig&gt;</code><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<div style="text-align: center;"><span style="font-weight: bold;">Example</span><code
+ style="font-weight: bold;">WorldStateConfig.xml<br>
+</code>
+<div style="text-align: left;"><code style="font-weight: bold;"></code><br>
+CPY agents are configured through the CPYAgentConfig.xml file.&nbsp;
+The primary parameters of interest are the update rates which
+initialize the operating modes and the synthetic CPU consumption for
+updating status and updating the manuever plan. An example CPY agent
+configuration file is shown below. <br>
+<br>
+<table cellpadding="2" cellspacing="2" border="1"
+ style="text-align: left; width: 100%;">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;">&nbsp;<code>&lt;CPConfig&gt;<br>
+&nbsp; &lt;actions&gt;<br>
+&nbsp; &lt;CPYUpdateStatusNIU value="2000"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //
+Number of instruction units it takes for the CPY agent to <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// perform the UpdateStatus action<br>
+&nbsp; &lt;CPYUpdateManueverPlanNIU value="1500"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp; // Number of instruction units it takes
+for the CPY agent to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// perform the UpdateManeuverPlan action. This is a "synthetic"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// value and is adjustable for experimental purporses<br>
+&nbsp; &lt;CPYUpdateTimerPeriod value="30000"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // UpdateTimer period
+(in ms.)<br>
+&nbsp; &lt;/actions&gt;<br>
+&lt;/CPConfig&gt;</code><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<div style="text-align: center;"><span style="font-weight: bold;">Example<code>CPYAgentConfig.xml</code></span><br>
+<br>
+<div style="text-align: left;">The BN agents are configured through the
+BNAgentConfig.xml. <br>
+</div>
+<div style="text-align: left;">
+<table cellpadding="2" cellspacing="2" border="1"
+ style="text-align: left; width: 100%;">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;">&nbsp;<code>&lt;CPConfig&gt;<br>
+&nbsp; &lt;actions&gt;<br>
+&nbsp; &lt;BNReplanTimerPeriod value="60000"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // ReplanTimer period (in ms)<br>
+&nbsp; &lt;BNUpdateStatusNIU value="500"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Number
+of instruction units (A synthetic value that induces CPU consumption.)<br>
+&nbsp; &lt;BNPlanningDepth value="3"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// Planning depth of search<br>
+&nbsp; &lt;BNPlanningBreadth value="20"
+/&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //
+Number of search nodes expanded per search level<br>
+&nbsp; &lt;/actions&gt;<br>
+&lt;/CPConfig&gt;</code><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<div style="text-align: center;"><span style="font-weight: bold;">Example<code>BNAgentConfig.xml</code></span><br>
+</div>
+</div>
+</div>
+<code style="font-weight: bold;"></code></div>
+</div>
+<br>
+<h2>3.3 Running the CPE Society</h2>
+Insure that Cougaar 11 is properly installed (i.e. insure that the
+COUGAAR_INSTALL_PATH environment variable is set and that
+&lt;CIP&gt;\bin is on your path.) Currently, all Cougaar nodes are
+started by running the "Node" batch file. For example,<br>
+<br>
+<code>cd &lt;CPE&gt;\test\newconfigs<br>
+Node NodeWorld.ini<br>
+<br>
+</code><code></code>will start the agents in the NodeWorld.ini.<br>
+<br>
+In general, start the agents in this order on their respective hosts.
+(The precise .ini files to be started will be determined by the
+particular agents contained within each .ini file.)<br>
+<ol>
+  <li>WorldState</li>
+  <li>BDE, Supply<br>
+  </li>
+  <li>BN1, BN2, BN3</li>
+  <li>CPY1- CPY9</li>
+</ol>
+The WorldState UI should appear as well as a display panel for each
+agent.&nbsp; Also, verify that the relays from all the client agents to
+the WorldState have been created by looking at the console. <br>
+<br>
+<code>2004-06-02 20:43:40,908 SHOUT [CPESimulatorPlugin] - WorldState
+agent found new relay from BN1 agent<br>
+2004-06-02 20:43:40,478 SHOUT [CPESimulatorPlugin] - WorldState agent
+found new relay from BDE1 agent.<br>
+...<br>
+<br>
+</code><code></code>These messages indicate that each agent can
+communicate with the WorldState simulator.&nbsp; Once all agents have
+started and signed in, go to the WorldState UI.<br>
+<code></code><br>
+1. On the WorldState panel, select File -&gt; Configure.&nbsp; The
+playing field should become visible in the WorldState window, as well
+as the DisplayPanels of all other agents.&nbsp; However, not all agents
+will see the same view of the world.<br>
+<br>
+<table cellpadding="2" cellspacing="2" border="0"
+ style="text-align: left; width: 80%; margin-left: auto; margin-right: auto;">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top; text-align: center;"><img
+ alt="WorldState Image" title=""
+ src="file:///C:/Software/DISGroup/Projects/Ultralog/Software/CPESociety/docs/worldstate.jpg"
+ style="width: 480px; height: 379px;"></td>
+      <td style="vertical-align: top; text-align: center;"><img
+ src="bde1.jpg" title="" alt="BDE1 Image"
+ style="width: 531px; height: 370px;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; text-align: center;"><img
+ src="bn1.jpg" title="" alt="" style="width: 493px; height: 370px;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<div style="text-align: center;">Example Visualizations<br>
+</div>
+2. Select File -&gt; Start.&nbsp; The society should begin to
+execute.&nbsp; The results of the execution should be similar to those
+depicted in the CPESimulator, except that each BN and CPY agent will
+only have sections of the zone and manuever plans respectively.<br>
+<h1>4. Appendix<br>
+</h1>
+<h2>4.1 Notes on TechSpecs</h2>
+Each of the primary functional plugins are described in TechSpecs found
+in the <code>&lt;CPE&gt;\configs</code> directory.<br>
+<br>
+The <code>techspec.dtd</code> file contains the document type
+definition for TechSpec documents.<br>
+<br>
+The <code>cpespecs.xml</code> file contains the TechSpecs specific to
+the CPE society and configuration.<br>
+<br>
+Further documentation on TechSpecs will be made available.<br>
+<br>
+<h2>4.2 Notes on Modeling</h2>
+Instruction units (IUs) are abstract units.&nbsp; The actual amount of
+time taken to execute is scaled by CPU.&nbsp; Currently, <br>
+1000 IU takes approximately 1000 ms on a 2.5 GHz P4.<br>
+<br>
+</body>
+</html>
