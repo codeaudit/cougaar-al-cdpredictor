@@ -1,13 +1,83 @@
 package org.cougaar.cpe.model;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Modifier;
+
 /**
  * These are some constants to be used corresponding primarily to simulation
  * rules.
  *
- * TODO Implement loading of constants and properties from a rules.xml file. Currently, everything is static.
  *
  */
 public class VGWorldConstants {
+
+
+    private static String getNodeValueForTag(Document doc, String tagName, String namedItem ) {
+        NodeList nodes = doc.getElementsByTagName( tagName );
+
+        String value = null ;
+        for (int i=0;i<nodes.getLength();i++) {
+            Node n = nodes.item(i) ;
+            value = n.getAttributes().getNamedItem( namedItem ).getNodeValue() ;
+        }
+        return value;
+    }
+
+    /**
+     * Load world constants configuration from the document.
+     * Search by the name of the local static variable (with the initial caps.)
+     *
+     * @param doc
+     */
+    public static void loadValues( Document doc ) {
+
+        Node root = doc.getDocumentElement() ;
+        if( root.getNodeName().equals( "CPEWorld" ) ) {
+
+            Class c = VGWorldConstants.class ;
+            Field[] f = c.getFields() ;
+            for (int i = 0; i < f.length; i++) {
+                Field field = f[i];
+                if ( !Modifier.isFinal( field.getModifiers() ) && Modifier.isStatic( field.getModifiers() )) {
+                    String name = field.getName() ;
+                    if ( Character.isUpperCase( name.charAt(0) ) ) {
+                        // Remove underscores.
+                        name = convertFromAllCaps( name ) ;
+                    }
+                    else {
+                        StringBuffer newName = new StringBuffer() ;
+                        newName.append( Character.toUpperCase( name.charAt(0) ) ) ;
+                        newName.append( name.substring(1) ) ;
+                        name = newName.toString() ;
+                    }
+
+                    // Now, look at the type of field and parse accordingly.
+                }
+            }
+        }
+    }
+
+    private static String convertFromAllCaps(String name) {
+        StringBuffer result = new StringBuffer() ;
+        result.append( name.charAt(0) ) ;
+        for (int i=1;i<name.length();i++) {
+            if ( name.charAt(i) == '_' ) {
+                continue ;
+            }
+            if ( name.charAt(i-1) == '_' ) {
+                result.append( name.charAt(i) ) ;
+            }
+            else {
+                result.append( Character.toLowerCase(name.charAt(i)) ) ;
+            }
+        }
+        return result.toString() ;
+    }
 
     /**
      * Basic time constants.
@@ -22,55 +92,55 @@ public class VGWorldConstants {
     /**
      * Width in coordinate units.
      */
-    private static final double UNIT_RANGE_WIDTH = 2 ;
+    private static double UNIT_RANGE_WIDTH = 2 ;
 
-    private static final float UNIT_RANGE_HEIGHT = 8 ;
+    private static float UNIT_RANGE_HEIGHT = 8 ;
 
-    private static final float LONG_SENSOR_MAX_ERROR = 2 ;
+    private static float LONG_SENSOR_MAX_ERROR = 2 ;
 
     /**
      * The sensor range at the BN level.
      */
-    private static final float MEDIUM_SENSOR_RANGE = 14 ;
+    private static float MEDIUM_SENSOR_RANGE = 14 ;
 
     /**
      * The sensor error at the BN level.
      */
-    private static final float MEDIUM_SENSOR_MAX_ERROR = 0.5f ;
+    private static float MEDIUM_SENSOR_MAX_ERROR = 0.5f ;
 
     /**
      * Sensor range for the CPY units.
      */
-    private static final float CPY_SENSOR_WIDTH = 4 ;
+    private static float CPY_SENSOR_WIDTH = 4 ;
 
-    private static final float CPY_SENSOR_HEIGHT = 8 ;
+    private static float CPY_SENSOR_HEIGHT = 8 ;
 
     // Fuel capacity
     //
-    private static final float MAX_UNIT_FUEL_LOAD = 50 ;
+    private static float MAX_UNIT_FUEL_LOAD = 50 ;
 
-    private static final int MAX_UNIT_AMMO_LOAD = 40 ;
+    private static int MAX_UNIT_AMMO_LOAD = 40 ;
 
 
     /**
      * The target move rate in coordinate units per second.
      */
-    private static final double TARGET_MOVE_RATE = 0.04 ;
+    private static double TARGET_MOVE_RATE = 0.04 ;
 
     /**
      * Suppressed movement is multipled by this factor.
      */
-    private static final double targetSuppressedMovementFactor = 0.25 ;
+    private static double targetSuppressedMovementFactor = 0.25 ;
 
     /**
      * Units with <= strengh will be routed, i.e. reverse direction.
      */
-    private static final double TARGET_ROUT_STRENGTH = 20 ;
+    private static double targetRoutStrength = 20 ;
 
     /**
      * Amount of time units are suppressed in ms.
      */
-    private static final long targetSuppressedTime = 50000 ;
+    private static long targetSuppressedTime = 50000 ;
 
     public static final double TARGET_RANGE_WIDTH = 2.4 ;
 
@@ -79,7 +149,7 @@ public class VGWorldConstants {
     /**
      * Initial target strength.
      */
-    private static final double targetFullStrength = 30 ;
+    private static double targetFullStrength = 30 ;
 
     /**
      * Standard damage inflicted by a target.
@@ -196,7 +266,7 @@ public class VGWorldConstants {
 
     public static double getTargetRoutStrength()
     {
-        return TARGET_ROUT_STRENGTH;
+        return targetRoutStrength;
     }
 
     public static double getTargetFullStrength()
