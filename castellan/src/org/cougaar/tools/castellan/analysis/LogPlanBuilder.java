@@ -551,7 +551,7 @@ public class LogPlanBuilder implements PDUSink {
     }
 
     private void enqueueMessage( UIDPDU uid, PDU m ) {
-        if ( ServerApp.instance().isVerbose() ) {
+        if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
             System.out.println( "Enqueuing " + m + " on UID " + uid ) ;
         }
         System.out.print( "+" ) ;
