@@ -132,7 +132,7 @@ public class AggregateTaskBuilder {
     }
     
     protected AggregateMPTaskLog checkAggregateMPTaskLogForLog( MPTaskLog mpTaskLog ) {
-        if ( ServerApp.instance().isVerbose() ) {
+        if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
             ServerApp.instance().println( "\tcheckAggregateMPTaskLogForLog for " + mpTaskLog ) ;
         }
         

@@ -98,7 +98,7 @@ public class AggregateLog implements Loggable {
     }
     
     public boolean logChildAggregateLog( AggregateLog alog, UniqueObjectLog instance ) {
-        if ( ServerApp.instance().isVerbose()  ) {
+        if ( ServerApp.instance() != null &&  ServerApp.instance().isVerbose()  ) {
             ServerApp.instance().println( "Logging for " + this + " \n\t and child " + alog ) ;
         }
         

@@ -59,8 +59,8 @@ public class AggregateVerbTaskLog extends AggregateLog {
      *  AggregateExpansionTaskLog(TYPE_EXAPANSION) or AggregateAggregationLog (TYPE_AGGREGATION).  If
      */
     public boolean logChildAggregateLog( AggregateLog alog, UniqueObjectLog l ) {
-        if ( ServerApp.instance().isVerbose() ) {
-           System.out.println( "Logging " + l + " as child agg. log of " + alog ) ;
+        if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
+           ServerApp.instance().println( "Logging " + l + " as child agg. log of " + alog ) ;
         }
 
         if ( ( alog instanceof AggregateVerbTaskLog && l instanceof TaskLog ) ||

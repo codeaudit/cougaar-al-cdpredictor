@@ -265,7 +265,9 @@ public class ClientThread extends Thread {
                     // e.printStackTrace();
                 }
             }
-            ServerApp.instance().println( "Client " + clusterName + " disconnected by server."  ) ;
+            if ( ServerApp.instance() != null ) {
+                ServerApp.instance().println( "Client " + clusterName + " disconnected by server."  ) ;
+            }
             mt.removeClient( this ) ;
         }
     }
