@@ -298,9 +298,9 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 								StartIndicator tindicator = new StartIndicator(cluster, uidservice.nextUID(), starttime, 10);
 								tindicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
 								bs.publishAdd(tindicator);
+								System.out.println(getAgentIdentifier().toString() + ": adding StartIndicator to be sent to " + tindicator.getTargets());
 							}
 
-							System.out.println(getAgentIdentifier().toString() + ": adding StartIndicator to be sent to " + tindicator.getTargets());
 							if(!internalState.over) { sendLoadIndicator(0, LoadIndicator.NORMAL_LOAD); }
 						} else {
 							System.out.println(getAgentIdentifier().toString() + " Destination address is null");
