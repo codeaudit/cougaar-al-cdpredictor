@@ -192,7 +192,7 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
     }
 
     public void conditionalFlush() {
-        if (( lastAddTime - System.currentTimeMillis() ) > maximumDelay) {
+        if (( System.currentTimeMillis() - lastAddTime ) > maximumDelay) {
             flush();
         }
     }
