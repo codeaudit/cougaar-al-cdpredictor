@@ -94,14 +94,13 @@ public class QueueingModel extends ComponentPlugin {
 				MeasurementPoint measurementPoint = (MeasurementPoint) measurementPoints.get(i);
 				if (measurementPoint instanceof TimePeriodMeasurementPoint) {
 					TimePeriodMeasurementPoint dmp = (TimePeriodMeasurementPoint) measurementPoint;
-					System.out.println("Measurement points name " + dmp.getName());
-					iter = dmp.getMeasurements();
+					//System.out.println("Measurement points name " + dmp.getName()+","+dmp.getHistorySize());
+					iter = dmp.getMeasurements(period);
 					double total = 0;
 					double count = 0;
-					if ((iter != null) && (iter.hasNext())) {
+					while ((iter != null) && (iter.hasNext())) {
 						TimePeriodMeasurement t= (TimePeriodMeasurement) iter.next();
 						Object o = t.getValue();
-						System.out.println(o.toString());
 						if (o instanceof Double)
 							total += ((Double) (o)).doubleValue();
 						else if (o instanceof Integer)
@@ -109,8 +108,8 @@ public class QueueingModel extends ComponentPlugin {
 						count++;
 					}
 					if (count != 0) {
-						System.out.println(dmp.getName()+":  " +total+"/"+count);
-						scores.put(dmp.getName(), new Double(total / count));
+						//System.out.println(dmp.getName()+":  " +total+"/"+(count*5/60));
+						scores.put(dmp.getName(), new Double(total / (count*5/60)));
 					}
 				}
 			}
@@ -226,14 +225,14 @@ public class QueueingModel extends ComponentPlugin {
 	}
 
 	public void measurement() {
-		getMeanScore(System.currentTimeMillis(), 200);
+		HashMap scores = getMeanScore(System.currentTimeMillis(), 60); //last 5 minutes of history (1 sample every 5 seconds = 12 * 5 = 60 samples /min)) 
 		try {
 
 			measurementPoints.clear();
 			measurementPoints.addAll(measurementPointSubscription.getCollection());
 
 			//	Find the mean and variance
-			logger.shout("\n *------------------CALCULATING DELAY-------------* @" + this.getAgentIdentifier());
+			logger.shout("\n *------------------CONSOLIDATED MEASUREMENT DATA (last 5 or 50 seconds approx.)-------------* @" + this.getAgentIdentifier());
 			//get all delays
 			ControlMeasurement c = consolidateDelays(false);
 			//System.out.println(c.toString());
@@ -272,8 +271,8 @@ public class QueueingModel extends ComponentPlugin {
 			//set timerCount as a multiple of nextTime for Control Measurement
 			if ((timerCount++ == 6) && (hasSystemBeenPurturbed())) {
 				timerCount = 0;
-				SearchAndRank s = new SearchAndRank(c);
-				s.generateQueueingParameters(c);
+				SearchAndRank s = new SearchAndRank(c,scores);
+				s.generateQueueingParameters(c,scores);
 				//ships the ith ranking control set from the class s
 				// this control set is a hashmap of hashmaps
 				ControlMessage cm = s.getTop(1);
