@@ -1,8 +1,10 @@
 package org.cougaar.tools.techspecs.qos;
 
+import java.io.Serializable;
+
 public class TimePeriodMeasurement implements Record
 {
-    public TimePeriodMeasurement(long startTime, long endTime, Object value)
+    public TimePeriodMeasurement(long startTime, long endTime, Serializable value)
     {
         this.startTime = startTime;
         this.endTime = endTime;
