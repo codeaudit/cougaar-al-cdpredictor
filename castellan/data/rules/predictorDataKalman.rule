@@ -1,7 +1,7 @@
 ####################################################
 # Rule to insert Predictor Data plugin
 
-predictorDataKalman = "org.cougaar.tools.predictor.plugin.PredictorDataPlugin"
+predictorDataKalman = "org.cougaar.tools.alf.sensor.plugin.PredictorDataPlugin"
 agentList = ["47-FSB.DISCOM.1-AD.ARMY.MIL", "123-MSB-FOOD.DISCOM.1-AD.ARMY.MIL","123-MSB-HQ.DISCOM.1-AD.ARMY.MIL","123-MSB-ORD.DISCOM.1-AD.ARMY.MIL","123-MSB-PARTS.DISCOM.1-AD.ARMY.MIL","123-MSB-POL.DISCOM.1-AD.ARMY.MIL"]
 
   society.each_agent do |agent|
