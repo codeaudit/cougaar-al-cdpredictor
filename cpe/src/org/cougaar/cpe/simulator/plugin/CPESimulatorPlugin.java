@@ -15,10 +15,7 @@ import org.cougaar.cpe.agents.Constants;
 import org.cougaar.cpe.model.*;
 import org.cougaar.cpe.model.events.CPEEventListener;
 import org.cougaar.cpe.model.events.CPEEvent;
-import org.cougaar.cpe.relay.GenericRelayMessageTransport;
-import org.cougaar.cpe.relay.MessageSink;
-import org.cougaar.cpe.relay.TargetBufferRelay;
-import org.cougaar.cpe.relay.TimerMessage;
+import org.cougaar.cpe.relay.*;
 import org.cougaar.cpe.planning.zplan.BNAggregate;
 import org.cougaar.cpe.planning.zplan.ZoneWorld;
 import org.cougaar.cpe.util.CloneUtils;
@@ -256,13 +253,14 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     public void DoTimeAdvance( TimerEvent m ) {
         double rate ;
 
-        rate =  ( referenceWorldState.getDeltaT() * VGWorldConstants.MILLISECONDS_PER_SECOND ) / ( System.currentTimeMillis() - lastTime ) ;
+        long newTime = System.currentTimeMillis() ;
+        rate =  ( referenceWorldState.getDeltaT() * VGWorldConstants.MILLISECONDS_PER_SECOND ) / ( newTime - lastTime ) ;
 
-        lastTime = System.currentTimeMillis() ;
+        lastTime = newTime ;
         long elapsedTime = lastTime - baseTime ;
 
-        System.out.println( getAgentIdentifier() +
-                "::WorldStateExecutorPlugin:: ADVANCING time at simTime=" + referenceWorldState.getTime() +
+        log.shout( getAgentIdentifier() +
+                " ADVANCING time at simTime=" + referenceWorldState.getTime() +
                 ", elapsed=" + elapsedTime * VGWorldConstants.SECONDS_PER_MILLISECOND +
                 ", advanceRate =" + format.format(rate) + "x Real Time" ) ;
 
@@ -361,11 +359,21 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             mt.sendMessage( o.getSource(), wsum );
         }
 
-        // Now, send the messages to the control relay.
+        // Now, send the messages to the control relay. Always use the long range sensor filter.
         for (Iterator iterator = controlRelaySubscription.iterator(); iterator.hasNext();) {
             //
-            // Object o = (Object) iterator.next();
-
+            ControlTargetBufferRelay relay = (ControlTargetBufferRelay) iterator.next();
+            String agentId = relay.getSource().getAddress() ;
+            WorldStateModel model = referenceWorldState.filter( WorldStateModel.SENSOR_LONG, false, false, null ) ;
+            ArrayList events = (ArrayList) CloneUtils.deepClone( worldEvents ) ;
+            log.debug( "Sending state to ControlTargetBufferRelay with " +
+                    agentId + " and " + events.size() + " messages.");
+            UnitStatusUpdateMessage wsum = new UnitStatusUpdateMessage( null, model, events ) ;
+            wsum.setPriority( ActionEvent.PRIORITY_HIGH );
+            relay.addResponse( wsum );
+            if ( relay.isResponseChanged() ) {
+                getBlackboardService().publishChange( relay );
+            }
         }
     }
 
@@ -651,14 +659,11 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             }
         }) ;
 
+        // Subscribe to any control oriented target buffer relays.
         controlRelaySubscription = ( IncrementalSubscription )
                 getBlackboardService().subscribe( new UnaryPredicate() {
             public boolean execute(Object o) {
-                Class c = o.getClass() ;
-                if ( c.getName().equals( "org.cougaar.cpe.relay.ControlTargetBufferRelay") ) {
-                    return true ;
-                }
-                return false ;
+                return ( o instanceof ControlTargetBufferRelay ) ;
             }
         }) ;
 
