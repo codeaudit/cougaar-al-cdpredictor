@@ -1,0 +1,39 @@
+Configuring Generic Customer Predictor Plugins and Predictor Servlet 
+
+Create recipes in csmart. 
+
+1) Specific Insertion: PredictorDataPlugin
+	Class Name: org.cougaar.tools.alf.sensor.plugin.PredictorDataPlugin
+	Component Name: PredictorDataPlugin
+	Component Priority: COMPONENT
+	No. of Arguments: 0
+	Target Component Selection Query: recipeQueryAllAgents
+	Type of Insertion:  plugin
+
+
+2) Specific Insertion: PredictorPlugin
+	Class Name: org.cougaar.tools.alf.sensor.plugin.predictorPlugin
+	Component Name: predictorPlugin
+	Component Priority: COMPONENT
+	No. of Arguments: 0
+	Target Component Selection Query: recipeQueryAllAgents
+	Type of Insertion:  plugin
+
+
+For the Predictor Turn OFF Servlet
+
+3) Specific Insertion: PredictorPlugin
+	Class Name: org.cougaar.tools.alf.sensor.servlet.predictorServlet
+	Component Name:	predictorServlet
+	Component Priority: COMPONENT
+	Number of Arguments: 0
+	Target Component Selection Query: recipeQueryNCAAgent
+	Type of Insertion:  plugin
+
+
+To view the servlet and perform the "Turn Off" action:
+
+1) Go to http://localhost:8800/
+2) Click on the NCA agent
+3) Click on the /$NCA/predictor servlet link
+4) Just hit the "Turn OFF Predictor" Button to switch off the predictor in all agents
