@@ -25,7 +25,7 @@ import java.io.*;
 public class PSUFBSensor4Plugin extends ComponentPlugin
 {
 
-    class TriggerFlushAlarm implements PeriodicAlarm
+        class TriggerFlushAlarm implements PeriodicAlarm
     {
         public TriggerFlushAlarm(long expTime)
         {
@@ -144,14 +144,15 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
 		if (myTimestampService == null) {
             System.out.println("\n"+cluster+" ["+sensorname+"]: TimestampService is NOT available.\n");
         }
-		as = getAlarmService() ;
-	
+	        AlarmService as = getAlarmService() ;
+        as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 60000 ) ) ;		
     }
 
 
     public void execute()
     {
-            if (alarm != null) alarm.cancel();
+
+
 		if (myTimestampService == null) {
             myTimestampService = (BlackboardTimestampService) getBindingSite().getServiceBroker().getService(this, BlackboardTimestampService.class, null);
             if (myTimestampService == null) {
@@ -171,6 +172,8 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         long tevent_time, pevent_time;
 
         if (allocationSubscription.size()<3) return;
+	  if (allocationSubscription.size() == size) return;
+	  size = allocationSubscription.size();
         
         queue = new long[2][2*allocationSubscription.size()];
         long min_task_time = Long.MAX_VALUE, max_task_time = Long.MIN_VALUE;
@@ -228,8 +231,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         }
         
         System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = "+((int)(loadIndex*100))/100.0+" ["+status+"]");
-	  alarm = new TriggerFlushAlarm( currentTimeMillis() + 60000 );
-        as.addAlarm(alarm) ;	
+
     }
  
     
@@ -276,7 +278,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
     }  
 
     void setNormal () {
-        Iterator iter;
+                Iterator iter;
         String status = LoadIndicator.NORMAL_LOAD;
         for (iter = sensorSubscription.getCollection().iterator(); iter.hasNext();) {
             LoadIndicator loadIndicator = (LoadIndicator) iter.next();
@@ -286,9 +288,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
                 myBlackboardService.publishChange(loadIndicator);
             }
         }
-        
         System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = -1"+" ["+status+"]");
-	  alarm.cancel();
     }
 
     IncrementalSubscription allocationSubscription;   
@@ -299,8 +299,6 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
     private BlackboardService myBlackboardService;
     private LoggingService myLoggingService;
     private UIDService myUIDService;
-    AlarmService as;
-    TriggerFlushAlarm alarm = null;
-
+    int size = 0;
     
 }
