@@ -21,16 +21,29 @@ import com.axiom.lib.mat.*;
 import com.axiom.lib.util.*;
 import java.io.Serializable;
 import org.cougaar.cpe.agents.messages.ControlMessage;
+import org.cougaar.cpe.agents.messages.OpmodeNotificationMessage;
+import org.cougaar.core.adaptivity.OperatingModeCondition;
+import org.cougaar.cpe.agents.plugin.control.*;
 
 import java.io.File;
-import java.io.FileInputStream;
+//import java.io.FileInputStream;
 import java.util.*;
-import org.cougaar.cpe.agents.plugin.QMHelper;
 
 public class QueueingModel extends ComponentPlugin {
 	private LoggingService log;
 
-	public void processMessage(Object o) {
+	public void processMessage(Object[] o) {
+		// all types of message received are known
+		// so the object array Object[] o is traversed and the latest this is set to the local copy
+		if (o.length > 0) {
+			onm = null;
+			for (int i = 0; i < o.length; i++) {
+				if (o[i] instanceof OpmodeNotificationMessage) {
+					onm = (OpmodeNotificationMessage) o[i];
+				} else {
+				}
+			}
+		}
 	}
 
 	//get subscriptions of the measurements points - from BDEAgentPlugin, C2AgentPlugin, UnitAgentPlugin
@@ -46,6 +59,14 @@ public class QueueingModel extends ComponentPlugin {
 		});
 
 		setupRelaySubscriptions();
+
+		opModeCondSubscription = (IncrementalSubscription) getBlackboardService().subscribe(new UnaryPredicate() {
+			public boolean execute(Object o) {
+				return o instanceof OperatingModeCondition;
+			}
+		});
+
+		makeMeasurementPoints();
 	}
 
 	/**
@@ -61,6 +82,42 @@ public class QueueingModel extends ComponentPlugin {
 			csbr[i] = new ControlSourceBufferRelay(service.nextUID(), MessageAddress.getMessageAddress(SubordinateList[i]), getAgentIdentifier());
 			getBlackboardService().publishAdd(csbr[i]);
 		}
+	}
+
+	public HashMap getMeanScore(long currentTime, int period) {
+		HashMap scores = new HashMap();
+		Iterator iter = null;
+		if (period == 0)
+			return null;
+		try {
+			for (int i = 0; i < measurementPoints.size(); i++) {
+				MeasurementPoint measurementPoint = (MeasurementPoint) measurementPoints.get(i);
+				if (measurementPoint instanceof TimePeriodMeasurementPoint) {
+					TimePeriodMeasurementPoint dmp = (TimePeriodMeasurementPoint) measurementPoint;
+					iter = dmp.getMeasurements(period);
+					double total = 0;
+					double count = 0;
+					if ((iter != null) && (iter.hasNext())) {
+						Object o = ((TimePeriodMeasurement) iter.next()).getValue();
+						if (o instanceof Double)
+							total += ((Double) (o)).doubleValue();
+						else if (o instanceof Integer)
+							total += ((Integer) (o)).intValue();
+						count++;
+					}
+					if (count != 0) {
+						System.out.println(dmp.getName()+":  " +total+"/"+count);
+						scores.put(dmp.getName(), new Double(total / count));
+					}
+				}
+			}
+			System.out.println("AVG SCORES " + scores);
+		} catch (Exception e) {
+			//throw new RuntimeException("Unexpected condition reached");
+			e.printStackTrace();
+			return null;
+		}
+		return null;
 	}
 
 	/**
@@ -85,7 +142,7 @@ public class QueueingModel extends ComponentPlugin {
 			for (int i = 0; i < measurementPoints.size(); i++) {
 				MeasurementPoint measurementPoint = (MeasurementPoint) measurementPoints.get(i);
 				//System.out.println(
-				//	"Measurement points name " + measurementPoint.getName());
+				//"Measurement points name " + measurementPoint.getName());
 				long[] delays = new long[period];
 				if (measurementPoint instanceof EventDurationMeasurementPoint) {
 					EventDurationMeasurementPoint dmp = (EventDurationMeasurementPoint) measurementPoint;
@@ -132,7 +189,7 @@ public class QueueingModel extends ComponentPlugin {
 							avg_delays[ii][0] = -1;
 						}
 					}
-					//broken code
+					//broken code: doesnt work as it should
 					if (count > 0) {
 						double sum = 0;
 						for (int p = 0; p < count; p++) {
@@ -144,7 +201,7 @@ public class QueueingModel extends ComponentPlugin {
 						double variance = (double) (sum / count);
 						//System.out.println("count: " + count);
 						avg_delays[typeOfDelayMeasurement][1] = variance;
-					}					
+					}
 				}
 			}
 			return avg_delays;
@@ -166,6 +223,7 @@ public class QueueingModel extends ComponentPlugin {
 	}
 
 	public void measurement() {
+		getMeanScore(System.currentTimeMillis(), 200);
 		try {
 
 			measurementPoints.clear();
@@ -174,50 +232,78 @@ public class QueueingModel extends ComponentPlugin {
 			//	Find the mean and variance
 			logger.shout("\n *------------------CALCULATING DELAY-------------* @" + this.getAgentIdentifier());
 			//get all delays
-			double[][] processingDelayStats = consolidateDelays(true);
+			ControlMeasurement c = consolidateDelays(false);
+			//System.out.println(c.toString());
 
+			//store the system snapshot in a measurement point
+			boolean wasOpen = true;
+			if (!getBlackboardService().isTransactionOpen()) {
+				wasOpen = false;
+				getBlackboardService().openTransaction();
+			}
+			controlMP.addMeasurement(c);
+			System.out.println(controlMP.toString());
+			if (getBlackboardService().isTransactionOpen() && !wasOpen) {
+				getBlackboardService().closeTransaction();
+			}
+
+			//-------------------old style -----------------------------------------
 			//TODO remove later
-			qmh.invokeMatlab(processingDelayStats);
+			//qmh.invokeMatlab(c.getTaskTimes());
 
 			//if inside qmh something is in process, the function will return a null
-			HashMap h = qmh.getControlSet(processingDelayStats);
+			//HashMap h = qmh.getControlSet(processingDelayStats);
 
 			//a null HashMap ensures no opmodes are shipped
-			if (h != null) {
-				shipControlSet(h);
-			}
+			//if (h != null) {
+			//	shipControlSet(h);
+			//}
 			//TODO REMOVE: TEST FOR SENDING MESSAGES BACK TO SUBORDINATES:
-			ControlMessage controlMsg = new ControlMessage("a", "b");
-			controlMsg.putControlParameter((Object) "BN1Replan", new Integer(10));
-			for (int l = 0; l < SubordinateList.length; l++)
-				sendMessage((Serializable) controlMsg, csbr[l]);
+			//ControlMessage controlMsg = new ControlMessage("a", "b");
+			//controlMsg.putControlParameter((Object) "BN1Replan", new Integer(10));
+			//for (int l = 0; l < SubordinateList.length; l++)
+			//sendMessage((Serializable) controlMsg, csbr[l]);
+			//------------------end old style---------------------------------------
+
+			//if system has been purturbed control, predicted entry rate is different from last time or stress is present
+			//set timerCount as a multiple of nextTime for Control Measurement
+			if ((timerCount++ == 6) && (hasSystemBeenPurturbed())) {
+				timerCount = 0;
+				SearchAndRank s = new SearchAndRank(c);
+				s.generateQueueingParameters(c);
+				//ships the ith ranking control set from the class s
+				// this control set is a hashmap of hashmaps
+				ControlMessage cm = s.getTop(1);
+				//System.out.println("Control String "+cm.toString());
+				if (cm != null)
+					shipControlSet(cm);
+			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
 			// Reset the alarm service.
 			if (started) {
-				long nextTime = 10000;
+				long nextTime = 10000; //Measurement every nextTime seconds
 				getAlarmService().addRealTimeAlarm(new MeasurementAlarm(nextTime));
 			}
 
 		}
 	}
 
-	private void shipControlSet(HashMap h) {
-		//TODO from the HashMap choose which Control Set you want
-
-		//TODO convert them to opmodes
-
-		ControlMessage controlMsg = new ControlMessage("a", "b");
-		controlMsg.putControlParameter((Object) "BN1Replan", new Integer(10));
-		for (int l = 0; l < SubordinateList.length; l++)
-			sendMessage((Serializable) controlMsg, csbr[l]);
+	private boolean hasSystemBeenPurturbed() {
+		return true;
 	}
 
-	private double[][] consolidateDelays(boolean print) {
+	private void shipControlSet(ControlMessage c) {
+		for (int l = 0; l < SubordinateList.length; l++)
+			sendMessage((Serializable) c, csbr[l]);
+	}
+
+	private ControlMeasurement consolidateDelays(boolean print) {
 		double[][] averageProcessingDelays = new double[29][2];
 		double[][] Dlay = getMeanDelay(System.currentTimeMillis(), 20);
+		HashMap tempHash = new HashMap();
 
 		//getting BDE avg processing delays
 		if (Dlay != null) {
@@ -230,6 +316,8 @@ public class QueueingModel extends ComponentPlugin {
 				averageProcessingDelays[i][0] = -2;
 				//		-2 indicates nothing arrived
 			}
+		//puts all control paramters into hashMap
+		tempHash.put((Object) this.getAgentIdentifier(), (Object) putControlParameters());
 
 		//getting BN avg processing delays
 		int currPos = 1;
@@ -237,7 +325,14 @@ public class QueueingModel extends ComponentPlugin {
 			if (csbr[l] != null) {
 				Object[] o = (csbr[l].clearReponses());
 				if (o.length > 0) {
-					double[][] DlayFromSubs = (double[][]) o[0];
+					//TODO scan the complete object array and check for message type
+					onm = null; // <-
+					processMessage(o); // <-
+					//OpmodeNotificationMessage msg = (OpmodeNotificationMessage) o[0];
+					OpmodeNotificationMessage msg = (OpmodeNotificationMessage) onm; // <-
+					tempHash.put((Object) msg.getEntityName(), (Object) msg.getAllOpmodes());
+
+					double[][] DlayFromSubs = msg.getTimeForModes();
 					if (DlayFromSubs != null) {
 						for (int i = 2; i < 5; i++) {
 							//							System.out.println(
@@ -270,7 +365,12 @@ public class QueueingModel extends ComponentPlugin {
 				if (csbr[l] != null) {
 					Object[] o = (csbr[l].clearReponses());
 					if (o.length > 0) {
-						double[][] DlayFromSubs = (double[][]) o[0];
+						onm = null; // <-
+						processMessage(o); // <-
+						//OpmodeNotificationMessage msg = (OpmodeNotificationMessage) o[0];
+						OpmodeNotificationMessage msg = (OpmodeNotificationMessage) onm; // <-
+						tempHash.put((Object) msg.getEntityName(), (Object) msg.getAllOpmodes());
+						double[][] DlayFromSubs = msg.getTimeForModes();
 						if (DlayFromSubs != null) {
 							for (int i = 5; i < 7; i++) {
 								//								System.out.println(
@@ -309,7 +409,8 @@ public class QueueingModel extends ComponentPlugin {
 			//				"DELAY VARIANCE  " + averageProcessingDelays[0][1] + " " + averageProcessingDelays[1][1]);
 		}
 
-		return averageProcessingDelays;
+		ControlMeasurement cm = new ControlMeasurement("MeasurementTimer", "Measurement", this.getAgentIdentifier(), System.currentTimeMillis(), tempHash, averageProcessingDelays);
+		return cm;
 	}
 
 	private void sendMessage(Object msg, ControlSourceBufferRelay c) {
@@ -327,6 +428,37 @@ public class QueueingModel extends ComponentPlugin {
 		if (getBlackboardService().isTransactionOpen() && !wasOpen) {
 			getBlackboardService().closeTransaction();
 		}
+	}
+
+	private void makeMeasurementPoints() {
+		// Make some measurement points.
+
+		controlMP = new ControlMeasurementPoint("ControlMeasurementBDE");
+		getBlackboardService().publishAdd(controlMP);
+
+	}
+
+	private HashMap putControlParameters() {
+		boolean wasOpen = true;
+		HashMap temp = new HashMap();
+		if (!getBlackboardService().isTransactionOpen()) {
+			wasOpen = false;
+			getBlackboardService().openTransaction();
+		}
+
+		//put all the current opmodes in the opmode notification message
+		Collection opModeCollection = opModeCondSubscription.getCollection();
+		Iterator iter = opModeCollection.iterator();
+		while (iter.hasNext()) {
+			OperatingModeCondition omc = (OperatingModeCondition) iter.next();
+			temp.put((Object) omc.getName(), (Object) omc.getValue());
+		}
+
+		if (getBlackboardService().isTransactionOpen() && !wasOpen) {
+			getBlackboardService().closeTransaction();
+		}
+		return temp;
+
 	}
 
 	public class MeasurementAlarm implements Alarm {
@@ -370,11 +502,15 @@ public class QueueingModel extends ComponentPlugin {
 		protected long period;
 	}
 
+	//messages this node gets
+	private int timerCount = 0;
+	private OpmodeNotificationMessage onm;
+	private ControlMeasurementPoint controlMP;
 	LoggingService logger;
-	QMHelper qmh = new QMHelper();
+	//QMHelper qmh = new QMHelper();
 	private ArrayList measurementPoints = new ArrayList();
 	long baseTime = 0;
-	IncrementalSubscription measurementPointSubscription;
+	IncrementalSubscription measurementPointSubscription, opModeCondSubscription;
 	private boolean started = false;
 	private ControlSourceBufferRelay[] csbr;
 	private String[] SubordinateList = { "BN1", "BN2", "BN3", "CPY1", "CPY2", "CPY3", "CPY4", "CPY5", "CPY6", "CPY7", "CPY8", "CPY9" };
