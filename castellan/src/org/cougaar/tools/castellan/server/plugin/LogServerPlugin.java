@@ -75,6 +75,10 @@ public class LogServerPlugin extends ComponentPlugin
                 catch ( InterruptedException e ) {
                 }
 
+                if ( stop ) {
+                    break ;
+                }
+
                 flushBuffer() ;
             }
         }
@@ -249,10 +253,37 @@ public class LogServerPlugin extends ComponentPlugin
         buf.append( dom ) ;
         buf.append( y ) ;
         buf.append( '_' ) ;
+        if ( hod < 10 ) {
+            buf.append( '0' ) ;
+        }
         buf.append( hod ) ;
+        if ( min < 10 ) {
+            buf.append( '0' ) ;
+        }
         buf.append( min ) ;
 
         return getBindingSite().getAgentIdentifier().cleanToString() + buf.toString() ;
+    }
+
+    public void unload ()
+    {
+        super.unload();
+
+        if ( flushThread != null ) {
+            flushThread.setStop( true );
+            flushThread.interrupt() ;
+            flushThread = null ;
+        }
+
+        if ( log != null ) {
+            getServiceBroker().releaseService( this, LoggingService.class, log );
+            log = null ;
+        }
+
+        if ( persistentLog != null ) {
+            persistentLog.close();
+            persistentLog = null ;
+        }
     }
 
     public void execute()
