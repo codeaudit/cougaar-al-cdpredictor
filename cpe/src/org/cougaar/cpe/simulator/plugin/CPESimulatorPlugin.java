@@ -508,7 +508,15 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             System.out.println( getAgentIdentifier() + ":: CONFIGURING AND CREATING WORLD STATE...");
 
             // Now, actually make the reference world state.
-            referenceWorldState = new ReferenceWorldState( boardWidth, boardHeight, penaltyHeight, recoveryHeight, deltaT ) ;
+            WorldStateInfo info = new WorldStateInfo( boardWidth, boardHeight, penaltyHeight, recoveryHeight, deltaT) ;
+            info.setAmmoConsumptionFactor( ammoConsumptionFactor );
+            info.setFuelConsumptionFactor( fuelConsumptionFactor );
+            info.setKillScore( killFactor );
+            info.setPenaltyFactor( penaltyFactor );
+            info.setViolationFactor( violationFactor );
+            info.setAttritionFactor( attritionFactor );
+
+            referenceWorldState = new ReferenceWorldState( info ) ;
             referenceWorldState.setLogEvents( true );
             MeasuredWorldMetrics metrics =
                     new MeasuredWorldMetrics( "Metrics", referenceWorldState, metricsIntegrationPeriod ) ;
@@ -520,8 +528,15 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             System.out.println("RecoveryHeight=" + referenceWorldState.getRecoveryLine() );
             System.out.println("DeltaT=" + referenceWorldState.getDeltaT() + " secs." );
             System.out.println("PenaltyHeight=" + referenceWorldState.getPenaltyHeight() );
+            System.out.println("\n\tSCORING");
+            System.out.println("AttritionFactor=\t" + attritionFactor );
+            System.out.println("KillFactor=\t\t" + killFactor );
+            System.out.println("PenaltyFactor=\t" + penaltyFactor);
+            System.out.println("ViolationFactor=\t" + violationFactor );
+            System.out.println("FuelConsumptionFactor=\t" + fuelConsumptionFactor );
+            System.out.println("AmmoConsumptionFactor=\t" + ammoConsumptionFactor );
 
-            System.out.println("\nSIMULATION CONFIGURATION:");
+            System.out.println("\n\tSIMULATION CONFIGURATION:");
             System.out.println("Number of BN units=" + numBNUnits + ", each with " + numCPYUnitsPerBN + " subordinates.");
             System.out.println("Number of CPY units (total)=" + numCPYAgents );
             System.out.println("Number of supply vehicles per agent=" + numberOfSupplyVehicles );
@@ -970,6 +985,60 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                                         e.printStackTrace();
                                     }
                                 }
+                                String attritionFactorValue = getNodeValueForTag( doc, "AttritionFactor", "value" ) ;
+                                if ( attritionFactorValue != null ) {
+                                    try {
+                                        attritionFactor = Float.valueOf( attritionFactorValue ).floatValue() ;
+                                    }
+                                    catch ( Exception e ) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                String killFactorValue = getNodeValueForTag( doc, "KillFactor", "value" ) ;
+                                if ( killFactorValue != null ) {
+                                    try {
+                                        killFactor = Float.valueOf( killFactorValue).floatValue() ;
+                                    }
+                                    catch ( Exception e ) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                String penaltyFactorValue = getNodeValueForTag( doc, "PenaltyFactor", "value" ) ;
+                                if ( penaltyFactorValue != null ) {
+                                    try {
+                                        penaltyFactor = Float.valueOf( penaltyFactorValue).floatValue() ;
+                                    }
+                                    catch ( Exception e ) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                String violationFactorValue = getNodeValueForTag( doc, "ViolationFactor", "value" ) ;
+                                if ( violationFactorValue != null ) {
+                                    try {
+                                        violationFactor = Float.valueOf( violationFactorValue).floatValue() ;
+                                    }
+                                    catch ( Exception e ) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                String fuelConsumptionFactorValue = getNodeValueForTag( doc, "FuelConsumptionFactor", "value" ) ;
+                                if ( fuelConsumptionFactorValue != null ) {
+                                    try {
+                                        fuelConsumptionFactor = Float.valueOf( fuelConsumptionFactorValue).floatValue() ;
+                                    }
+                                    catch ( Exception e ) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                String ammoConsumptionFactorValue = getNodeValueForTag( doc, "AmmoConsumptionFactor", "value" ) ;
+                                if ( ammoConsumptionFactorValue != null ) {
+                                    try {
+                                        ammoConsumptionFactor = Float.valueOf( ammoConsumptionFactorValue).floatValue() ;
+                                    }
+                                    catch ( Exception e ) {
+                                        e.printStackTrace();
+                                    }
+                                }
 
                                 String metricsIntegrationPeriodValue = getNodeValueForTag( doc, "MetricsIntegrationPeriod", "value" ) ;
                                 if ( metricsIntegrationPeriodValue != null ) {
@@ -1065,6 +1134,12 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     int numberOfSupplyVehicles, numberOfSupplyUnits ;
 
     double deltaT = 5 ;
+
+    /*
+     * Scoring parameters.
+     */
+    float attritionFactor = 1, killFactor = 15, penaltyFactor = 5, violationFactor = 50,
+        fuelConsumptionFactor=0.2f, ammoConsumptionFactor = 0.1f ;
 
     /**
      * Arrival rate.

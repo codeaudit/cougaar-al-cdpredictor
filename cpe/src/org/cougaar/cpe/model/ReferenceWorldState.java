@@ -67,6 +67,11 @@ public class ReferenceWorldState extends WorldState
         setDefaultMetric( new MeasuredWorldMetrics( WorldState.DEFAULT_METRIC, this, defaultIntegrationPeriod ) ) ;
     }
 
+    public ReferenceWorldState( WorldStateInfo info ) {
+        this.info = info ;
+        initSensors();
+    }
+
     public ReferenceWorldState(double boardWidth, double boardHeight, double penaltyHeight, double recoveryLine,
                                double deltaT, int sensorType)
     {

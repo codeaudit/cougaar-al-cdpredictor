@@ -18,11 +18,6 @@ public abstract class WorldState implements java.io.Serializable {
         idToInfoMap = new HashMap() ;
     }
 
-    public WorldState(double boardWidth, double boardHeight, double penaltyHeight) {
-        this() ;
-        info = new WorldStateInfo(boardWidth, boardHeight, penaltyHeight ) ;
-    }
-
     public WorldState(double boardWidth, double boardHeight, double penaltyHeight, double recoveryLine, double deltaT ) {
         this() ;
         info = new WorldStateInfo(boardWidth, boardHeight, penaltyHeight, recoveryLine, deltaT ) ;
@@ -121,6 +116,14 @@ public abstract class WorldState implements java.io.Serializable {
         return accumulatedViolations;
     }
 
+    public int getAccumAmmoConsumption() {
+        return accumAmmoConsumption;
+    }
+
+    public float getAccumFuelConsumption() {
+        return accumFuelConsumption;
+    }
+
     public EntityInfo getEntityInfo( String id ) {
         return (EntityInfo) idToInfoMap.get(id) ;
     }
@@ -135,6 +138,10 @@ public abstract class WorldState implements java.io.Serializable {
 
     public double getGridPositionForPosition( double position ) {
         return Math.round( position / info.getGridSize() ) * info.getGridSize() ;
+    }
+
+    public WorldStateInfo getInfo() {
+        return info;
     }
 
     public UnitEntity addUnit( double x, double y, String id ) {
@@ -248,10 +255,8 @@ public abstract class WorldState implements java.io.Serializable {
      * @return
      */
     public double getScore() {
-        return accumulatedAttritionValue * info.getAttritionFactor()
-                + accumulatedKills * info.getKillScore()
-                - ( accumulatedPenalties * info.getPenaltyFactor() +
-                    accumulatedViolations * info.getViolationFactor() ) ;
+        return info.computeScore( accumulatedAttritionValue, accumulatedKills, accumulatedPenalties,
+                accumulatedViolations, accumFuelConsumption, accumAmmoConsumption ) ;
     }
 
     public double getPenaltyHeight() {
@@ -560,6 +565,7 @@ public abstract class WorldState implements java.io.Serializable {
         if ( fuelConsumption > 0 ) {
             fireEvent( new FuelConsumptionEvent( getTime(), entity.getId(), fuelConsumption ));
         }
+        accumFuelConsumption += fuelConsumption ;
         return new MoveResult( startX, startY, entity.getX(), entity.getY(), fuelConsumption ) ;
     }
 
@@ -779,6 +785,7 @@ public abstract class WorldState implements java.io.Serializable {
 
             int engageCount = incrementEngageByFireCount( target ) ;
 
+            accumAmmoConsumption ++ ;
             // Engage for a single deltaT.
             double startTime = getTime() * VGWorldConstants.SECONDS_PER_MILLISECOND ;
             info.getModel().nextAttritionValue( t, tempResult,
@@ -902,6 +909,10 @@ public abstract class WorldState implements java.io.Serializable {
      * Damage is accumulated when targets fire at nearby targets.
      */
     protected int accumulatedDamage = 0 ;
+
+    protected int accumAmmoConsumption;
+
+    protected float accumFuelConsumption ;
 
     /**
      * Time in milliseconds.

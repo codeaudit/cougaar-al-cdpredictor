@@ -446,13 +446,13 @@ public class VGSearchStrategy implements Strategy {
 
                 // This should never happen.
                 if ( er == null ) {
-                    System.out.println("\nNull ER result encountered!" );
-                    System.out.println("Tuples=" );
+                    System.err.println("\nNull ER result encountered!" );
+                    System.err.println("Tuples=" );
                     for (int k = 0; k < objects.length; k++) {
                         UnitEntity object = (UnitEntity) objects[k];
                         System.out.println( object  );
                     }
-                    System.out.println(" Projected ws " + futureWorldState );
+                    System.err.println(" Projected ws " + futureWorldState );
                     Iterator iter = futureWorldState.getUnits() ;
                     while (iter.hasNext()) {
                         UnitEntity unitEntity = (UnitEntity) iter.next();
@@ -468,9 +468,11 @@ public class VGSearchStrategy implements Strategy {
                 }
             }
 
+            // TODO Tracking fuel consumption has becoming redundant since the WorldState itself tracks it now
             WorldStateNode nwsn = new WorldStateNode( ( WorldStateNode ) n, futureWorldState ) ;
             nwsn.ammoConsumption = wsn.ammoConsumption + ammoConsumed ;
             nwsn.fuelConsumption = wsn.fuelConsumption + fuelConsumed ;
+            // nwsn.recomputeScore();
             successors[i] = nwsn ;
         }
         n.addSuccessors( successors );

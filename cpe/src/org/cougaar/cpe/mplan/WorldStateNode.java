@@ -3,6 +3,7 @@ package org.cougaar.cpe.mplan;
 import com.axiom.pspace.search.GraphNode;
 import com.axiom.pspace.search.DefaultGraphNode;
 import org.cougaar.cpe.model.WorldStateModel;
+import org.cougaar.cpe.model.WorldStateInfo;
 
 /**
  *  A node representing the state of the world and the accumulated score.
@@ -106,6 +107,16 @@ public class WorldStateNode extends DefaultGraphNode {
     public void setInternalZoneCoverage(float internalZoneCoverage)
     {
         this.internalZoneCoverage = internalZoneCoverage;
+    }
+
+    public void recomputeScore() {
+        WorldStateInfo info = state.getInfo() ;
+        score = (float) ( state.getAccumulatedAttritionValue() * info.getAttritionFactor() +
+                state.getAccumulatedKills() * info.getKillScore() -
+                state.getAccumulatedPenalties() * info.getPenaltyFactor() -
+                state.getAccumulatedViolations() * info.getViolationFactor() -
+                fuelConsumption * info.getFuelConsumptionFactor() -
+                ammoConsumption * info.getAmmoConsumptionFactor() ) ;
     }
 
     /**

@@ -35,6 +35,22 @@ public class WorldStateInfo implements Serializable {
         this.recoveryLine = recoveryLine;
     }
 
+    public float getAmmoConsumptionFactor() {
+        return ammoConsumptionFactor;
+    }
+
+    public float getFuelConsumptionFactor() {
+        return fuelConsumptionFactor;
+    }
+
+    public void setAmmoConsumptionFactor(float ammoConsumptionFactor) {
+        this.ammoConsumptionFactor = ammoConsumptionFactor;
+    }
+
+    public void setFuelConsumptionFactor(float fuelConsumptionFactor) {
+        this.fuelConsumptionFactor = fuelConsumptionFactor;
+    }
+
     public long getBaseTime() {
         return baseTime;
     }
@@ -103,6 +119,10 @@ public class WorldStateInfo implements Serializable {
         return attritionFactor;
     }
 
+    public void setAttritionFactor(float attritionFactor) {
+        this.attritionFactor = attritionFactor;
+    }
+
     public boolean isTargetRoutEnabled()
     {
         return targetRoutEnabled;
@@ -111,6 +131,19 @@ public class WorldStateInfo implements Serializable {
     public void setTargetRoutEnabled(boolean targetRoutEnabled)
     {
         this.targetRoutEnabled = targetRoutEnabled;
+    }
+
+    public float computeScore( float attrit, float kills, float penalities, float violations, float fuelConsumption,
+                              float ammoConsumption )
+    {
+        float score = (float) ( attrit * getAttritionFactor() +
+                          kills * getKillScore() -
+                penalities * getPenaltyFactor() -
+                violations * getViolationFactor() -
+                fuelConsumption * getFuelConsumptionFactor() -
+                ammoConsumption * getAmmoConsumptionFactor() ) ;
+
+        return score ;
     }
 
     /**
@@ -127,6 +160,8 @@ public class WorldStateInfo implements Serializable {
     private float penaltyFactor = 5;
     private float violationFactor = 50;
     private float attritionFactor = 1 ;
+    private float fuelConsumptionFactor = 0.2f ;
+    private float ammoConsumptionFactor = 0.1f ;
     private boolean targetRoutEnabled = true ;
 
 

@@ -17,6 +17,8 @@ import java.awt.event.ActionEvent;
 import java.io.*;
 import java.util.Iterator;
 import java.util.Collection;
+import java.text.NumberFormat;
+import java.text.DecimalFormat;
 
 public class CPESimulatorUIFrame extends JFrame {
     private CPESimulatorPlugin plugin;
@@ -203,9 +205,14 @@ public class CPESimulatorUIFrame extends JFrame {
                     displayPanel.repaint();
                     WorldState ws = displayPanel.getWorldState() ;
                     if ( ws != null ) {
+                        NumberFormat numberFormat = new DecimalFormat( "####.##" ) ;
                         setTitle( "WorldState " + agentName + " [Time=" +
                             ( ws.getTime() * VGWorldConstants.SECONDS_PER_MILLISECOND ) +
-                            ", Score=" + ws.getScore() + "]" );
+                            ", Score=" + numberFormat.format(ws.getScore()) + ",Attrit=" + ws.getAccumulatedAttritionValue() +
+                                ",Kills=" + ws.getAccumulatedKills() + ",Penalty=" + ws.getAccumulatedPenalties()
+                                + ",Violations=" + ws.getAccumulatedViolations() +
+                                ",Fuel=" + numberFormat.format( ws.getAccumFuelConsumption() ) +
+                                ",Ammo=" + ws.getAccumAmmoConsumption() + "]" );
                     }
                 }
             }
