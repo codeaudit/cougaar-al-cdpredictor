@@ -32,19 +32,23 @@ import java.util.*;
 public class DemandHistoryManager implements java.io.Serializable {
 
 	HashMap DemandHistory; 
-	private LoggingService myLoggingService;
+//	private LoggingService myLoggingService;
 
 	// All the demand will be managed by this manager
-	public DemandHistoryManager(LoggingService myLoggingService) {
+//	public DemandHistoryManager(LoggingService myLoggingService) {
+	public DemandHistoryManager() {
 		DemandHistory = new HashMap();
-		this.myLoggingService = myLoggingService;
+//		this.myLoggingService = myLoggingService;
 	}
 
 	public void addDemandData(Task task, long today) {
 
 		DemandPerAgent demandPerAgent = (DemandPerAgent) DemandHistory.get((String) task.getUID().getOwner());
 
-		if (demandPerAgent == null)	{	demandPerAgent = new DemandPerAgent((String) task.getUID().getOwner(),myLoggingService);		}
+		if (demandPerAgent == null)	{	
+//			demandPerAgent = new DemandPerAgent((String) task.getUID().getOwner(),myLoggingService);		
+			demandPerAgent = new DemandPerAgent((String) task.getUID().getOwner());		
+		}
 
 		demandPerAgent.addDemandData(task, today);
 		DemandHistory.put((String) task.getUID().getOwner(), demandPerAgent);
@@ -54,7 +58,9 @@ public class DemandHistoryManager implements java.io.Serializable {
 
 		DemandPerAgent demandPerAgent = (DemandPerAgent) DemandHistory.get((String) task.getUID().getOwner());
 
-		if (demandPerAgent == null)	{	myLoggingService.shout("DemandHistoryManager : You are trying to remove unknown agent's demand");		}
+		if (demandPerAgent == null)	{	
+			//myLoggingService.shout("DemandHistoryManager : You are trying to remove unknown agent's demand");		
+		}
 
 		demandPerAgent.removeDemandData(task);
 		DemandHistory.put((String) task.getUID().getOwner(), demandPerAgent);

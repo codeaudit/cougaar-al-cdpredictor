@@ -32,13 +32,14 @@ public class DemandPerAgent implements java.io.Serializable
 {
 	String agentName = null;		
 	HashMap demandHistoryPerType = null;
-	LoggingService myLoggingService = null;
+//	LoggingService myLoggingService = null;
 	long tempLeadTime = 0;
 	long tempToday = 0;
 	
-	public DemandPerAgent(String agentName,LoggingService myLoggingService) {
+//	public DemandPerAgent(String agentName,LoggingService myLoggingService) {
+	public DemandPerAgent(String agentName) {
 		this.agentName = agentName;
-		this.myLoggingService = myLoggingService;
+//		this.myLoggingService = myLoggingService;
 		demandHistoryPerType = new HashMap();
 	}
 
@@ -50,14 +51,15 @@ public class DemandPerAgent implements java.io.Serializable
 		if (pp != null)	{
 			ofType	=	(String) pp.getIndirectObject();
 		} else {
-			myLoggingService.shout ("DemandPerAgent : null Prepositional Phrase Maintaining" );
+//			myLoggingService.shout ("DemandPerAgent : null Prepositional Phrase Maintaining" );
 			return;
 		}
 
 		DemandHistoryPerType demandHistoryOfCertainType = (DemandHistoryPerType)demandHistoryPerType.get(ofType);
 
 		if (demandHistoryOfCertainType == null)	{
-			demandHistoryOfCertainType = new DemandHistoryPerType(ofType, myLoggingService);
+//			demandHistoryOfCertainType = new DemandHistoryPerType(ofType, myLoggingService);
+			demandHistoryOfCertainType = new DemandHistoryPerType(ofType);
 		}
 
 		demandHistoryOfCertainType.addDemandData(task);		//////////////////////
@@ -72,7 +74,7 @@ public class DemandPerAgent implements java.io.Serializable
 		if (pp != null)	{
 			ofType	=	(String) pp.getIndirectObject();
 		} else {
-			myLoggingService.shout ("DemandPerAgent : null Prepositional Phrase Maintaining" );
+//			myLoggingService.shout ("DemandPerAgent : null Prepositional Phrase Maintaining" );
 			return;
 		}
 
@@ -80,12 +82,12 @@ public class DemandPerAgent implements java.io.Serializable
 
 		if (demandHistoryOfCertainType == null)
 		{
-			myLoggingService.shout ("DemandPerAgent : you tried to remove an unrecorded task "+ofType +" in "+agentName);
+//			myLoggingService.shout ("DemandPerAgent : you tried to remove an unrecorded task "+ofType +" in "+agentName);
 			return; 
 		}
 
 		if (!demandHistoryOfCertainType.removeDemandData(task))	{
-			myLoggingService.shout ("[HONG]DemandPerAgent : you tried to remove a task of "+ofType +" in "+agentName );
+//			myLoggingService.shout ("[HONG]DemandPerAgent : you tried to remove a task of "+ofType +" in "+agentName );
 		}
 	}
 
@@ -95,7 +97,7 @@ public class DemandPerAgent implements java.io.Serializable
 
 		if (demandHistoryOfCertainType == null)
 		{
-			myLoggingService.shout ("DemandPerAgent : you tried to get past history for unknown type." );
+//			myLoggingService.shout ("DemandPerAgent : you tried to get past history for unknown type." );
 			return -1; 
 		}
 

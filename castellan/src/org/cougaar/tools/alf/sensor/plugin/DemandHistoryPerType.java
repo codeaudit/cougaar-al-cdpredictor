@@ -32,13 +32,14 @@ public class DemandHistoryPerType implements java.io.Serializable
 {
 	String type = null;		
 	HashMap demandHistoryPerItem = null;
-	LoggingService myLoggingService = null;
+//	LoggingService myLoggingService = null;
 	long tempLeadTime = 0;
 	long tempToday = 0;
 	
-	public DemandHistoryPerType(String type,LoggingService myLoggingService) {
+//	public DemandHistoryPerType(String type,LoggingService myLoggingService) {
+	public DemandHistoryPerType(String type) {
 		this.type = type;
-		this.myLoggingService = myLoggingService;
+//		this.myLoggingService = myLoggingService;
 		demandHistoryPerItem = new HashMap();
 	}
 
@@ -55,7 +56,7 @@ public class DemandHistoryPerType implements java.io.Serializable
 			maintainedItem = (MaintainedItem) pp.getIndirectObject();
 			nomenclature = maintainedItem.getNomenclature();
 		} else {
-			myLoggingService.shout ("DemandHistoryPerType : null Prepositional Phrase Maintaining" );
+//			myLoggingService.shout ("DemandHistoryPerType : null Prepositional Phrase Maintaining" );
 			return;
 		}
 
@@ -65,8 +66,9 @@ public class DemandHistoryPerType implements java.io.Serializable
 		double qty = task.getPreferredValue(AspectType.QUANTITY);
 
 		if (demandHistoryForAnItem == null)	{
-			demandHistoryForAnItem = new DemandHistoryForAnItem(ofType,maintainedItem,myLoggingService);
-			
+//			demandHistoryForAnItem = new DemandHistoryForAnItem(ofType,maintainedItem,myLoggingService);
+			demandHistoryForAnItem = new DemandHistoryForAnItem(ofType,maintainedItem);
+
 			Date commitmentDate = task.getCommitmentDate();
 			long commitment_time = 0;
 
@@ -86,18 +88,17 @@ public class DemandHistoryPerType implements java.io.Serializable
 		String nomenclature = null;
 		PrepositionalPhrase pp = task.getPrepositionalPhrase("Maintaining");
 
-		if (pp != null)
-		{
+		if (pp != null)	{
 			nomenclature = ((MaintainedItem) pp.getIndirectObject()).getNomenclature();
 		} else {
-			myLoggingService.shout ("DemandHistoryPerType : null Prepositional Phrase Maintaining" );
+//			myLoggingService.shout ("DemandHistoryPerType : null Prepositional Phrase Maintaining" );
 			return false;
 		}
 
 		DemandHistoryForAnItem demandHistoryForAnItem = (DemandHistoryForAnItem)demandHistoryPerItem.get(nomenclature);
 
 		if (demandHistoryForAnItem == null)	{
-			myLoggingService.shout ("DemandHistoryPerType : you tried to remove an unrecorded task "+nomenclature +" in "+type);
+//			myLoggingService.shout ("DemandHistoryPerType : you tried to remove an unrecorded task "+nomenclature +" in "+type);
 			return false; 
 		}
 
@@ -105,7 +106,7 @@ public class DemandHistoryPerType implements java.io.Serializable
 		double qty = task.getPreferredValue(AspectType.QUANTITY);
 
 		if (!demandHistoryForAnItem.removeDemandData(end_time,qty))	{
-			myLoggingService.shout ("[HONG]DemandHistoryPerType : you tried to remove a task of "+nomenclature +" in "+type );
+//			myLoggingService.shout ("[HONG]DemandHistoryPerType : you tried to remove a task of "+nomenclature +" in "+type );
 			return false; 
 		}
 		return true;
@@ -116,7 +117,7 @@ public class DemandHistoryPerType implements java.io.Serializable
 		DemandHistoryForAnItem demandHistoryForAnItem = (DemandHistoryForAnItem)demandHistoryPerItem.get(nomenclature);
 
 		if (demandHistoryForAnItem == null)	{
-			myLoggingService.shout ("DemandHistoryPerType : you tried to get past history for unknown item." );
+//			myLoggingService.shout ("DemandHistoryPerType : you tried to get past history for unknown item." );
 			return -1; 
 		}
 
@@ -151,7 +152,7 @@ public class DemandHistoryPerType implements java.io.Serializable
 		long max_end_time = getMaxEndTime();
 
 		if (max_end_time<=commLossDay)	{
-			myLoggingService.shout ("DemandHistoryPerType : Something wrong on this type " + type +"because it has smaller value of max_end_time than commLossDay!!");
+//			myLoggingService.shout ("DemandHistoryPerType : Something wrong on this type " + type +"because it has smaller value of max_end_time than commLossDay!!");
 			return 0;
 		}
 

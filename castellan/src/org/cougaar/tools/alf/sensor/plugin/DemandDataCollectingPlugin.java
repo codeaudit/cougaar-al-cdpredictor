@@ -59,19 +59,15 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 					if (verb.equals("Supply")||verb.equals("ProjectSupply"))
 					{
-						PrepositionalPhrase pp = null;
-						if ((pp = tempTask.getPrepositionalPhrase("OfType"))!=null)
-						{
-							String s = (String) pp.getIndirectObject();
-							if (s.equalsIgnoreCase("BulkPOL")||s.equalsIgnoreCase("Ammunition"))
-							{
+//						PrepositionalPhrase pp = null;
+//						if ((pp = tempTask.getPrepositionalPhrase("OfType"))!=null)
+//						{
+//							String s = (String) pp.getIndirectObject();
+//							if (s.equalsIgnoreCase("BulkPOL")||s.equalsIgnoreCase("Ammunition"))
+//							{
 								return true;
-							} 
-						}
-					}
-					else if (verb.equals("ForecastDemand"))
-					{
-						return true;
+//							} 
+//						}
 					}
 				}
 				return false; 	
@@ -88,16 +84,16 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 					
 					if (verb.equals("Supply")||verb.equals("ProjectSupply"))
 					{
-						PrepositionalPhrase pp = null;
-						if ((pp = tempTask.getPrepositionalPhrase("OfType"))!=null)
-						{
-							String s = (String) pp.getIndirectObject();
-
-							if (s.equalsIgnoreCase("BulkPOL")||s.equalsIgnoreCase("Ammunition"))
-							{
+//						PrepositionalPhrase pp = null;
+//						if ((pp = tempTask.getPrepositionalPhrase("OfType"))!=null)
+//						{
+//							String s = (String) pp.getIndirectObject();
+//
+//							if (s.equalsIgnoreCase("BulkPOL")||s.equalsIgnoreCase("Ammunition"))
+//							{
 								return true;
-							} 
-						}
+//							} 
+//						}
 					}
 				}
 				return false; 	
@@ -189,10 +185,6 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 	int curr_state = -1;
 
-	long nextTime = 0;
-	long offsetTime = -1;  // Actual runtime
-	long baseTime = 13005; // August 10th 2005 
-//	long baseTime = 12974; // July 10th 2005 
 	boolean oplan_is_not_detected = true;
 	
 	boolean OutputFileOn = true;
@@ -223,7 +215,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 		try
 		{
-			rst = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster + forName +".txt", true ));
+			rst = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster + forName +".dump.txt", true ));
 			rstInv = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster + forName +"Inv.txt", true ));
 //			rstTask = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster+System.currentTimeMillis()+".t", true ));
 //			rstPE = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster+System.currentTimeMillis()+".p", true ));
@@ -251,6 +243,11 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 		checkPeSubscription(nowTime/86400000, planelementSubscription);
 
 		Collection c = bs.query(new InventoryPredicate("Ammunition"));
+		if (c!=null)	{
+			printInventory(c.size(), c.iterator(), "added",nowTime);
+		}
+
+		c = bs.query(new InventoryPredicate("BulkPOL"));
 		if (c!=null)	{
 			printInventory(c.size(), c.iterator(), "added",nowTime);
 		}

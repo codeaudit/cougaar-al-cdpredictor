@@ -37,14 +37,15 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 	public String ofType = null;
 	private boolean leadTimeSet = false;
 	private boolean commitmentDateSet = false;
-	private LoggingService myLoggingService;
+//	private LoggingService myLoggingService;
 
 	public TreeMap demandHistory = null;	
 
-	public DemandHistoryForAnItem(String ofType, MaintainedItem maintainedItem, LoggingService myLoggingService) { 
+//	public DemandHistoryForAnItem(String ofType, MaintainedItem maintainedItem, LoggingService myLoggingService) { 
+	public DemandHistoryForAnItem(String ofType, MaintainedItem maintainedItem) { 
 		this.ofType = ofType;
 		this.maintainedItem = maintainedItem; 
-		this.myLoggingService = myLoggingService;
+//		this.myLoggingService = myLoggingService;
 		this.itemName = maintainedItem.getNomenclature();
 		demandHistory = new TreeMap(new DateComparator());
 //		dateHistory = new TreeSet(new DateComparator());
@@ -56,12 +57,12 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 	public long getLeadTime(long today)		{     
 
 		if (demandHistory==null)	{
-			myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : " + itemName + " has null demandHistory");		
+//			myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : " + itemName + " has null demandHistory");		
 			return 1;
 		}
 
 		if (demandHistory.size()==0)	{
-			myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : " + itemName + " has zero number of demandHistory");		
+//			myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : " + itemName + " has zero number of demandHistory");		
 			return 1;
 		}
 
@@ -109,6 +110,7 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 
 //	public boolean removeDemandData(long date, double quantity, long currentTime) {
 	public boolean removeDemandData(long date, double quantity) {	
+
 		Long dateInLong = new Long(date);
 
 //		Long currentTimeInLong = new Long(currentTime);
@@ -192,7 +194,7 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 
 			prev_date = unitDemand.date;
 			sumOfQuantity += unitDemand.quantity;
-			myLoggingService.shout("[PREDICTOR]averagePast : "+unitDemand.date+","+unitDemand.quantity+","+targetDate+","+itemName);	// for Debug
+//			myLoggingService.shout("[PREDICTOR]averagePast : "+unitDemand.date+","+unitDemand.quantity+","+targetDate+","+itemName);	// for Debug
 		}
 		
 		if (tw >1)	{
@@ -220,7 +222,7 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 			UnitDemand unitDemand = (UnitDemand)iter.next();
 
 			sumOfQuantity += unitDemand.quantity;
-			myLoggingService.shout("[PREDICTOR]averagePast : "+unitDemand.date+","+unitDemand.quantity+","+itemName);	// for Debug
+//			myLoggingService.shout("[PREDICTOR]averagePast : "+unitDemand.date+","+unitDemand.quantity+","+itemName);	// for Debug
 		}
 		
 		return sumOfQuantity/tw;
@@ -338,8 +340,7 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 
 	public long getMaxEndTimeInHistory() {
 	
-		if (demandHistory.size()==0)
-		{
+		if (demandHistory.size()==0)	{
 			return -1;
 		}
 		Long tempEndDate = (Long) demandHistory.firstKey();
@@ -373,9 +374,8 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 
 		return (long) Math.floor(interval/(tw-1));
 	}
-
-	private class UnitDemand
-	{
+/*
+	private class UnitDemand implements java.io.Serializable {
 		public long date = 0;			// end date
 		public long commitmentdate = 0;	// commitment date
 		public double quantity = 0;
@@ -404,4 +404,5 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 				return 0;
 		}
     }
+*/
 }
