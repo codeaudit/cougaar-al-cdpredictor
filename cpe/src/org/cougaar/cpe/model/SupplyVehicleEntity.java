@@ -45,31 +45,36 @@ public class SupplyVehicleEntity extends Entity
         }
 
 
+        // Scan through the plan and find the next incomplete task.
         SupplyTask t = (SupplyTask) currentPlan.getCurrentTask() ;
+        int index = currentPlan.getCurrentActionIndex() ;
 
         while ( t != null && t.isComplete() ) {
             t = (SupplyTask) currentPlan.nextTask() ;
+            index++ ;
         }
 
-        // Recovery tasks are always done. Delay all new tasks into the future until the
-        // recovery is complete. Also, if a task is in progress it cannot be cancelled.
+        // If we find an incomplete task, see if it is active.  If so, we must delay
+        // unitl it and its recovery tasks are done. Delay all new tasks into the future until the
+        // active task and its recovery is complete.
         if ( t != null &&
              ( ( t.getDisposition() == Task.ACTIVE && !t.isComplete() )  // I am in progress
                || ( t.getType() == SupplyTask.ACTION_RECOVERY && !t.isComplete() ) ) ) // I am a recovery task
         {
-            int index = currentPlan.getCurrentActionIndex() ;
-
             // Cannot preempt this task or the next one if the next one is a recovery task.
-            SupplyTask currentTask = (SupplyTask) currentPlan.getCurrentTask() ;
-            if ( currentTask.getType() != SupplyTask.ACTION_RECOVERY &&
-                currentPlan.getCurrentActionIndex() < currentPlan.getNumTasks() - 1 ) {
-                SupplyTask nextTask = (SupplyTask) currentPlan.getTask( index + 1 ) ;
+            long lastTime = t.getEndTime() ;
+            SupplyTask nextTask ;
+            if ( t.getType() != SupplyTask.ACTION_RECOVERY &&
+                 index < currentPlan.getNumTasks() - 1 )
+            {
+                nextTask = (SupplyTask) currentPlan.getTask( index + 1 ) ;
                 if ( nextTask.getType() == SupplyTask.ACTION_RECOVERY ) {
+                    lastTime = nextTask.getEndTime() ;
                     index++ ;
                 }
             }
 
-            int delayedTasks = ScheduleUtils.delayPlanUntilTime( newSupplyPlan, t.getEndTime() );
+            int delayedTasks = ScheduleUtils.delayPlanUntilTime( newSupplyPlan, lastTime );
             System.out.println( "UPDATE SUPPLY PLAN " + this + ":: Delayed " + delayedTasks + " tasks.");
             currentPlan.replan( index + 1 , newSupplyPlan );
         }
