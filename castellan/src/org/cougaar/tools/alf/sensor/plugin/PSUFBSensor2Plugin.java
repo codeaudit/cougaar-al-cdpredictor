@@ -289,7 +289,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 
 						Collection alCommunities2 = communityService.search("(CommunityType=AdaptiveLogistics)");				
 
-						internalState.setalCommunities(alCommunities2);
+//						internalState.setalCommunities(alCommunities2);
 
 						if (internalState.alCommunities != null)
 						{
@@ -319,7 +319,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 					if (internalState.StartTime > 0 )
 					{
 						org.cougaar.core.util.UID uid = (org.cougaar.core.util.UID) tpdu.getUID();
-						// check waiting time
+
 						if (action == 0)	{
 							addTaskForCheckingFallingBehind(tpdu);
 							bs.publishChange(internalState);
@@ -361,6 +361,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 		        internalState = (InternalState) iter.next();
 				// debug
 				internalState.show();
+				internalState.rehydrate = true;
 				if(!internalState.over) { System.out.println("PSUFBSensor2Plugin start at " + cluster); }
 				break;
 			}
@@ -383,8 +384,19 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 
 			if (internalState.over) {	return;	}
 
+			long t = bts.getCreationTime(tpdu.getUID());
+
+			if (internalState.rehydrate)
+			{
+				internalState.Correction = t - internalState.CurrentTime ;
+				internalState.rehydrate=false;
+			}
+
+			internalState.CurrentTime = t;
+
+			t = t - internalState.StartTime - internalState.Correction;
+
 			internalState.NoTasks++;
-			long t = bts.getCreationTime(tpdu.getUID())-internalState.StartTime;
 
 			if (t >= internalState.nextcheckpoint)
 			{
@@ -520,10 +532,21 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 			if (mode == 0)
 			{
 				loadIndicator = new LoadIndicator(this.getClass(), cluster, uidservice.nextUID(), loadlevel);
+				if (loadIndicator == null)
+				{
+					System.out.println("loadindicator is null");
+				}
 				for (Iterator iterator = internalState.alCommunities.iterator(); iterator.hasNext();) {
 					String community = (String) iterator.next();
-					loadIndicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
+					AttributeBasedAddress aba = new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager");
+//					loadIndicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
+					if (aba == null)
+					{
+						System.out.println("aba is null");
+					}
+					loadIndicator.addTarget(aba);
 					bs.publishAdd(loadIndicator);
+					System.out.println(cluster + ": add loadIndicator to be sent to " + loadIndicator.getTargets());
 				}
 
 
@@ -531,9 +554,10 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 			
 		        loadIndicator.setLoadStatus(loadlevel);
 				bs.publishChange(loadIndicator);
+				System.out.println(cluster + ": change loadIndicator to be sent to " + loadIndicator.getTargets());
 			}	
 
-			System.out.println(cluster + ": adding loadIndicator to be sent to " + loadIndicator.getTargets());
+
 		}
 
 	class ConditionByNo implements java.io.Serializable
