@@ -273,20 +273,15 @@ public class SensorPlugin extends ComponentPlugin
 
     String databaseName = null;
     boolean logToMemory = true, logToDatabase = false;
-<<<<<<< SensorPlugin.java
+
     DBEventLog DBLog;
-=======
-	TheSensor sensor;		
-//    InMemoryEventLog memoryLog;
-    DBEventLog DBLog;
->>>>>>> 1.3
     PDUBuffer buffer;
     LoggingService log ;
     IncrementalSubscription pduBufferSubscription;
 
 // Feedback
 // Yunho and Hari's Loadforecaster and Falling behind sensor
-    TheSensor sensor;		
+   TheSensor sensor;		
    InterAgentOperatingMode[] psu_fb;
    InterAgentOperatingMode[] psu_lf3;
    int[] prev_state;

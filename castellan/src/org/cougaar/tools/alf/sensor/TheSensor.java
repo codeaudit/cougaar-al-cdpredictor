@@ -214,8 +214,8 @@ public class TheSensor {
 	  // TRANSPORT
         agent[129]="TheaterGround";
         agent[130]="GlobalSea";
-	  agent[131]="CONUSGround";
-	  agent[132]="TRANSCOM";
+	    agent[131]="CONUSGround";
+	    agent[132]="TRANSCOM";
 
 	  UIDService us=(UIDService) sensorplugin.getUIDService();
 
@@ -460,13 +460,7 @@ public class TheSensor {
 					// for load forecasting
 //					System.out.println(tpdu.getSource()+","+s);
 					info tinfo = (info) TallyTableMap.get(tpdu.getSource());
-<<<<<<< TheSensor.java
-					if (tinfo==null) return;
 
-//					System.out.println(tpdu.getSource()+","+s);
-
-					String t = tpdu.getDirectObject();
-=======
 					if (tinfo==null) return;
 
 					System.out.println(tpdu.getSource()+","+s);
@@ -483,17 +477,11 @@ public class TheSensor {
 							forecast(tpdu.getSource(),(tinfo.StartTime - starttime),t);
 						}
 					}
->>>>>>> 1.4
 
 					if (tinfo.StartTime == 0 )
 					{
 						if (tpdu.getAction() == 0 && tpdu.getDirectObject() != null)
 						{
-<<<<<<< TheSensor.java
-							tinfo.StartTime = tpdu.getTime();
-						//	printout("\nA: " + tpdu.getSource() + "'s start time = " + ((float)(tinfo.StartTime - starttime)/1000), ForecastResult,true);
-						
-=======
 							tinfo.StartTime = tpdu.getTime();
 							System.out.println(tpdu.getSource()+","+s+","+t+"second" + tinfo.StartTime);
 /*		June 12, 2002							
@@ -501,8 +489,6 @@ public class TheSensor {
 							{
 								tinfo.StartTime = tpdu.getTime();
 								printout("\nA: "+ tpdu.getSource() + "'s start time = " + (tinfo.StartTime - starttime), ForecastResult,true);
->>>>>>> 1.4
-
 						}
 					}
 
@@ -566,7 +552,6 @@ public class TheSensor {
 
 	private void forecast(String agentname, long time, String t) {
 		
-<<<<<<< TheSensor.java
 		if (t.equalsIgnoreCase("5") == true) {
 
 			if (agentname.equalsIgnoreCase("1-27-FABN") == true)
@@ -594,13 +579,7 @@ public class TheSensor {
 				psu_lf3[116].setValue(new Double(2.3243*time-1.0));				
 				sensorplugin.publishChange(psu_lf3[116]);
 				printout("F, class "+ t+ ", 592-ORDCO, start time =," + (2.3243*time-1.0),ForecastResult,true);
-=======
-		if (t.equalsIgnoreCase("1") == true) {
-			if (agentname.equalsIgnoreCase("123-MSB") == true)
-			{
->>>>>>> 1.4
 
-<<<<<<< TheSensor.java
 				hari = 1;
 			}
 			else if (agentname.equalsIgnoreCase("1-35-ARBN") == true && hari == 0)
@@ -614,39 +593,10 @@ public class TheSensor {
 				psu_lf3[116].setValue(new Double(2.3243*time-1.0));				
 				sensorplugin.publishChange(psu_lf3[116]);
 				printout("F, class "+ t+ ", 592-ORDCO, start time =," + (2.3243*time-1.0),ForecastResult,true);
-=======
-				printout("F, class "+ t+ ", " + "DLAHQ, start time =, " + (1.2431*time + 30.57),ForecastResult,true);
-				printout("F, class "+ t+ ", " + "227-SupplyCo, start time =, " + (1.1597*time + 19.378),ForecastResult,true);
-				printout("F, class "+ t+ ", " + "343-SupplyCo, start time =, " + (1.2205*time + 23.153),ForecastResult,true);
->>>>>>> 1.4
 
-<<<<<<< TheSensor.java
 				hari = 1;
 			}
 		}
-=======
-			} 
-			else if (agentname.equalsIgnoreCase("47-FSB") == true)
-			{
->>>>>>> 1.4
-
-<<<<<<< TheSensor.java
-=======
-				printout("F, class "+ t+ ", " + "227-SupplyCo, start time =, " + (26.676*Math.pow((double) time, 0.6217)),ForecastResult,true);
-				printout("F, class "+ t+ ", " + "343-SupplyCo, start time =, " + (27.895*Math.pow((double) time, 0.6237)),ForecastResult,true);
-				printout("F, class "+ t+ ", " + "DLAHQ, start time =, " + (29.447*Math.pow((double) time, 0.6188)),ForecastResult,true);
-				printout("F, class "+ t+ ", " + "123-MSB, start time =, " + (26.65*Math.pow((double) time, 0.5852)),ForecastResult,true);
->>>>>>> 1.4
-
-<<<<<<< TheSensor.java
-=======
-			} 
-			else if (agentname.equalsIgnoreCase("1-35-ARBN") == true || agentname.equalsIgnoreCase("1-6-INFBN") == true )
-			{
-				printout("F, class "+ t+ ", " + "47-FSB, start time =, " + (4.6449*time + 17.341),ForecastResult,true);
-			} 
-		}
->>>>>>> 1.4
 	}
 	
 	private void printout(String s, java.io.BufferedWriter bw, boolean flag ){

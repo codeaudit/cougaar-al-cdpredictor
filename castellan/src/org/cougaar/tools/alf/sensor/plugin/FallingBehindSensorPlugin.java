@@ -111,7 +111,6 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
 
         // Create a falling behind sensor.
         fbsensor = new FallingBehindSensor() ;
-<<<<<<< FallingBehindSensorPlugin.java
 	  int n=fbsensor.clusters;
 	  ServiceBroker sb=getServiceBroker();
 	  UIDService us=(UIDService) sb.getService(this, UIDService.class, null);
@@ -125,21 +124,6 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
 		psu_fb[i].setUID(us.nextUID());
 		bs.publishAdd(psu_fb[i]);
 	  }
-=======
-	  int n=fbsensor.clusters;
-	  ServiceBroker sb=getServiceBroker();
-	  UIDService us=(UIDService) sb.getService(this, UIDService.class, null);
-	  psu_fb = new InterAgentOperatingMode[n];
-        int[] result =new int[2];
-        result[0]=0; result[1]=1;
-	  int i;
-	  for (i=0; i<=n-1; i++) {
-		psu_fb[i]= new InterAgentOperatingMode("PSU_Sensor_1", new OMCRangeList(result),new Integer(0));
-		psu_fb[i].setTarget(new ClusterIdentifier(fbsensor.cluster[i]));
-		psu_fb[i].setUID(us.nextUID());
-		bs.publishAdd(psu_fb[i]);
-	  }
->>>>>>> 1.3
         AlarmService as = getAlarmService() ;
         as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
 	  status= new int[n];
@@ -184,7 +168,6 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
                     }
                     // Update sensor status after PDUs in buffer are all added.
                     fbsensor.update();
-<<<<<<< FallingBehindSensorPlugin.java
 			  for (i=0; i<=fbsensor.clusters-1; i++) {
 				if (status[i]!=fbsensor.state[i]) {
 				    status[i]=fbsensor.state[i]; 
@@ -192,15 +175,6 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
 				    bs.publishChange(psu_fb[i]);
 				}
 			  }
-=======
-			  for (i=0; i<=fbsensor.clusters-1; i++) {
-				if (status[i]!=fbsensor.state[i]) {
-				    status[i]=fbsensor.state[i]; 
-				    psu_fb[i].setValue(new Integer(status[i]));
-				    bs.publishChange(psu_fb[i]);
-				}
-			  }
->>>>>>> 1.3
                 }
                 buffer.clearIncoming();
             }
