@@ -159,6 +159,9 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
     };
 
     public void setupSubscriptions() {
+        //DEBUG
+        System.out.println("PlanLogPlugin::Setting up subscriptions...");
+
         config= getConfigInfo() ;
         log = ( LoggingService ) getServiceBroker().getService( this, LoggingService.class, null ) ;
 
