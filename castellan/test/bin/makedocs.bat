@@ -27,8 +27,5 @@ set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/util/*.
 set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/planlog/*.java 
 set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/plugin/*.java 
 set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/pspace/search/*.java
-set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/alf/*.java
 echo on
-javac -classpath %LIBPATHS% -d %TMPDIR% %SOURCEFILES%
-REM copy %CASTELLANROOT%\data\defs\*.xml %TMPDIR%\org\dbinterface\defs
-jar cf %COUGAARPATH%\lib\castellan.jar -C %TMPDIR% org
+javadoc -classpath %LIBPATHS% -d %CASTELLANROOT%\doc\api %SOURCEFILES%
