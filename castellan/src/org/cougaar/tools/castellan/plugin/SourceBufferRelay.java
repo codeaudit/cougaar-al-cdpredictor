@@ -58,6 +58,7 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
     }
 
     public Object getContent() {
+        System.out.println("SourceBufferRelay::getContent() called on " + this );
         Object[] c = outgoing.toArray() ;
         outgoing.clear();
         return c ;
@@ -71,10 +72,16 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
         return SimpleRelayFactory.INSTANCE;
     }
 
+    static final Object[] nullArray = new Object[0] ;
+
     /**
      * Get responses.
      */
     public synchronized Object[] clearReponses() {
+        if ( responses.size() == 0 ) {
+            return nullArray ;
+        }
+
         Object[] result = new Object[responses.size()];
         for (int i = 0 ; i < responses.size() ; i++) {
             result[i] = responses.get(i);

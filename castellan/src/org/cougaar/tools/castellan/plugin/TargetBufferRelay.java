@@ -97,6 +97,7 @@ public class TargetBufferRelay implements Relay.Target, java.io.Serializable {
     }
 
     public int updateContent(Object o, Relay.Token token) {
+        System.out.println("updateContent() called on " + this);
         addIncoming( ( Object[] ) o );
         return Relay.CONTENT_CHANGE ;
     }
