@@ -95,8 +95,8 @@ public class ServerPlugin extends ComponentPlugin implements PDUSink {
         impl.setPDUSink( this );
 
         findOrCreateBuffer() ;
-        flushThread = new FlushThread() ;
-        flushThread.start();
+        //flushThread = new FlushThread() ;
+        //flushThread.start();
     }
 
     public void unload () {
