@@ -41,7 +41,7 @@ import java.util.*;
 public class AgentLoadObserver {
     public AgentLoadObserver(PlanLogDatabase pld, SocietyDesc society ) {
         if ( pld == null || society == null ) {
-            throw new IllegalArgumentException( "Null arguement passed." ) ;
+            throw new IllegalArgumentException( "Null argument passed." ) ;
         }
         this.pld = pld;
         this.society = society ;
@@ -300,16 +300,16 @@ public class AgentLoadObserver {
 
             if ( o instanceof MPTaskLog ) {
                  // MPTaskLogs are not
-                 System.out.println("\nSKIPPING MTTaskLog " + o );
+                 //System.out.println("\nSKIPPING MTTaskLog " + o );
                  continue ;
             }
 
             BoundaryTaskLog tl = ( BoundaryTaskLog ) o ;
 
-            System.out.println(" \nPROCESSING " + tl );
+            //System.out.println(" \nPROCESSING " + tl );
             int btype = getBoundaryType( tl ) ;
             tl.setBoundaryType( btype ) ;
-            System.out.println( "\tBYTPE is " + BoundaryConstants.toParamString( btype ) );
+            //System.out.println( "\tBYTPE is " + BoundaryConstants.toParamString( btype ) );
 
             /**
              * I am incoming and terminal; just hook me to my parent.
@@ -350,28 +350,28 @@ public class AgentLoadObserver {
                 // Mark this as an incoming and source.
                 incomingAndSource.add( tl ) ;
 
-                System.out.println("\tFinding descendents:");
+                //System.out.println("\tFinding descendents:");
                 outgoing.clear(); internal.clear(); unknown.clear(); terminal.clear() ;
                 findLeafDescendants( tl, terminal, outgoing, internal, unknown );
                 // Fill in descendents
-                System.out.println("\t\tOUTGOING " ) ;
+                //System.out.println("\t\tOUTGOING " ) ;
                 for (int i=0;i<outgoing.size();i++) {
-                    System.out.println( "\t\t" + outgoing.get(i) );
+                    //System.out.println( "\t\t" + outgoing.get(i) );
                     BoundaryLog otl = ( BoundaryLog ) outgoing.get(i) ;
                     tl.addOutgoingDescendent( ( TaskLog ) otl );
                     otl.addIncomingAncestor( tl ) ;
                 }
-                System.out.println("\t\tTERMINAL \n" ) ;
+                //System.out.println("\t\tTERMINAL \n" ) ;
                 for (int i=0;i<terminal.size();i++) {
                     BoundaryLog ttl = ( BoundaryLog ) terminal.get(i) ;
-                    System.out.println( "\t\t" + terminal.get(i) );
+                    //System.out.println( "\t\t" + terminal.get(i) );
                     tl.addOutgoingDescendent( ( TaskLog ) ttl );
                     ttl.addIncomingAncestor( tl ) ;
                 }
                 // Fill in unknown (internal descendents that terminate with no plan element.)
-                System.out.println("\t\tUNKNOWN \n");
+                //System.out.println("\t\tUNKNOWN \n");
                 for (int i=0;i<unknown.size();i++) {
-                    System.out.println("\t\t" +unknown.get(i) );
+                    //System.out.println("\t\t" +unknown.get(i) );
                     tl.addUnknownOrIncomplete( ( TaskLog ) unknown.get(i) );
                 }
 
