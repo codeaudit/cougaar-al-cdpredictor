@@ -28,7 +28,9 @@ import org.cougaar.core.util.UID;
 import org.cougaar.tools.castellan.pdu.* ;
 import org.cougaar.tools.castellan.util.* ;
 import org.cougaar.core.plugin.ComponentPlugin;
+
 import org.cougaar.tools.alf.sensor.plugin.*;
+// import org.cougaar.tools.alf.sensor.TheLoadForecaster;
 
 import org.cougaar.core.adaptivity.InterAgentOperatingMode;
 import org.cougaar.core.agent.ClusterIdentifier;
@@ -44,6 +46,7 @@ import java.lang.Float;
 import java.lang.Double;
 import java.lang.Integer;
 import java.lang.String;
+import java.lang.Math;
 import java.io.File;
 
 /**
@@ -52,13 +55,14 @@ import java.io.File;
  * @version
  */
 
-public class TheSensor {
+public class TheSensor implements java.io.Serializable {
 
 
-	private long starttime = -1L; // The time when the first GetLogSupport arrives.
-	private HashMap TallyTableMap, Fbthreshold;
-	private java.io.BufferedWriter ForecastResult, FallingBehind ;
-	private int hari;	
+	private long starttime = -1L;	// The time when the first GetLogSupport arrives.
+	private HashMap TallyTableMap;  // Maintain the information of counting tasks
+	private java.io.BufferedWriter FallingBehind ; // Log file
+	private TheLoadForecaster loadforecaster;
+	private int Hongfbtype;
 
 	SensorPlugin sensorplugin;
 	InterAgentOperatingMode[] psu_lf3;
@@ -67,179 +71,16 @@ public class TheSensor {
 	public TheSensor(SensorPlugin plugin, String fbtype) {
 	  
 	  sensorplugin = plugin;
-
-	  int num_agent = 133;
-	  String [] agent = new String[num_agent];
-
-	  hari = 0;
-
-        // REAR-A NODE
-        agent[0]="NATO";
-        agent[1]="JSRCMDSE";
-        agent[2]="USEUCOM";
-        agent[3]="USAEUR";
-        agent[4]="5-CORPS";
-        agent[5]="HNS";
-        agent[6]="5-CORPS-REAR";
-        agent[7]="11-AVN-RGT";
-        agent[8]="12-AVNBDE";
-        agent[9]="130-ENGBDE";
-        agent[10]="244-ENGBN-CBTHVY";
-        agent[11]="52-ENGBN-CBTHVY";
-        agent[12]="18-MPBDE";
-        agent[13]="205-MIBDE";
-        agent[14]="22-SIGBDE";
-        agent[15]="30-MEDBDE";
-        agent[16]="69-ADABDE";
-        agent[17]="286-ADA-SCCO";
-        agent[18]="5-CORPS-ARTY";
-        agent[19]="41-FABDE";
-        agent[20]="1-27-FABN";
-        agent[21]="2-4-FABN-MLRS";
-        agent[22]="3-13-FABN-155";
-        // REAR-B NODE
-        agent[23]="3-SUPCOM-HQ";
-        agent[24]="19-MMC";
-        agent[25]="208-SCCO";
-        agent[26]="27-TCBN-MVTCTRL";
-        agent[27]="7-CSG";
-        agent[28]="316-POL-SUPPLYBN";
-        agent[29]="515-POL-TRKCO";
-        agent[30]="900-POL-SUPPLYCO";
-        agent[31]="71-MAINTBN";
-        agent[32]="240-SSCO";
-        agent[33]="317-MAINTCO";
-        agent[34]="565-RPRPTCO";
-        agent[35]="597-MAINTCO";
-        agent[36]="71-ORDCO";
-        // REAR-C NODE
-        agent[37]="125-ORDBN";
-        agent[38]="452-ORDCO";
-        agent[39]="529-ORDCO";
-        agent[40]="181-TCBN";
-        agent[41]="377-HVY-TRKCO";
-        agent[42]="41-POL-TRKCO";
-        agent[43]="51-MDM-TRKCO";
-        agent[44]="561-SSBN";
-        agent[45]="541-POL-TRKCO";
-        agent[46]="584-MAINTCO";
-        // REAR-D NODE
-        agent[47]="21-TSC-HQ";
-        agent[48]="200-MMC";
-        agent[49]="7-TCGP-TPTDD";
-        agent[50]="AWR-2";
-        agent[51]="RSA";
-        agent[52]="37-TRANSGP";
-        agent[53]="28-TCBN";
-        agent[54]="109-MDM-TRKCO";
-        agent[55]="66-MDM-TRKCO";
-        agent[56]="68-MDM-TRKCO";
-        agent[57]="6-TCBN";
-        agent[58]="110-POL-SUPPLYCO";
-        agent[59]="416-POL-TRKCO";
-        agent[60]="632-MAINTCO";
-        // REAR E NODE
-        agent[61]="29-SPTGP";
-        agent[62]="191-ORDBN";
-        agent[63]="23-ORDCO";
-        agent[64]="24-ORDCO";
-        agent[65]="702-EODDET";
-        agent[66]="720-EODDET";
-        agent[67]="51-MAINTBN";
-        agent[68]="18-PERISH-SUBPLT";
-        agent[69]="343-SUPPLYCO";
-        agent[70]="5-MAINTCO";
-        agent[71]="512-MAINTCO";
-        agent[72]="574-SSCO";
-        // FWD-A NODE
-        agent[73]="1-AD";
-        agent[74]="1-AD-DIV";
-        agent[75]="1-4-ADABN";
-        agent[76]="141-SIGBN";
-        agent[77]="501-MIBN-CEWI";
-        agent[78]="501-MPCO";
-        agent[79]="69-CHEMCO";
-        agent[80]="DIVARTY-1-AD";
-        agent[81]="1-94-FABN";
-        agent[82]="25-FABTRY-TGTACQ";
-        agent[83]="DISCOM-1-AD";
-        agent[84]="123-MSB";
-        // FWD-B NODE
-        agent[85]="1-BDE-1-AD";
-        agent[86]="1-36-INFBN";
-        agent[87]="1-37-ARBN";
-        agent[88]="16-ENGBN";
-        agent[89]="2-3-FABN";
-        agent[90]="2-37-ARBN";
-        agent[91]="501-FSB";
-        // FWD-C NODE
-        agent[92]="2-BDE-1-AD";
-        agent[93]="1-35-ARBN";
-        agent[94]="1-6-INFBN";
-        agent[95]="2-6-INFBN";
-        agent[96]="4-27-FABN";
-        agent[97]="40-ENGBN";
-        agent[98]="47-FSB";
-        //  FWD-D NODE
-        agent[99]="3-BDE-1-AD";
-        agent[100]="1-13-ARBN";
-        agent[101]="1-41-INFBN";
-        agent[102]="125-FSB";
-        agent[103]="2-70-ARBN";
-        agent[104]="4-1-FABN";
-        agent[105]="70-ENGBN";
-        // FWD-E NODE
-        agent[106]="AVNBDE-1-AD";
-        agent[107]="1-1-CAVSQDN";
-        agent[108]="1-501-AVNBN";
-        agent[109]="127-DASB";
-        agent[110]="2-501-AVNBN";
-        // FWD-F NODE
-        agent[111]="16-CSG";
-        agent[112]="485-CSB";
-        agent[113]="102-POL-SUPPLYCO";
-        agent[114]="26-SSCO";
-        agent[115]="588-MAINTCO";
-        agent[116]="592-ORDCO";
-        agent[117]="596-MAINTCO";
-        agent[118]="18-MAINTBN";
-        agent[119]="226-MAINTCO";
-        agent[120]="227-SUPPLYCO";
-        agent[121]="263-FLDSVC-CO";
-        agent[122]="77-MAINTCO";
-        agent[123]="106-TCBN";
-        agent[124]="15-PLS-TRKCO";
-        agent[125]="238-POL-TRKCO";
-        agent[126]="372-CGO-TRANSCO";
-        agent[127]="594-MDM-TRKCO";
-        agent[128]="DLAHQ";
-
-	  // TRANSPORT
-        agent[129]="TheaterGround";
-        agent[130]="GlobalSea";
-		agent[131]="CONUSGround";
-		agent[132]="TRANSCOM";
-
-	  UIDService us=(UIDService) sensorplugin.getUIDService();
-
-	  psu_lf3 = new InterAgentOperatingMode[agent.length];
-	  
-  	  for (int i=0; i<agent.length; i++) {
-
-		psu_lf3[i]= new InterAgentOperatingMode("PSU_Loadforecaster_Class3", new OMCRangeList(new Double(0),new Double(Double.MAX_VALUE)),new Double(0));
-		psu_lf3[i].setTarget(new ClusterIdentifier(agent[i]));
-		psu_lf3[i].setUID(us.nextUID());
-		sensorplugin.publishAdd(psu_lf3[i]);
-	  }
+	  Hongfbtype = 2;
+	  loadforecaster = new TheLoadForecaster(plugin);
 
 	  try
 	  {
-			ForecastResult = new java.io.BufferedWriter ( new java.io.FileWriter("forecating.txt", true ));
-			FallingBehind = new java.io.BufferedWriter ( new java.io.FileWriter("fallingbheind.txt", true ));
+      	 FallingBehind = new java.io.BufferedWriter ( new java.io.FileWriter("fallingbheind.txt", true ));
 	  } 
 	  catch (java.io.IOException ioexc)
 	  {
-		    System.err.println ("can't write file, io error" );
+		 System.err.println ("can't write file, io error" );
 	  }
 
 	  // Table for checking number of tasks by agents
@@ -288,9 +129,11 @@ public class TheSensor {
 	private void read_lookupTable(java.io.BufferedReader input_stream) {
 
 		String current_agent = null;
-		Vector LookupTable = null;
+		Hashtable LookupTable = null;
 		String s = null;
-		int From = 0 , To = 0, Threshold = 0;
+		Long From; 
+		int FbLevel = 0;
+		float LLThreshold = 0, ULThreshold = 0;
 		int lt = 0; 
 		int st = 0;
 
@@ -311,13 +154,13 @@ public class TheSensor {
 
 					if (current_agent != null)
 					{
-						TallyTableMap.put(current_agent, new info(current_agent, 1000, Integer.MAX_VALUE , LookupTable));
+						TallyTableMap.put(current_agent, new TheFallingBehindSensor2(current_agent, 1000, Integer.MAX_VALUE , LookupTable, sensorplugin));
 					}
 					
 					st = ix+1;
 					current_agent = s.substring(st);
 					current_agent = current_agent.trim();
-					LookupTable	= new Vector();
+					LookupTable	= new Hashtable();
 
 					// debug
 					System.out.println("agent : " + current_agent);
@@ -325,28 +168,38 @@ public class TheSensor {
 					continue;
 				}
 
-				// from		
-				From = (Integer.valueOf(temp_string.trim())).intValue();
+				// from	 (specific time)
+				From = new Long(temp_string.trim());
 
-				// to
+				// Level
 				is = ix + 1;
 				ix = s.indexOf(" ",is);	
-				To = (Integer.valueOf(s.substring(is,ix).trim())).intValue();
+				FbLevel = (Integer.valueOf(s.substring(is,ix).trim())).intValue();
 
-				// threshold value
+				// Lower limit threshold value
+				is = ix + 1;
+				ix = s.indexOf(" ",is);	
+				LLThreshold = (Float.valueOf(s.substring(is,ix).trim())).floatValue();
+
+				// Upper limit threshold value
 				st = ix+1;
-				Threshold = (Integer.valueOf(s.substring(st).trim())).intValue();
+				ULThreshold = (Float.valueOf(s.substring(st).trim())).floatValue();
 				
 				// debug
-				System.out.println("lookup: " + From + ", " + To + ", " + Threshold);
-
-				LookupTable.add(new ConditionByNo(    From, To, Threshold, 0));  // Last part represents level of falling behindness. 
-																				 // Here, I just set one level of falling behindness. 
-																				 // In the future, if we specify more levels, then it will have meaning. 
+				System.out.println("lookup: " + From + ", " + FbLevel + ", " + LLThreshold + ", " + ULThreshold);
+				Vector ThresholdList = null;
+				if ((ThresholdList = (Vector) LookupTable.get(From)) == null)
+				{
+					ThresholdList = new Vector();
+				}
+				ThresholdList.add(new ConditionByNo( FbLevel, LLThreshold, ULThreshold, 0));
+				LookupTable.put(From,ThresholdList);  // Last part represents level of falling behindness. 
+													  // Here, I just set one level of falling behindness. 
+													  // In the future, if we specify more levels, then it will have meaning. 
 
 			}
 
-			TallyTableMap.put(current_agent, new info(current_agent, 1000, Integer.MAX_VALUE , LookupTable));
+			TallyTableMap.put(current_agent, new TheFallingBehindSensor2(current_agent, 1000, Integer.MAX_VALUE , LookupTable, sensorplugin));
 
 		} 
 		catch (java.io.IOException ioexc)
@@ -558,8 +411,8 @@ public class TheSensor {
 					if (pdu.getTaskVerb().toString().compareToIgnoreCase("GetLogSupport") == 0)
 					{
 						starttime = pdu.getTime();
-						printout("\n GetLogSupport time = " + starttime,ForecastResult,true);
-						printout("The task is " + pdu.toString(),ForecastResult,true);
+						loadforecaster.printout("\n GetLogSupport time = " + starttime,true);
+						loadforecaster.printout("The task is " + pdu.toString(),true);
 					}
 				}
 
@@ -571,16 +424,15 @@ public class TheSensor {
 
 					String s = tpdu.getTaskVerb().toString();
 
-					if (tpdu.getAction() != 0 || s.compareToIgnoreCase("Ready")== 0|| s.compareToIgnoreCase("Finish")== 0||  // if this pdu is not an add event.
+					if (s.compareToIgnoreCase("Ready")== 0|| s.compareToIgnoreCase("Finish")== 0||  // if this pdu is not an add event.
 						s.compareToIgnoreCase("Sample")== 0|| s.compareToIgnoreCase("GetLogSupport")== 0|| s.compareToIgnoreCase("ReportForDuty")== 0||
 						s.compareToIgnoreCase("ReportForService")== 0|| s.compareToIgnoreCase("Start")== 0)
 					{
 						return;
 					}
 
-					// for load forecasting
 //					System.out.println(tpdu.getSource()+","+s);
-					info tinfo = (info) TallyTableMap.get(tpdu.getSource());
+					TheFallingBehindSensor2 tinfo = (TheFallingBehindSensor2) TallyTableMap.get(tpdu.getSource());
 					if (tinfo==null) return;
 
 //					System.out.println(tpdu.getSource()+","+s);
@@ -593,11 +445,10 @@ public class TheSensor {
 						{
 							tinfo.StartTime = tpdu.getTime();
 						//	printout("\nA: " + tpdu.getSource() + "'s start time = " + ((float)(tinfo.StartTime - starttime)/1000), ForecastResult,true);
-						
-
 						}
 					}
 
+					// Load forecasting
 					if (t!=null) {
 						if (t.equalsIgnoreCase("5") == true) {
 
@@ -606,106 +457,51 @@ public class TheSensor {
 							if (((Long)(tinfo.stime).get(t)).intValue() == 0) {
 //								System.out.println(tpdu.getSource()+","+s+","+t+"second");
 								tinfo.stime.put(t, new Long(tpdu.getTime()));
-								printout("\nA: class "+ t+ ", " + tpdu.getSource() + "'s start time = " + ((float)(tpdu.getTime() - starttime)/1000), ForecastResult,true);
-								forecast(tpdu.getSource(),(tpdu.getTime() - starttime)/1000,t);
+								loadforecaster.printout("\nA: class "+ t+ ", " + tpdu.getSource() + "'s start time = " + ((float)(tpdu.getTime() - starttime)/1000),true);
+								loadforecaster.forecast(tpdu.getSource(),(tpdu.getTime() - starttime)/1000,t);
 							}
 						}
 					}
 
 					if (tinfo.StartTime > 0 )
 					{
-
 						// check waiting time
 						if (tpdu.getAction() == 0)
 						{
-							tinfo.add(tpdu);
-						} else if (tpdu.getAction() == 1) {
-//							tinfo.getAverageWaitingTime((UIDStringPDU) tpdu.getUID(), tpdu.getTime(), tpdu.getSource());
-	          				}
+							tinfo.add(tpdu,starttime);
+						} else if (tpdu.getAction() == 1 && Hongfbtype == 1) { // for type 1, considering the case in which a task is cancelled before allocation
+							tinfo.getAverageWaitingTime((UIDStringPDU) tpdu.getUID(), tpdu.getTime());
+          				}
 					}
-					
 				}
-/* 
-				  else if (p instanceof ExpansionPDU)	{
+  			    else if (p instanceof ExpansionPDU && Hongfbtype == 1)	{
 					ExpansionPDU ppdu = (ExpansionPDU) p;
 					if (ppdu.getAction() != 0 )	{
 						return;
 					}
-					info tinfo = (info) TallyTableMap.get(ppdu.getSource());
+					TheFallingBehindSensor2 tinfo = (TheFallingBehindSensor2) TallyTableMap.get(ppdu.getSource());
 					if (tinfo==null) return;
-					tinfo.getAverageWaitingTime((UIDStringPDU) ppdu.getParentTask(), ppdu.getTime(), ppdu.getSource() );
-				} else if (p instanceof AggregationPDU)	{
+					tinfo.getAverageWaitingTime((UIDStringPDU) ppdu.getParentTask(), ppdu.getTime());
+				} else if (p instanceof AggregationPDU && Hongfbtype == 1)	{
 					AggregationPDU ppdu = (AggregationPDU) p;
 					if (ppdu.getAction() != 0 )	{
 						return;
 					}
-					info tinfo = (info) TallyTableMap.get(ppdu.getSource());
+					TheFallingBehindSensor2 tinfo = (TheFallingBehindSensor2) TallyTableMap.get(ppdu.getSource());
 					if (tinfo==null) return;
-					tinfo.getAverageWaitingTime((UIDStringPDU) ppdu.getTask(), ppdu.getTime(), ppdu.getSource() );
-				} else if (p instanceof AllocationPDU)	{
+					tinfo.getAverageWaitingTime((UIDStringPDU) ppdu.getTask(), ppdu.getTime());
+				} else if (p instanceof AllocationPDU && Hongfbtype == 1)	{
 					AllocationPDU ppdu = (AllocationPDU) p;
 					if (ppdu.getAction() != 0 )	{
 						return;
 					}
-					info tinfo = (info) TallyTableMap.get(ppdu.getSource());
+					TheFallingBehindSensor2 tinfo = (TheFallingBehindSensor2) TallyTableMap.get(ppdu.getSource());
 					if (tinfo==null) return;
-					tinfo.getAverageWaitingTime((UIDStringPDU) ppdu.getTask(), ppdu.getTime(), ppdu.getSource() );
+					tinfo.getAverageWaitingTime((UIDStringPDU) ppdu.getTask(), ppdu.getTime());
 				} 
-*/
 		 	}
     }
 
-	private void forecast(String agentname, long time, String t) {
-		
-		if (t.equalsIgnoreCase("5") == true) {
-
-			if (agentname.equalsIgnoreCase("1-27-FABN") == true)
-			{
-
-				// 125-ORDBN
-				psu_lf3[37].setValue(new Double(1.009*time + 2.8363));				
-				sensorplugin.publishChange(psu_lf3[37]);
-				printout("F, class "+ t+ ", 125-ORDBN, start time =," + (1.009*time + 2.8363),ForecastResult,true);
-
-				// 191-ORDBN
-				psu_lf3[62].setValue(new Double(1.038*time + 3.0388));				
-				sensorplugin.publishChange(psu_lf3[62]);
-				printout("F, class "+ t+ ", 191-ORDBN, start time =," + (1.038*time + 3.0388),ForecastResult,true);
-
-			} 
-			else if (agentname.equalsIgnoreCase("1-6-INFBN") == true && hari == 0)
-			{
-				// 123-MSB
-				psu_lf3[84].setValue(new Double(1.6968*time + 2.4398));				
-				sensorplugin.publishChange(psu_lf3[84]);
-				printout("F, class "+ t+ ", 123-MSB, start time =," + (1.6968*time + 2.4398),ForecastResult,true);
-
-				// 592-ORDCO
-				psu_lf3[116].setValue(new Double(2.3243*time-1.0));				
-				sensorplugin.publishChange(psu_lf3[116]);
-				printout("F, class "+ t+ ", 592-ORDCO, start time =," + (2.3243*time-1.0),ForecastResult,true);
-
-				hari = 1;
-			}
-			else if (agentname.equalsIgnoreCase("1-35-ARBN") == true && hari == 0)
-			{
-				// 123-MSB
-				psu_lf3[84].setValue(new Double(1.6968*time + 2.4398));				
-				sensorplugin.publishChange(psu_lf3[84]);
-				printout("F, class "+ t+ ", 123-MSB, start time =," + (1.6968*time + 2.4398),ForecastResult,true);
-
-				// 592-ORDCO
-				psu_lf3[116].setValue(new Double(2.3243*time-1.0));				
-				sensorplugin.publishChange(psu_lf3[116]);
-				printout("F, class "+ t+ ", 592-ORDCO, start time =," + (2.3243*time-1.0),ForecastResult,true);
-
-				hari = 1;
-			}
-		}
-
-
-	}
-	
 	private void printout(String s, java.io.BufferedWriter bw, boolean flag ){
 
 		try
@@ -724,7 +520,10 @@ public class TheSensor {
 		}
 	}
 
-	class info 
+
+	//////////////////////////////////////////////////////////////////////////////////////////////
+
+	class TheFallingBehindSensor2 
 	{
 		/*
 		 *	src : Agent name
@@ -733,9 +532,10 @@ public class TheSensor {
 		 *	lookuptable : lookuptable
 		 */
 
-		public info(String src, long ut, long timelimit1, Vector lookuptable) { 
+		public TheFallingBehindSensor2(String src, long ut, long timelimit1, Hashtable lookuptable, SensorPlugin sensorplugin1) { 
 
-			hari = 0;
+			nextcheckpoint = 0;
+			previoustime = 0;
 			StartTime = 0;
 			CurrentTime = 0;
 			unittime = ut;  // 1 sec
@@ -747,9 +547,9 @@ public class TheSensor {
 			currentstate = 0;
 			timelimit = timelimit1;
 			lookup = lookuptable;
-	
-			if (lookuptable == null) {	over=true;	}
-			
+			over = false;
+			sensorplugin = sensorplugin1;
+
 			stime = new Hashtable();
 
 			stime.put("1",new Long("0"));
@@ -759,132 +559,90 @@ public class TheSensor {
 			stime.put("5",new Long("0"));
 			stime.put("9",new Long("0"));
 			stime.put("10",new Long("0"));
-	
+
+			if (lookuptable == null) {	over=true;	}
+			
 			// preparing for falling behind result
-		    double [] fbresult =new double[2];
+		    double [] fbresult =new double[3];
 		    fbresult[0]=0; // normal
  	  	    fbresult[1]=1; // mild falling behind
+ 	  	    fbresult[2]=2; // mild falling behind
 
-		    UIDService us=(UIDService) sensorplugin.getUIDService();
+//		    UIDService us=(UIDService) getUIDService();
 			psu_fb = new InterAgentOperatingMode("FallingBehind", new OMCRangeList(fbresult),new Double(0));
-			psu_fb.setTarget(new ClusterIdentifier(source));
-			psu_fb.setUID(us.nextUID());
 			sensorplugin.publishAdd(psu_fb);
 
 		}
 
-		public void add(TaskPDU tpdu) {
+		public void add(TaskPDU tpdu, long starttime) {
 
-			if (over)
-			{
-				return;
-			}
+			if (over) {	return;	}
 
 //			TaskList.put(((UIDStringPDU)tpdu.getUID()).toString(),new taskinfo(tpdu.getTime()-StartTime));
 			NoTasks++;
-			if(NoTasks%100 == 0) {
-				checkfallingbehindness2(tpdu.getTime()-starttime, NoTasks);
+
+//			in TIC
+//			if(NoTasks%100 == 0) {	
+//				checkfallingbehindness2(tpdu.getTime()-starttime, NoTasks);	// Type 2
+//			}
+
+			long t = tpdu.getTime()-starttime;
+
+			if (t >= nextcheckpoint)
+			{
+				System.out.println(source + ", " + t + ", " + NoTasks);
+				nextcheckpoint = t - t%1000;
+				checkfallingbehindness2(nextcheckpoint, NoTasks);	// Type 2
+				nextcheckpoint = nextcheckpoint + 1000;
 			}
+//			previoustime = t;
 		}
 
 		public void checkfallingbehindness2(long curr_time, int num_task) { // for the number of tasks
 
-			int []c = { -1, -1 };
 			boolean FbSV = false;
+			int newlydetectedstate = currentstate;
 
 			if (FbSV == true) // check whether SV check falling behindness.
 			{
-/*				
-				if (askSVMaboutFallingbehindness(curr_time, num_task))
-				{
-					c[0] = 1;
-				}
-*/
+
+			
 			} else {
 
-				// Lookup table
-				for (Enumeration e = lookup.elements() ; e.hasMoreElements() ;) {
-					 ConditionByNo k = (ConditionByNo) e.nextElement();
-					 if (k.check(num_task, curr_time))
-					 {
-						c[k.type] = 1;
-					 } 
-				}
-			}
-			
-			if (c[0] <= 0 && currentstate > 0) {
-				// PublishChange falling behindness
-				psu_fb.setValue(new Double(0));
-				sensorplugin.publishChange(psu_fb);
-				printout(source+","+num_task+","+curr_time+", not Falling behind",FallingBehind, true);
-				currentstate = 0;
-			}
+				// Consult Lookup table
 
-			if (c[0] > 0  && c[1] < 0 && currentstate < 1) {
-				// PublishChange falling behindness
-				psu_fb.setValue(new Double(1));
-				sensorplugin.publishChange(psu_fb);
+//				long neartime = 1000*Math.round(curr_time/1000);
 
-				printout(source+","+num_task+","+curr_time+", Falling behind",FallingBehind, true);
-				currentstate = 1;
-			} 
+				Vector thresholdlist = (Vector) lookup.get(new Long(curr_time));
 
-		}
-
-/*
-	This part is for the SVM classifier. In the future, I will finish this part.
-*/
-/*		
-		private boolean askSVMaboutFallingbehindness(long curr_time, int num_task) {
-
-			double result = b;
-			double [] x = new double[2];
-			boolean fallingbehind = false;  // Normal + value
-
-			x[0] = curr_time;
-			x[1] = num_task;
-
-			for (int i=0;i<number;i++ )
-			{
-				result = result + lamda[i]*y[i]*calculateKernel(x,X[i]);
-			}
-		
-			if (result < 0) // Falling behind - value
-			{
-				fallingbehind = true;
-			}
-
-			return fallingbehind;
-		}
-
-		private double calculateKernel(double [] x, double [] y) {
-
-			double result = 0;
-
-			if (type.compareToIgnoreCase("radial")==0)	{ //  k(x,y) = exp(-r|x-y|^2)
-				
-				for (int i=0;i<dimension;i++)
+				if (thresholdlist != null)
 				{
-					result = result + math.pow((x[i] - y[i]),2);
+					for (Enumeration e = thresholdlist.elements() ; e.hasMoreElements() ;) {
+						 ConditionByNo k = (ConditionByNo) e.nextElement();
+						 if (k.check(num_task, curr_time))
+						 {
+							newlydetectedstate = k.getLevel();
+						 } 
+					}
+
+					if (newlydetectedstate != currentstate)
+					{
+//						 psu_fb.setValue(new Double(status)); 
+//			             sensorplugin.publishChange(psu_fb); 
+
+						currentstate = newlydetectedstate;
+						psu_fb.setValue(new Double(currentstate));
+						sensorplugin.publishChange(psu_fb);
+						printout(source+","+num_task+","+curr_time+", Falling behind: level "+ currentstate ,FallingBehind, true);
+					}
 				}
-
-				result = math.exp(-1*gamma*result);
-
-			} else if (type.compareToIgnoreCase("polynomial")==0)	{
-
-				for (int i=0;i<dimension;i++)
-				{
-					result = result + x[i]*y[i];
-				}
-
-				result = math.pow(result+1,degree);;
 			}
-
-			return result;
 		}
-*/
-		public void getAverageWaitingTime(UIDStringPDU uid, long time1, String source) {
 
+		public void getAverageWaitingTime(UIDStringPDU uid, long time1) {
+
+//			UIDStringPDU
+//			org.cougaar.core.util.UID uid = 
 			if (over) {	return;	}
 
 			long time = time1 - StartTime;
@@ -892,7 +650,7 @@ public class TheSensor {
 			// add cumulative finishtime
 			taskinfo tpdu = null;
 
-			if ((tpdu = (taskinfo) TaskList.get(uid.toString()))== null)
+			if ((tpdu = (taskinfo) TaskList.get(uid))== null)
 			{
 				return;
 			}
@@ -977,9 +735,9 @@ public class TheSensor {
 		public long CurrentTime;
 		public long unittime;
 		public long timelimit;
-		private Hashtable TaskList;	
 		public Hashtable stime; // Start time of each logistic item
-		private Vector lookup;	
+		private Hashtable TaskList;	
+		private Hashtable lookup;	
 		private int NoFinish;
 		private long CTFinish;  // Cumulative waiting time;
 		private float mildfb;
@@ -988,41 +746,39 @@ public class TheSensor {
 		private String source;
 		private int currentstate;
 		private boolean over;
-		private int hari;
 		private InterAgentOperatingMode psu_fb;
-
+		private long previoustime;
+		private long nextcheckpoint;
+		SensorPlugin sensorplugin;
 	};
-}
+	
 
 class ConditionByNo
 {
-	public ConditionByNo(int from1, int to1, long threshold1, int type1) {
-		from = from1;
-		to = to1;
-		threshold = threshold1;  // time;
+	public ConditionByNo(int FbLevel, float LLThreshold, float ULThreshold, int type1) {
+		level = FbLevel;
+		LowerLimit = LLThreshold;
+		Upperlimit = ULThreshold;  // time;
 		type = type1;
 	}
 
 	public boolean check(int num_task, long t) {
 
-		if (from < num_task && num_task <= to) {
+		if (LowerLimit < num_task && num_task <= Upperlimit) {
 
-			if (threshold < t) {
-				return true;
-			}
-		}
-/*
-		if (from < num_task && num_task <= to)
-		{
 			return true;
-		} 
-*/
+		}
+
 		return false;
 	}
 
-	int from;
-	int to;
-	public long threshold;
+	public int getLevel() {
+		return level;
+	}
+
+	int level;
+	float LowerLimit;
+	float Upperlimit;  // time;
 	public int type;
 
 };
@@ -1063,3 +819,5 @@ class taskinfo
 	public long finishtime;
 
 };
+}
+
