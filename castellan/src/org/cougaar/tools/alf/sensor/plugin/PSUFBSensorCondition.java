@@ -1,7 +1,5 @@
 /*
- *  This plugin is a falling behind sensor based on the imbalance 
- *  between the performances of task arrival and task allocation.
- *  This sensor deals with ProjectSupply/Supply tasks and allocation to inventory assets.
+ *  This class is extended from SensorCondition class for PSUFBSensor1Plugin
  */
 
 
