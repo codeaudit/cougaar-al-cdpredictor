@@ -170,14 +170,16 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 		taskSubscription		 	= (IncrementalSubscription) bs.subscribe(taskPredicate);
 //		planelementSubscription     = (IncrementalSubscription) bs.subscribe(pePredicate);
 //		oPlanSubscription		 	= (IncrementalSubscription) bs.subscribe(oplanPredicate);
+		String dir = System.getProperty("org.cougaar.workspace");
+//		myLoggingService.shout("Directory = "+ dir);
 
 		try
 		{
-			rst = new java.io.BufferedWriter ( new java.io.FileWriter("$CIP/"+cluster+System.currentTimeMillis()+".txt", true ));
+			rst = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster+System.currentTimeMillis()+".txt", true ));
 		}
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't write file, io error" );
+		    System.err.println ("can't write data collecting file, io error" );
 	    }						
 
 		myLoggingService.shout("DemandDataCollectingPlugin start at " + cluster); 
@@ -458,10 +460,12 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				{
 //					myLoggingService.shout(v.toString());
 
-					start_time = (long) (ti.getPreferredValue(AspectType.START_TIME) / 86400000) - baseTime;
+//					start_time = (long) (ti.getPreferredValue(AspectType.START_TIME) / 86400000) - baseTime;
+					start_time = (long) (ti.getPreferredValue(AspectType.START_TIME) / 86400000);
 //   					start_time2 = ti.getPreference(AspectType.START_TIME).getScoringFunction().getBest().getValue();
 	
-					end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000) - baseTime;
+//					end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000) - baseTime;
+					end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000);
 //					end_time2 = ti.getPreference(AspectType.END_TIME).getScoringFunction().getBest().getValue();
 						
 					if (v.equals("Supply")||v.equals("ForecastDemand"))
@@ -512,120 +516,4 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 			    }					
 			} // for
 	}
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		
-//	public void checkFallingBehindness(long nowTime, int nTasks, int nUnconfidentTasks, int nFailedTasks, int nUnestimatedTasks, int nUnplannedTasks) 
-	public void checkFallingBehindness(long nowTime, int nTasks, int nUnconfidentTasks, int nUnestimatedTasks, int nUnplannedTasks, int nPSI, int nPSO, int nSI, int nSO, int nPW, int nW)
-	{
-
-//		int newlydetectedstate = internalState.currentstate;
-
-			try
-			{
-//				myLoggingService.shout("\n"+nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nFailedTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks);
-//				rst.write(nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nFailedTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks+"\n");
-				rst.write(nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks+","+nPSI+","+ nPSO+","+ nSI+","+ nSO+","+ nPW+","+ nW+"\n");
-				rst.flush();
-/*
-				a[0] = (double) nowTime;
-				a[1] = (double) nTasks;
-				a[2] = (double) nUnconfidentTasks;
-				a[3] = (double) nFailedTasks;
-				a[4] = (double) nUnestimatedTasks;
-				a[5] = (double) nUnplannedTasks;
-
-				double y = rbfnn.f(a);
-
-				if (y > 0)
-				{
-					if (curr_state == -1)
-					{
-						myLoggingService.shout("SEVERE_LOAD");
-						sendLoadIndicator(1, LoadIndicator.SEVERE_LOAD); 	
-						curr_state = 1;
-					}
-
-				} else {
-					if (curr_state == 1)
-					{
-						myLoggingService.shout("NORMAL_LOAD");
-						sendLoadIndicator(1, LoadIndicator.NORMAL_LOAD); 				
-						curr_state = -1;
-					}
-				}
-*/
-			}
-			catch (java.io.IOException ioexc)
-			{
-				System.err.println ("can't write file, io error" );
-		    }					
-	}
-
-/*
-	public void sendLoadIndicator(int mode, String loadlevel) 
-	{
-
-		if (mode == 0)
-		{
-			loadIndicator = new LoadIndicator(this.getClass(), cluster, uidservice.nextUID(), loadlevel);
-			for (Iterator iterator = internalState.alCommunities.iterator(); iterator.hasNext();) {
-				String community = (String) iterator.next();
-				loadIndicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
-				bs.publishAdd(loadIndicator);
-			}
-		} else {
-	        loadIndicator.setLoadStatus(loadlevel);
-			bs.publishChange(loadIndicator);
-		}	
-
-		myLoggingService.shout(cluster + ": adding loadIndicator to be sent to " + loadIndicator.getTargets());
-	}
-*/
-/*
-	class TriggerFlushAlarm implements PeriodicAlarm
-    {
-        public TriggerFlushAlarm(long expTime)
-        {
-            this.expTime = expTime;
-        }
-
-        public void reset(long currentTime)
-        {
-            expTime = currentTime + delay;
-            expired = false;
-        }
-
-        public long getExpirationTime()
-        {
-            return expTime;
-        }
-
-        public void expire()
-        {
-            expired = true;
-			getBlackboardService().openTransaction();
-//            sendLoadIndicator(1, LoadIndicator.NORMAL_LOAD);
-			getBlackboardService().closeTransaction();
-
-        }
-
-        public boolean hasExpired()
-        {
-            return expired;
-        }
-
-        public boolean cancel()
-        {
-            boolean was = expired;
-            expired = true;
-            return was;
-        }
-
-        boolean expired = false;
-        long expTime;
-        long delay = 60000;
-    }
-*/
 }
