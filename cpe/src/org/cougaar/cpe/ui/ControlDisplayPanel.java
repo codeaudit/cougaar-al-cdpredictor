@@ -81,7 +81,7 @@ public class ControlDisplayPanel extends JFrame {
 				QueueingParameters q = (QueueingParameters) qParas;
 				switch (columnIndex) {
 					case 0 :
-						return "Estimated";
+						return "Estimated(" + rowIndex + ")";
 					case 1 :
 						return ((Double) q.getValue("MG1", 0)).toString();
 					case 2 :
@@ -229,30 +229,30 @@ public class ControlDisplayPanel extends JFrame {
 
 		String[] keys =
 			{
+				"BN1.Kills",
 				"BN1.Attrition",
-				"BN1.EntryRate",
-				"BN2.Violations",
 				"BN1.Violations",
 				"BN1.Penalties",
-				"BN3.Penalties",
-				"BN3.Kills",
-				"BN2.Attrition",
-				"BN3.Violations",
-				"BN1.Kills",
-				"BN2.Penalties",
-				"BN2.Kills",
-				"BN3.EntryRate",
-				"BN3.Attrition",
-				"BN2.EntryRate",
 				"BN1.FuelConsumption.CPY1",
 				"BN1.FuelConsumption.CPY2",
 				"BN1.FuelConsumption.CPY3",
+				"BN2.Kills",
+				"BN2.Attrition",
+				"BN2.Violations",
+				"BN2.Penalties",
 				"BN2.FuelConsumption.CPY4",
 				"BN2.FuelConsumption.CPY5",
 				"BN2.FuelConsumption.CPY6",
+				"BN3.Kills",
+				"BN3.Attrition",
+				"BN3.Violations",
+				"BN3.Penalties",
 				"BN3.FuelConsumption.CPY7",
 				"BN3.FuelConsumption.CPY8",
-				"BN3.FuelConsumption.CPY9" };
+				"BN3.FuelConsumption.CPY9",
+				"BN1.EntryRate",
+				"BN2.EntryRate",
+				"BN3.EntryRate" };
 		HashMap scores = new HashMap();
 		ArrayList listeners = new ArrayList();
 	}
