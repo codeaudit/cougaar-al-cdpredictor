@@ -113,7 +113,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 	public void execute() {
 		if (alarm != null && alarm.hasExpired() == true) {
 			count_alarm++;
-			if (count_alarm == 1 && !rehydrate_flag) {
+			if (!rehydrate_flag) {
 				executeAlarm();
 				alarm.cancel();
 			}
@@ -175,7 +175,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 					if (org_name!= null && role!= null) {
 						tick++;
 						role = stringRevManipulation(role);
-						myLoggingService.debug("Supplier : " + cluster + "| Customer: " + org_name + "| SupplyClass "+role);
+						myLoggingService.shout("Supplier : " + cluster + "| Customer: " + org_name + "| SupplyClass "+role);
 						phm.addHashMap(org_name, role);
 						if(tick == 1) phm.setUID(myUIDService.nextUID());
 					}
@@ -185,78 +185,96 @@ public class PredictorDataPlugin extends ComponentPlugin {
 	}
 
 	public void getPlannedDemand() {
-
+		long startT = currentTimeMillis();
+		myLoggingService.debug("getPlannedDemand() method start time " +  new Date(startT));
 		Task task;
 		HashMap hashmap;
-		boolean fireAlarm = true;
-		//long time = System.currentTimeMillis();
-		//myLoggingService.debug("getPlannedDemand() method time start" +  new Date(time));
-
+		//boolean fireAlarm = true;
+		int task_counter = 0;
 		if(phm.getMap()!= null || !phm.getMap().isEmpty()) hashmap = phm.getMap();	else return;
 
 		for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
 			task = (Task) e.nextElement();
-			fireAlarm = false;
+			task_counter++;
+			//fireAlarm = false;
 			String owner = task.getPrepositionalPhrase("For").getIndirectObject().toString();
 			String comp = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
 			if (comp!= null) {
-				Asset as = task.getDirectObject();
-				String item_name = as.getTypeIdentificationPG().getNomenclature();
-				CustomerRoleKey crk = new CustomerRoleKey(owner, comp);
+				if (alarm != null) alarm.cancel();
+          alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
+          as.addAlarm(alarm);
+					Asset as = task.getDirectObject();
+					String item_name = as.getTypeIdentificationPG().getNomenclature();
+					CustomerRoleKey crk = new CustomerRoleKey(owner, comp);
+					HashMap inner_hashmap = (HashMap) hashmap.get(crk);
+					ArrayList valuesList = (ArrayList)inner_hashmap.get(item_name);
+				//	if(task.getVerb().equals("ProjectSupply")) {
+					long sTime = (long) task.getPreferredValue(AspectType.START_TIME);
+					long zTime = (long) task.getPreferredValue(AspectType.END_TIME);
 
-				HashMap inner_hashmap = (HashMap) hashmap.get(crk);
-				ArrayList valuesList = (ArrayList)inner_hashmap.get(item_name);
-
-				long sTime = (long) task.getPreferredValue(AspectType.START_TIME);
-				long zTime = (long) task.getPreferredValue(AspectType.END_TIME);
-
-				for (long incTime = sTime; incTime <= zTime; incTime = incTime + 86400000) {
-					double rate = 0.0;
-					if (comp.compareToIgnoreCase("BulkPOL") == 0) {
-						AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
-						FlowRate flowrate = (FlowRate) aspectrate.rateValue();
-						rate = (flowrate.getGallonsPerDay());
-					}
-					else {
-						AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
-						CountRate flowrate = (CountRate) aspectrate.rateValue();
-						rate = (flowrate.getUnitsPerDay());
-					}
-						Values new_value = new Values(incTime, rate);
-						if(valuesList!= null) valuesList.add(new_value);
-						else
-						{
-							valuesList = new ArrayList();
-							valuesList.add(new_value);
-							inner_hashmap.put(item_name, valuesList);
+					for (long incTime = sTime; incTime <= zTime; incTime = incTime + 86400000) {
+						double rate = 0.0;
+						if (comp.compareToIgnoreCase("BulkPOL") == 0) {
+							AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
+							FlowRate flowrate = (FlowRate) aspectrate.rateValue();
+							rate = (flowrate.getGallonsPerDay());
 						}
-					}
+						else {
+							AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
+							CountRate flowrate = (CountRate) aspectrate.rateValue();
+							rate = (flowrate.getUnitsPerDay());
+						}
+							Values new_value = new Values(incTime, rate, as);
+							if(valuesList!= null) valuesList.add(new_value);
+							else
+							{
+								valuesList = new ArrayList();
+								valuesList.add(new_value);
+								inner_hashmap.put(item_name, valuesList);
+							}
+						}
+					//}
+					/*else {
+						long endTime = (long) (task.getPreferredValue(AspectType.END_TIME));
+						double quantity = task.getPreferredValue(AspectType.QUANTITY);
+						Values new_value = new Values(endTime, quantity, as);
+							if(valuesList!= null) valuesList.add(new_value);
+							else
+							{
+								valuesList = new ArrayList();
+								valuesList.add(new_value);
+								inner_hashmap.put(item_name, valuesList);
+							}
+						}*/
 				}
 			}
-		if(!fireAlarm) {
+		/*if(!fireAlarm) {
 			if (alarm != null) alarm.cancel();
 			alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
 			as.addAlarm(alarm);
-		}
-			//long end = System.currentTimeMillis();
-			//myLoggingService.debug("getPlannedDemand() method end time " +  new Date(end)
-		 	//+ " in milliseconds" +
-			//(end - time));
+		}*/
+			long end = System.currentTimeMillis();
+			myLoggingService.debug("getPlannedDemand() method end time " +  new Date(end)
+		 	+ " in milliseconds" + (end - startT)+" Task Count "+task_counter);
 
 	}
 
 	public void executeAlarm() {
-
+		long startT = currentTimeMillis();
+		myLoggingService.shout("executeAlarm() method start time " +  new Date(startT));
 		HashMap processedMap = null;
 		myBlackBoardService.publishAdd(phm);
 		//phm.setUID(myUIDService.nextUID());
 		HashMap hashmap = phm.getMap();
 		ProcessHashData phd = new ProcessHashData(cluster, hashmap); //cluster added new
 		if (phd!= null) processedMap = phd.iterateList();
-		if (processedMap!= null) {
-			myLoggingService.debug("Demand Model published "+processedMap.size());
-			myBlackBoardService.publishChange(phm);
-		}
+			if (processedMap!= null) {
+				myLoggingService.shout("DemandModelPublished "+processedMap.size());
+				myBlackBoardService.publishChange(phm);
+			}
+		long end = System.currentTimeMillis();
+			myLoggingService.shout("executeAlarm() method end time " +  new Date(end)
+		 	+ " in milliseconds" + (end - startT));
 	}
 
 

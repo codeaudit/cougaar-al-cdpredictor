@@ -27,6 +27,7 @@ package org.cougaar.tools.alf.predictor.plugin;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.sql.Date;
 
 public class KalmanFilter implements java.io.Serializable {
 
@@ -38,78 +39,178 @@ public class KalmanFilter implements java.io.Serializable {
   	this.dataModelMap = dataModelMap;
   }
 
-	public void timeUpdate(){
-			for(Iterator iterator = aposteriorEstimateMap.keySet().iterator();iterator.hasNext();){
-				String key = (String)iterator.next();
-				ArrayList postEstValuesList = (ArrayList)aposteriorEstimateMap.get(key);
-				ArrayList apriorEstValuesList = new ArrayList();
-				for(Iterator iterator1 = postEstValuesList.iterator();iterator1.hasNext();) {
-					KFValues postEstKFValues = (KFValues)iterator1.next();
-					long endTime = postEstKFValues.getEndTime();
-					double quantity = postEstKFValues.getQuantity();
-					apriorEstValuesList.add(new KFValues(endTime+4*86400000, quantity, -1, -1));
+	public void timeUpdate() {
+		System.out.println("aposteriorEstimateMap size "+aposteriorEstimateMap.size());
+		for(Iterator iterator = aposteriorEstimateMap.keySet().iterator();iterator.hasNext();) {
+			CustomerRoleKey crk = (CustomerRoleKey)iterator.next();
+			HashMap aposteriorInnerMap = (HashMap)aposteriorEstimateMap.get(crk);
+			System.out.println("aposteriorInnerMap size "+aposteriorInnerMap.size());
+			HashMap apriorInnerMap = new HashMap();
+			for(Iterator iterator1 = aposteriorInnerMap.keySet().iterator();iterator1.hasNext();) {
+				String item_name = (String)iterator1.next();
+				if(item_name.equalsIgnoreCase("JP8")) System.out.println("timeUpdate JP8");
+				ArrayList apostEstList = (ArrayList)aposteriorInnerMap.get(item_name);
+				if(item_name.equalsIgnoreCase("JP8")) System.out.println("apostEstListJP8 size "+apostEstList.size());
+				ArrayList apriorList = new ArrayList();
+				int aPostListSize = apostEstList.size();
+				if(aPostListSize!= 0) {
+					double control_input = 0.0;
+					KFValues apostValue = (KFValues)apostEstList.get(apostEstList.size()-1);
+					if(item_name.equalsIgnoreCase("JP8")) System.out.println("apostValueJP8 "+apostValue.getEndTime()+
+									" "+apostValue.getQuantity());
+					long endTime = apostValue.getEndTime();  //represents k
+					double quantity = apostValue.getQuantity(); //represents z(k)
+					ArrayList storedList = getElementDataList(crk, item_name);
+					if(item_name.equalsIgnoreCase("JP8")) System.out.println("storedListJP8 size "+storedList.size());
+					for(int j= 0; j < storedList.size();j++) {
+						Values storedValue = (Values)storedList.get(j);
+						if(item_name.equalsIgnoreCase("JP8")) System.out.println("storedValueJP8 End time "+new Date(storedValue.getEndTime())+
+										" Required End Time "+new Date(endTime));
+						if(storedValue.getEndTime() == endTime) {
+							if(item_name.equalsIgnoreCase("JP8")) System.out.println("TimeUpdate Entered storeList1");
+							double originalQuantity = storedValue.getQuantity();
+							control_input = quantity - originalQuantity; //represents u(k)
+							if(item_name.equalsIgnoreCase("JP8")) System.out.println("control_inputJP8 "+control_input);
+							//storedList.remove(storedValue);
+							//storedList.add(new Values(endTime, quantity));
+							storedValue.setQuantity(quantity);
+							break;
+						}
+					}
+					double apriorEstimate = 0.0;
+					for(int k= 0; k < storedList.size();k++) {
+						Values storedValue = (Values)storedList.get(k);
+						if(storedValue.getEndTime() == (endTime+(4*86400000))) {
+							if(item_name.equalsIgnoreCase("JP8")) System.out.println("TimeUpdate Entered storeList2");
+							double futQuantity = storedValue.getQuantity();
+							apriorEstimate = futQuantity + control_input; //represents x(k+1)
+							apriorList.add(new KFValues(storedValue.getEndTime(), apriorEstimate,-1,-1));
+							if(item_name.equalsIgnoreCase("JP8")) System.out.println("futQuantityJP8 "+futQuantity);
+							storedValue.setQuantity(apriorEstimate);
+							if(item_name.equalsIgnoreCase("JP8")) {
+								System.out.println("KFApriorEst: "+" Item "+item_name+" "
+								+new java.util.Date(storedValue.getEndTime())+" "+apriorEstimate);
+							}
+							break;
+						}
+					}
+			/*	for(int i=0; i < apostEstList.size();i++) {
+					double control_input = 0.0;
+					KFValues apostValue = (KFValues)apostEstList.get(i);
+					if(item_name.equalsIgnoreCase("JP8")) System.out.println("apostValueJP8 "+apostValue.getEndTime()+
+									" "+apostValue.getQuantity());
+					long endTime = apostValue.getEndTime();  //represents k
+					double quantity = apostValue.getQuantity(); //represents z(k)
+					ArrayList storedList = getElementDataList(crk, item_name);
+					for(int j= 0; j < storedList.size();j++) {
+						Values storedValue = (Values)storedList.get(j);
+						if(storedValue.getEndTime() == endTime) {
+							System.out.println("TimeUpdateStoredValue1 Entered");
+							double originalQuantity = storedValue.getQuantity();
+							control_input = quantity - originalQuantity; //represents u(k)
+							if(item_name.equalsIgnoreCase("JP8")) System.out.println("control_inputJP8 "+control_input);
+							//storedList.remove(storedValue);
+							//storedList.add(new Values(endTime, quantity));
+							storedValue.setQuantity(quantity);
+							break;
+						}
+					}
+					double apriorEstimate = 0.0;
+					for(int k= 0; k < storedList.size();k++) {
+						Values storedValue = (Values)storedList.get(k);
+						if(storedValue.getEndTime() == (endTime+(4*86400000))) {
+							System.out.println("TimeUpdateStoredValue2 Entered");
+							double futQuantity = storedValue.getQuantity();
+							if(item_name.equalsIgnoreCase("JP8")) System.out.println("futQuantityJP8 "+futQuantity);
+							apriorEstimate = futQuantity + control_input; //represents x(k+1)
+							apriorList.add(new KFValues(storedValue.getEndTime(), apriorEstimate,-1,-1));
+							if(item_name.endsWith("JP8")) {
+								System.out.println("KFApriorEst: "+" Item "+item_name+" "
+								+new java.util.Date(storedValue.getEndTime())+" "+apriorEstimate);
+							}
+							break;
+						}
+					}
+				}*/
 				}
-				apriorEstimateMap.put(key, apriorEstValuesList);
+				apriorInnerMap.put(item_name, apriorList);
 			}
+			apriorEstimateMap.put(crk, apriorInnerMap);
+		}
+		aposteriorEstimateMap.clear();
 	}
 
 	public void measurementUpdate(PredictorSupplyArrayList psal) {
 	HashMap CRMap = (HashMap)psal.get(0); 		//There is only one hashmap in the arraylist
+	System.out.println("CRMapsize "+CRMap.size());
 	for(Iterator iterator = CRMap.keySet().iterator();iterator.hasNext();) {
 		CustomerRoleKey crk = (CustomerRoleKey)iterator.next();
 		HashMap valuesMap = (HashMap)CRMap.get(crk);
-		for(Iterator iter = valuesMap.keySet().iterator();iter.hasNext();){
+		System.out.println("valuesMapSize "+valuesMap.size());
+		HashMap aposteriorEstimateInnerMap = new HashMap();
+		for(Iterator iter = valuesMap.keySet().iterator();iter.hasNext();) {
 			String itemName = (String)iter.next();
+			if(itemName.equalsIgnoreCase("JP8")) System.out.println("JP8Item In");
 			ArrayList valuesList = (ArrayList)valuesMap.get(itemName);
+			if(itemName.equalsIgnoreCase("JP8")) System.out.println("valuesListSize "+valuesList.size());
 			ArrayList aPostEstList = new ArrayList();
 			for(Iterator iter1 = valuesList.iterator();iter1.hasNext();) {
 				Values value = (Values)iter1.next();
 				long endTime = value.getEndTime();
 				double quantity = value.getQuantity();
-				if(apriorEstimateMap.isEmpty()) {
-					ArrayList storedList = getElementDataList(crk, itemName);
-					for(int i= 0; i < storedList.size();i++) {
-						Values storedValue = (Values)storedList.get(i);
-						if(storedValue.getEndTime() == endTime) {
-							storedList.remove(storedValue);
-							storedList.add(new Values(endTime, quantity));
-							aPostEstList.add(new KFValues(endTime, quantity, -1, -1));
-							break;
-						}
+				if(itemName.equalsIgnoreCase("JP8")) System.out.println("endTimeJP8 "+endTime+" QuantityJP8 "+quantity);
+				if(!apriorEstimateMap.containsKey(crk)) {
+					aPostEstList.add(new KFValues(endTime, quantity, -1, -1));
+					if(itemName.equalsIgnoreCase("JP8")) {
+						System.out.println("KFApostEst: "+" Item "+itemName+" "
+						+new java.util.Date(endTime)+" "+quantity+" 0 Error");
 					}
 				} else {
-					ArrayList storedList = getElementDataList(crk, itemName);
-					for(int i=0; i < storedList.size();i++){
-						Values storedValue = (Values)storedList.get(i);
-						if(storedValue.getEndTime() == endTime) {
-							storedList.remove(storedValue);
-							storedList.add(new Values(endTime, quantity));
-							break;
+					HashMap apriorEstimateInnerMap = (HashMap)apriorEstimateMap.get(crk);
+					if(apriorEstimateInnerMap!= null) {
+						ArrayList apriorEstList = (ArrayList)apriorEstimateInnerMap.get(itemName);
+						boolean endTimeFound = false;
+						for(int i=0; i < apriorEstList.size();i++) {
+							KFValues aPriorValue = (KFValues)apriorEstList.get(i);
+							if(aPriorValue.getEndTime()==endTime) {
+								double error = aPriorValue.getQuantity() - quantity;
+								double aPostEstimate = aPriorValue.getQuantity() + 0.5 * error;
+								aPostEstList.add(new KFValues(endTime, aPostEstimate, error, 0.5));
+								if(itemName.equalsIgnoreCase("JP8")){
+									System.out.println("KFApostEst: "+" Item JP8 "+" "
+											+new java.util.Date(endTime)+" "+quantity+" "+error);
+								}
+								endTimeFound = true;
+								break;
+							}
+						}
+						if(!endTimeFound) {
+							aPostEstList.add(new KFValues(endTime, quantity, -1, -1));
+							if(itemName.equalsIgnoreCase("JP8")){
+									System.out.println("KFApostEst: "+" Item JP8 "+" "
+											+new java.util.Date(endTime)+" "+quantity+" No end time found");
+							}
+						}
+					} else {
+						aPostEstList.add(new KFValues(endTime, quantity, -1, -1));
+						if(itemName.equalsIgnoreCase("JP8")) {
+							System.out.println("KFApostEst: "+" Item "+itemName+" "
+							+new java.util.Date(endTime)+" "+quantity+" 0 Error");
 						}
 					}
-					ArrayList aPriorEstList = (ArrayList)apriorEstimateMap.get(crk+itemName);
-					for(int i=0; i < aPriorEstList.size();i++){
-						KFValues aPriorValue = (KFValues)aPriorEstList.get(i);
-						if(aPriorValue.getEndTime()==endTime){
-							double error = aPriorValue.getQuantity() - quantity;
-							double aPostEstimate = aPriorValue.getQuantity() + 0.5 * error;
-							aPostEstList.add(new KFValues(endTime, aPostEstimate, error, 0.5));
-						}
-					}
-					//Check if the endTime matches the apriorestimate end time
-					//if yes then compute aposteriorestimate
 				}
 			}
-			aposteriorEstimateMap.put(crk+itemName,aPostEstList);
+			aposteriorEstimateInnerMap.put(itemName, aPostEstList);
 		}
+		aposteriorEstimateMap.put(crk, aposteriorEstimateInnerMap);
 	}
-		apriorEstimateMap.clear();
-		timeUpdate();
+	apriorEstimateMap.clear();
+	timeUpdate();
 }
 
 	public double getApriorEstimate(CustomerRoleKey crk, String itemName, long endTime){
 		if(!apriorEstimateMap.isEmpty()){
-			ArrayList kfValuesList = (ArrayList)apriorEstimateMap.get(crk+itemName);
+			ArrayList kfValuesList = (ArrayList)apriorEstimateMap.get(crk+"-"+itemName);
 			for(Iterator iterator = kfValuesList.iterator();iterator.hasNext();){
 				KFValues kfValues = (KFValues)iterator.next();
 				if(kfValues.getEndTime()== endTime) {
@@ -123,7 +224,7 @@ public class KalmanFilter implements java.io.Serializable {
 
 	public double getAposteriorEstimate(CustomerRoleKey crk, String itemName, long endTime){
 		if(!aposteriorEstimateMap.isEmpty()){
-			ArrayList kfValuesList = (ArrayList)aposteriorEstimateMap.get(crk+itemName);
+			ArrayList kfValuesList = (ArrayList)aposteriorEstimateMap.get(crk+"-"+itemName);
 			for(Iterator iterator = kfValuesList.iterator();iterator.hasNext();){
 				KFValues kfValues = (KFValues)iterator.next();
 				if(kfValues.getEndTime()== endTime) {

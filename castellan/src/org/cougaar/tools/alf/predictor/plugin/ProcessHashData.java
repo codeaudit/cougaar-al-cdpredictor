@@ -24,6 +24,8 @@
 
 package org.cougaar.tools.alf.predictor.plugin;
 
+import org.cougaar.planning.ldm.asset.Asset;
+
 import java.io.BufferedWriter;
 import java.io.PrintWriter;
 import java.util.*;
@@ -46,8 +48,8 @@ public class ProcessHashData {
 				String item_name = (String)iter.next();
 				ArrayList valuesList = (ArrayList)inner_hashmap.get(item_name);
 				demandPerDay(valuesList);
-				//String formattedName = formatItemName(item_name);
-				//printList(formattedName, valuesList);
+				String formattedName = formatItemName(item_name);
+				printList(formattedName, valuesList);
 			}
 		}
 		return hashmap;
@@ -79,7 +81,7 @@ public class ProcessHashData {
   }
 
 	private void demandPerDay(ArrayList timeQtyValues) {
-
+			Asset asset = null;
 			endTimeSort(timeQtyValues);
 			double[][] timeQtyArray = new double[timeQtyValues.size()][2];
 			int k = 0;
@@ -87,6 +89,7 @@ public class ProcessHashData {
 				Values values = (Values)iterator2.next();
 				long endtime = values.getEndTime();
 				double quantity = values.getQuantity();
+				asset = values.getAsset();
 				timeQtyArray[k][0] = endtime;
 				timeQtyArray[k][1] = quantity;
 				k++;
@@ -104,7 +107,7 @@ public class ProcessHashData {
             	break;
             }
           }
-					Values newValues = new Values((long)timeQtyArray[i][0], sum_var);
+					Values newValues = new Values((long)timeQtyArray[i][0], sum_var, asset);
 					timeQtyValues.add(newValues);
           sum_var = 0;
 	        i = j;
@@ -122,7 +125,7 @@ public class ProcessHashData {
 				else	pwr = new PrintWriter(new BufferedWriter(new java.io.FileWriter(name + ".txt", false)));
 			 for (Iterator iterator = list.iterator();iterator.hasNext();) {
 						Values valObject = (Values)iterator.next();
-						pwr.print(valObject.getEndTime());
+						pwr.print(new Date(valObject.getEndTime()));
 						pwr.print(",");
 						pwr.print(valObject.getQuantity());
 						pwr.println();

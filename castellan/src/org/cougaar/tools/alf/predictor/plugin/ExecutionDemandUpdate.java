@@ -25,6 +25,8 @@
 package org.cougaar.tools.alf.predictor.plugin;
 
 import java.util.*;
+import java.io.PrintWriter;
+import java.io.BufferedWriter;
 
 public class ExecutionDemandUpdate {
 
@@ -42,14 +44,38 @@ public class ExecutionDemandUpdate {
 			ArrayList valuesList = new ArrayList();
 			valuesList.add(values);
 			innerItemMap.put(item, valuesList);
+			if(item.equalsIgnoreCase("JP8")){
+				for (Iterator iterator = valuesList.iterator(); iterator.hasNext();) {
+					Values values1 = (Values) iterator.next();
+					System.out.println("FirstEntry addDemandData: "+" Item "+item+" "+new Date(values1.getCommitmentTime())+" "
+														+new Date(values1.getEndTime())+" "+values1.getQuantity()+" "+new Date(values1.getPublishTime()));
+				}
+			}
 		}
 		else {
 			HashMap innerItemMap = (HashMap)CRMap.get(crk);
 			ArrayList valuesList = (ArrayList)innerItemMap.get(item);
-			if(valuesList!= null) valuesList.add(values);
+			if(valuesList!= null) {
+				valuesList.add(values);
+				if(item.equalsIgnoreCase("JP8")){
+					for (Iterator iterator = valuesList.iterator(); iterator.hasNext();) {
+						Values values1 = (Values) iterator.next();
+						System.out.println("valuesList!=null addDemandData: "+" Item "+item+" "+new Date(values1.getCommitmentTime())+" "
+															+new Date(values1.getEndTime())+" "+values1.getQuantity()+" "+new Date(values1.getPublishTime()));
+					}
+				}
+			}
 			else { valuesList = new ArrayList();
-			valuesList.add(values);
-			innerItemMap.put(item, valuesList);}
+				valuesList.add(values);
+				innerItemMap.put(item, valuesList);
+				if(item.equalsIgnoreCase("JP8")){
+					for (Iterator iterator = valuesList.iterator(); iterator.hasNext();) {
+						Values values1 = (Values) iterator.next();
+						System.out.println("valuesList==null addDemandData: "+" Item "+item+" "+new Date(values1.getCommitmentTime())+" "
+															+new Date(values1.getEndTime())+" "+values1.getQuantity()+" "+new Date(values1.getPublishTime()));
+					}
+				}
+			}
 		}
 	}
 
@@ -72,29 +98,45 @@ public class ExecutionDemandUpdate {
   public PredictorSupplyArrayList getExecutionDemandPerDay(){
 		PredictorSupplyArrayList psal = new PredictorSupplyArrayList();
 		if(!CRMap.isEmpty()) {
-			for(Iterator iterator = CRMap.keySet().iterator();iterator.hasNext();){
+			for(Iterator iterator = CRMap.keySet().iterator();iterator.hasNext();) {
 				CustomerRoleKey crk = (CustomerRoleKey)iterator.next();
 				HashMap itemMap = (HashMap)CRMap.get(crk);
 				for(Iterator iter = itemMap.keySet().iterator();iter.hasNext();){
 					String itemName = (String)iter.next();
 					ArrayList valueList = (ArrayList)itemMap.get(itemName);
 					if((valueList!= null) && (!valueList.isEmpty()) && (valueList.size() >= 1)) {
+
 						TimeSort(valueList);
+						if(itemName.equalsIgnoreCase("JP8")) {
+							for (Iterator iterator1 = valueList.iterator(); iterator1.hasNext();) {
+								Values values1 = (Values) iterator1.next();
+								System.out.println("After TSort ArrayList-Values-Size getExecutionDemandPerDay: "+" Item "
+												+itemName+" "+new Date(values1.getCommitmentTime())+" "+new Date(values1.getEndTime())+" "+values1.getQuantity()+" "+new Date(values1.getPublishTime()));
+							}
+						}
 						computePerDayDemand(valueList);
-						if(valueList.size()>0) {Values value = (Values)valueList.get(valueList.size()-1);
+						if(itemName.equalsIgnoreCase("JP8")) {
+							for (Iterator iterator1 = valueList.iterator(); iterator1.hasNext();) {
+								Values values1 = (Values) iterator1.next();
+								System.out.println("After DemandPerDay ArrayList-Values-Size getExecutionDemandPerDay: "+" Item "
+												+itemName+" "+new Date(values1.getCommitmentTime())+" "+new Date(values1.getEndTime())+" "+values1.getQuantity()+" "+new Date(values1.getPublishTime()));
+							}
+						}
+						if(valueList.size()>0) {Values value = (Values)valueList.get(valueList.size()-1); //Incorrect
 							setLastDemandValueForItem(crk, itemName, value);
 						}
 					}
+					//printList(itemName, valueList);
 				}
 			}
-			retainAllItems();
+			//retainAllItems();
 		}
 		psal.add(CRMap);
 		return psal;
 	}
 
 	private void computePerDayDemand(ArrayList values){
-		if(values!= null){
+		if(values!= null) {
 			ArrayList newValuesList = new ArrayList();
 			long temptime = -1;
 			long tempPublishTime = -1;
@@ -114,7 +156,12 @@ public class ExecutionDemandUpdate {
 						tempQuantity = quantity;
 						tempPublishTime = publishTime;
 						tempCommitmentTime = commitmentTime;
-					} else {
+						if(!iterator.hasNext()){
+							Values newValue1 = new Values(tempPublishTime, tempCommitmentTime, temptime, tempQuantity);
+							newValuesList.add(newValue1);
+						}
+					}
+					else {
 						temptime = endtime;
 						tempQuantity = tempQuantity + quantity;
 						tempPublishTime = publishTime;
@@ -126,10 +173,15 @@ public class ExecutionDemandUpdate {
 					tempQuantity = tempQuantity + quantity;
 					tempPublishTime = publishTime;
 					tempCommitmentTime = commitmentTime;
+					if(!iterator.hasNext()){
+						Values newValue = new Values(tempPublishTime, tempCommitmentTime, temptime, tempQuantity);
+						newValuesList.add(newValue);
+					}
 				}
 			}
 			values.clear();
 			values.addAll(newValuesList);
+
 		}
 	}
 
@@ -163,6 +215,22 @@ public class ExecutionDemandUpdate {
 		}
 	}
 
+	public long getLastDemandDate(String customer, String supplyclass){
+		CustomerRoleKey crk = new CustomerRoleKey(customer, supplyclass);
+		if(!lastDateMap.containsKey(crk)) return -1;
+		else {
+			long maxEndTime = -1;
+			HashMap innerMap = (HashMap)lastDateMap.get(crk);
+			for (Iterator iterator = innerMap.keySet().iterator(); iterator.hasNext();) {
+				String itemName = (String) iterator.next();
+				long endtime = ((Values)innerMap.get(itemName)).getEndTime();
+				if(maxEndTime < endtime) {
+					maxEndTime = endtime;
+				}
+			}
+			return maxEndTime;
+		}
+	}
 
 	public double getLastDemandQuantityForItem(String customer, String supplyclass, String itemName){
 		CustomerRoleKey crk = new CustomerRoleKey(customer, supplyclass);
@@ -180,7 +248,7 @@ public class ExecutionDemandUpdate {
 	private void retainAllItems(){
 		for(Iterator iterator = lastDateMap.keySet().iterator();iterator.hasNext();){
 			CustomerRoleKey crk = (CustomerRoleKey)iterator.next();
-			if(CRMap.containsKey(crk)){
+			if(CRMap.containsKey(crk)) {
 				HashMap itemMap = (HashMap)lastDateMap.get(crk);
 				for(Iterator iter = itemMap.keySet().iterator();iter.hasNext();){
 					String itemName = (String)iter.next();
@@ -199,7 +267,55 @@ public class ExecutionDemandUpdate {
 	/* This method should be called after the PredictorPlugin recieves the DemandData for that day
 	   and the demand Data Map is then cleared after each day of execution
 	*/
-	public void clearDemandDataMap(){
-		CRMap.clear();
+	//public void clearDemandDataMap(){
+	//	CRMap.clear();
+	//}
+
+		public void printList(String name, ArrayList list){
+		PrintWriter pwr;
+		String maindir = System.getProperty("org.cougaar.workspace");
+		String dir = maindir+"/log4jlogs/"+name+"Execution.txt";
+ 		try {
+				if(dir!= null)	pwr = new PrintWriter(new BufferedWriter(new java.io.FileWriter(dir, false)));
+				else	pwr = new PrintWriter(new BufferedWriter(new java.io.FileWriter(name + ".txt", false)));
+			 for (Iterator iterator = list.iterator();iterator.hasNext();) {
+						Values valObject = (Values)iterator.next();
+						pwr.print(valObject.getEndTime());
+						pwr.print(",");
+						pwr.print(valObject.getQuantity());
+						pwr.println();
+				}
+				pwr.close();
+		} catch (java.io.FileNotFoundException fnfe) {
+				System.err.println(fnfe);
+		} catch(java.io.IOException ioe){
+			 System.err.println(ioe);
+		 }
+	}
+
+	public String formatItemName(String name){
+
+		StringTokenizer st = new StringTokenizer(name);
+	  StringBuffer tempString = new StringBuffer();
+		while(st.hasMoreTokens()) {
+			String token = st.nextToken();
+			if(token.equals("/") || token.equals(",") || token.equals("-") || token.equals(".") || token.equals(":")) continue;
+			else tempString.append(token);
+		}
+		StringBuffer finalString = new StringBuffer();
+		char[] char_item = tempString.toString().toCharArray();
+    for(int i =0; i < char_item.length; i++) {
+				char temp = char_item[i];
+				String char_temp = new Character(temp).toString();
+				if(char_temp.equalsIgnoreCase("/") == true || char_temp.equalsIgnoreCase(".") ==true  || char_temp.equalsIgnoreCase("\"")== true
+				|| char_temp.equalsIgnoreCase(",")== true || char_temp.equalsIgnoreCase("-")== true
+				|| char_temp.equalsIgnoreCase(":")== true){
+							continue;
+				} else
+				{
+						finalString.append(char_temp);
+				}
+		}
+    return finalString.toString();
 	}
 }

@@ -25,6 +25,7 @@
 package org.cougaar.tools.alf.predictor.plugin;
 
 import org.cougaar.core.util.*;
+import org.cougaar.planning.ldm.asset.Asset;
 
 public class Values implements java.io.Serializable {
 
@@ -33,10 +34,17 @@ public class Values implements java.io.Serializable {
 	private long commitmentTime;
 	private double quantity;
 	private UID uid;
+	private Asset asset;
 
 	public Values(long time, double quantity){
 		this.time = time;
 		this.quantity = quantity;
+	}
+
+	public Values(long time, double quantity, Asset asset){
+			this.time = time;
+			this.quantity = quantity;
+			this.asset = asset;
 	}
 
 	public Values(long commitmentTime, long endTime, double quantity) {
@@ -78,6 +86,18 @@ public class Values implements java.io.Serializable {
 
 	public UID getUID(){
 		return uid;
+	}
+
+	public Asset getAsset(){
+		return asset;
+	}
+
+	public void setEndTime(long endTime){
+		this.time = endTime;
+	}
+
+	public void setQuantity(double quantity){
+		this.quantity = quantity;
 	}
 
 	public String toString(){

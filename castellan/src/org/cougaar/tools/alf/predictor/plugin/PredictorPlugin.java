@@ -36,8 +36,12 @@ import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.planning.ldm.plan.*;
 import org.cougaar.util.UnaryPredicate;
+import org.cougaar.util.Thunk;
+import org.cougaar.util.Collectors;
 
 import java.util.*;
+import java.io.PrintWriter;
+import java.io.BufferedWriter;
 
 public class PredictorPlugin extends ComponentPlugin {
 
@@ -83,12 +87,13 @@ public class PredictorPlugin extends ComponentPlugin {
 	private final int SupportVectorMachine = 2;
 	private final int KalmanFilter = 3;
 	private int selectedPredictor = KalmanFilter;
+	private Collection taskColl = new ArrayList();
 
 
 	UnaryPredicate taskPredicate = new UnaryPredicate() {
 		public boolean execute(Object o) {
 			if (o instanceof Task) {
-				Task tempTask = (Task) o;
+				Task tempTask = (Task)o;
 				if (tempTask.getVerb().equals(Constants.Verb.SUPPLY)) {
 					if (!tempTask.getPrepositionalPhrase("For").getIndirectObject().equals(cluster)) {
 						if (!TaskUtils.isMyRefillTask(tempTask, cluster)) {
@@ -183,13 +188,30 @@ public class PredictorPlugin extends ComponentPlugin {
 	//Kalman Filter specific implementation
 	public void checkdataModelMapSubscription() {
 		for (Enumeration et = dataModelMapSubscription.getChangedList(); et.hasMoreElements();) {
-			PredictorHashMap pHashmap = (PredictorHashMap) et.nextElement();
+			PredictorHashMap pHashmap = (PredictorHashMap)et.nextElement();
 			hashmap = pHashmap.getMap();
 			if (hashmap!= null) {
 				myLoggingService.shout("DemandModel Received by agent " + cluster+" Modelsize: " + hashmap.size());
+				printMapDetails(hashmap);
 				kf = new KalmanFilter(hashmap);
 				myBS.publishAdd(kf);
 			  flag = true;
+			}
+		}
+	}
+
+	public void printMapDetails(HashMap hashmap){
+		for (Iterator iterator = hashmap.values().iterator(); iterator.hasNext();) {
+			HashMap hashMap = (HashMap) iterator.next();
+			for (Iterator iterator1 = hashMap.keySet().iterator(); iterator1.hasNext();) {
+				String itemname = (String) iterator1.next();
+				if(itemname.equalsIgnoreCase("JP8")) {
+					ArrayList list = (ArrayList)hashMap.get(itemname);
+					for (Iterator iterator2 = list.iterator(); iterator2.hasNext();) {
+						Values values = (Values) iterator2.next();
+						System.out.println("HashMapDetailsJP8 "+new Date(values.getEndTime())+" "+values.getQuantity());
+					}
+				}
 			}
 		}
 	}
@@ -241,10 +263,13 @@ public class PredictorPlugin extends ComponentPlugin {
 		if (!status) {
 			commLossTime = cs.getCommLossTime();
 			PredictorSupplyArrayList executionDataList = edu.getExecutionDemandPerDay();
+			System.out.println("executionDataList size "+executionDataList.size());
 			kf.measurementUpdate(executionDataList);
 			setDemandDataList(executionDataList);
 			alarm = new TriggerFlushAlarm(currentTimeMillis());
 			as.addAlarm(alarm);
+			System.out.println("CurrentTimeMillisForPP "+new Date(currentTimeMillis()));
+			findLastSupplyTaskTime(taskColl, customerAgentName);
 		} else {
 			commRestoreTime = cs.getCommRestoreTime();
 			time_gap = (int) (((commRestoreTime - commLossTime) / 86400000) * 4);
@@ -270,15 +295,24 @@ public class PredictorPlugin extends ComponentPlugin {
 
 	public void actualInputDemand() {
 		Task task;
-		long currentTime = currentTimeMillis() / 86400000; //Time in terms of days
+		long currentTime = currentTimeMillis()/86400000; //Time in terms of days
+		System.out.println("PPlugincurrentTime "+currentTime);
 		if(status) {
 			for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
-				task = (Task) e.nextElement();
+				task = (Task)e.nextElement();
+				taskColl.add(task);
 				String customer = (String) task.getPrepositionalPhrase("For").getIndirectObject();
 				String supplyclass = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
 				Asset as = task.getDirectObject();
 				String item_name = as.getTypeIdentificationPG().getNomenclature();
 				addAsset(as);
+				if(task.getUID().getOwner().equalsIgnoreCase("Prediction")) System.out.println("Is a Prediction Task: "+task.getUID());
+				if(as!= null) {
+					System.out.println("PPlugin asset: UID"+" "+task.getUID()+" "+customer+" "
+									+supplyclass+" "+item_name+" ParentTaskUID "+task.getParentTaskUID());
+				}
+				else System.out.println("PPlugin asset null:  TaskUID"+task.getUID()+" "+customer+" "+supplyclass
+								+" "+item_name+" ParentTaskUID "+task.getParentTaskUID());
 				//ArrayList assetList = getAssetList();
 				//if (assetList.size()== 1) myBS.publishAdd(assetList); else myBS.publishChange(assetList);
 
@@ -291,14 +325,17 @@ public class PredictorPlugin extends ComponentPlugin {
 						long endTime = (long) (task.getPreferredValue(AspectType.END_TIME));
 						double quantity = task.getPreferredValue(AspectType.QUANTITY);
 						long commitmentTime = task.getCommitmentDate().getTime();
-						Values elementValues = new Values(currentTime, commitmentTime, endTime, quantity);
+						Values elementValues = new Values(currentTime*86400000, commitmentTime, endTime, quantity);
 						if (currentTime <= cutOffTime) {
 							edu.addDemandData(customer, supplyclass, item_name, elementValues);
 						} else {
 							PredictorSupplyArrayList executionDataList = edu.getExecutionDemandPerDay();
+							//long lastDate = edu.getLastDemandDate(customer, supplyclass);
+							//System.out.println("LastDatePP "+" Customer "+customer+" Supply Class "+supplyclass+
+										//	" lastDate "+lastDate);
 							kf.measurementUpdate(executionDataList);
 							setDemandDataList(executionDataList);
-							edu.clearDemandDataMap();
+							//edu.clearDemandDataMap();
 							edu.addDemandData(customer, supplyclass, item_name, elementValues);
 							cutOffTime = currentTime;
 						}
@@ -365,7 +402,7 @@ public class PredictorPlugin extends ComponentPlugin {
 	//Get the current day value and the previous 4 values from the stored list
 	//Apply weighted average over the 5 values to generate prediction for next day
 	//or gap period
-	public void publishPredictions() {
+	public void publishPredictions1() {
 		if (status)return;
 		else {
 			if(!comm_restore_flag) {
@@ -384,7 +421,9 @@ public class PredictorPlugin extends ComponentPlugin {
 							ArrayList valueList = (ArrayList) itemMap.get(itemName);
 							for (Iterator iterator2 = valueList.iterator(); iterator2.hasNext();) {
 								Values values = (Values) iterator2.next();
-								long endTime = values.getEndTime();
+								//long endTime = values.getEndTime();
+								long endTime = findLastSupplyTaskTimePerSC(taskColl, crk.getRoleName());
+								//System.out.println("crk.getRoleName() "+crk.getRoleName());
 								long commitmentTime = values.getCommitmentTime();
 								double quantity = values.getQuantity();
 								long customer_lead_time = getCustomerLeadTime(endTime, commLossTime);
@@ -419,6 +458,7 @@ public class PredictorPlugin extends ComponentPlugin {
 												Values v = new Values(commitmentTime, endTime, finalPredictionQuantity);
 												NewTask new_task = getNewTask(crk.getCustomerName(), crk.getRoleName(), itemName, v);
 												myBS.publishAdd(new_task);
+												if(itemName.equalsIgnoreCase("GLOWPLUG")||itemName.equalsIgnoreCase("JP8"))
 												myLoggingService.shout(cluster + ": NEW TASK ADDED PPOUTPUT1" + new_task);
 											} else {
 												commitmentTime = commitmentTime + 4 * 86400000;
@@ -426,6 +466,7 @@ public class PredictorPlugin extends ComponentPlugin {
 												Values v = new Values(commitmentTime, endTime, finalPredictionQuantity);
 												NewTask new_task = getNewTask(crk.getCustomerName(), crk.getRoleName(), itemName, v);
 												myBS.publishAdd(new_task);
+												if(itemName.equalsIgnoreCase("GLOWPLUG")||itemName.equalsIgnoreCase("JP8"))
 												myLoggingService.shout(cluster + ": NEW TASK ADDED PPOUTPUT" + new_task);
 											}
 										} else
@@ -439,6 +480,103 @@ public class PredictorPlugin extends ComponentPlugin {
 				}
 			}
 			comm_restore_flag = false;
+		}
+	}
+
+	public void publishPredictions() {
+	if (status)return;
+	else {
+		if(!comm_restore_flag) {
+			if (alarm != null) alarm.cancel();
+				alarm = new TriggerFlushAlarm(currentTimeMillis() + 86400000);
+				as.addAlarm(alarm);
+			}
+			int number_of_prediction_items = 0;
+			for (Iterator iterator = hashmap.keySet().iterator(); iterator.hasNext();) {
+				CustomerRoleKey customerRoleKey = (CustomerRoleKey) iterator.next();
+				if(customerRoleKey.getCustomerName().equalsIgnoreCase(customerAgentName)) {
+					long endTime = findLastSupplyTaskTimePerSC(taskColl, customerRoleKey.getRoleName());
+					long commitmentTime = endTime - 86400000; //hardcode as of now
+					long customer_lead_time = getCustomerLeadTime(endTime, commLossTime);
+					long pred_gap = getPredictorGap(endTime, customer_lead_time);
+					long order_ship_time = getOrderShipTime(endTime, commitmentTime);
+					setPredictionCommitmentDate(endTime, order_ship_time);
+
+					HashMap item_map = (HashMap)hashmap.get(customerRoleKey);
+					for (Iterator iterator1 = item_map.keySet().iterator(); iterator1.hasNext();) {
+						String item_name = (String) iterator1.next();
+						ArrayList valueList = (ArrayList)item_map.get(item_name);
+						for (Iterator iterator2 = valueList.iterator(); iterator2.hasNext();) {
+							Values values = (Values)iterator2.next();
+							double quantity = values.getQuantity();
+							long execEndTime = -1;
+							double execQuantity = -1;
+							if (!getDemandDataList().isEmpty()) {
+								HashMap executionDataList = (HashMap)local_alist.get(0);
+								HashMap itemMap = (HashMap) executionDataList.get(customerRoleKey);
+								if(itemMap!= null){
+									ArrayList valueList1 = (ArrayList) itemMap.get(item_name);
+									if(valueList1!= null){
+										for (Iterator iter2 = valueList1.iterator(); iter2.hasNext();) {
+											Values values1 = (Values) iter2.next();
+											execEndTime = values1.getEndTime();
+											execQuantity = values1.getQuantity();
+											if(item_name.equalsIgnoreCase("JP8")) System.out.println("execEndTimeJP8 "+new Date(execEndTime)+" execQuantity "+execQuantity);
+										}
+										quantity = execQuantity;
+										if(item_name.equalsIgnoreCase("JP8")) System.out.println("QuantitySetJP8 "+quantity);
+									}
+								}
+							}
+							if (time_gap == -1 || time_gap <= ((int) pred_gap/86400000)) {
+								if ((int) pred_gap / 86400000 >= 1) {
+									if ((((int) pred_gap / 86400000) % 4) == 0 || ((int) pred_gap / 86400000) == 1) {
+								/*		double firstDataPoint = 0.0;
+										double secondDataPoint = 0.0;
+										double thirdDataPoint = 0.0;
+										if (values.getEndTime() == (endTime - (4 * 1 * 86400000))) {
+											firstDataPoint = values.getQuantity();
+										}
+										if (values.getEndTime() == (endTime - (4 * 2 * 86400000))) {
+											secondDataPoint = values.getQuantity();
+										}
+										if (values.getEndTime() == (endTime - (4 * 3 * 86400000))) {
+											thirdDataPoint = values.getQuantity();
+										} */
+										//double finalPredictionQuantity = 0.7 * quantity + 0.2 * firstDataPoint + 0.1 * secondDataPoint + 0.05 * thirdDataPoint;
+										double finalPredictionQuantity = quantity;
+										if (((int) pred_gap / 86400000) == 1) {
+											commitmentTime = getPredictionCommitmentDate() + 3 * 86400000;
+											endTime = commitmentTime + 86400000;
+											Values v = new Values(commitmentTime, endTime, finalPredictionQuantity);
+											NewTask new_task = getNewTask(customerRoleKey.getCustomerName(), customerRoleKey.getRoleName(),
+																				 item_name, v);
+											myBS.publishAdd(new_task);
+											if(item_name.equalsIgnoreCase("JP8"))
+											myLoggingService.shout(cluster + ": NEW TASK ADDED PPOUTPUT1" + new_task);
+											number_of_prediction_items++;
+											break;
+										} else {
+											commitmentTime = getPredictionCommitmentDate() + 4 * 86400000;
+											endTime = commitmentTime + 86400000;
+											Values v = new Values(commitmentTime, endTime, finalPredictionQuantity);
+											NewTask new_task = getNewTask(customerRoleKey.getCustomerName(), customerRoleKey.getRoleName(),
+																				 item_name, v);
+											myBS.publishAdd(new_task);
+											if(item_name.equalsIgnoreCase("JP8"))
+											myLoggingService.shout(cluster + ": NEW TASK ADDED PPOUTPUT" + new_task);
+											number_of_prediction_items++;
+											break;
+										}
+									} else break;
+								} else break;
+							} else break;
+						}
+					}
+				}
+			}
+			comm_restore_flag = false;
+			System.out.println("Number of Prediction tasks added "+number_of_prediction_items+" cluster "+cluster);
 		}
 	}
 
@@ -474,6 +612,27 @@ public class PredictorPlugin extends ComponentPlugin {
 			UID newuid = new UID("Prediction", id);
 			asset.setUID(newuid);
 			nt.setDirectObject(asset);
+		} else {
+			for (Iterator iterator = hashmap.values().iterator(); iterator.hasNext();) {
+				HashMap map = (HashMap) iterator.next();
+				boolean foundAsset = false;
+				for (Iterator iterator1 = map.keySet().iterator(); iterator1.hasNext();) {
+					String itemname = (String) iterator1.next();
+					if(itemname.equalsIgnoreCase(itemName)){
+						ArrayList valuesList = (ArrayList)map.get(itemName);
+						Values value = (Values)valuesList.get(0);
+						asset = value.getAsset();
+						UID uid = asset.getUID();
+						long id = uid.getId();
+						UID newuid = new UID("Prediction", id);
+						asset.setUID(newuid);
+						nt.setDirectObject(asset);
+						System.out.println("FoundAssetFromPlanningData "+asset.getUID());
+						foundAsset = true;
+						break;
+					}
+				} if(foundAsset)break;
+			}
 		}
 		return nt;
 	}
@@ -491,6 +650,18 @@ public class PredictorPlugin extends ComponentPlugin {
 		myBS.publishAdd(disp);
 
 	}
+
+	 private long findLastSupplyTaskTime(Collection tasks, String customerName) {
+		 MaxEndThunk thunk = new MaxEndThunk(customerName);
+		 Collectors.apply(thunk, tasks);
+		 return thunk.getMaxEndTime();
+	 }
+
+	private long findLastSupplyTaskTimePerSC(Collection tasks, String supplyClass) {
+		 MaxEndThunk thunk = new MaxEndThunk(supplyClass);
+		 Collectors.apply(thunk, tasks);
+		 return thunk.getMaxEndTime(supplyClass);
+	 }
 
 	public class TriggerFlushAlarm implements PeriodicAlarm {
 
@@ -527,4 +698,61 @@ public class PredictorPlugin extends ComponentPlugin {
 		long expTime;
 		long delay = 86400000;
 	};
+
+
+
+	private class MaxEndThunk implements Thunk {
+		 long maxEnd = Long.MIN_VALUE;
+		 String customerName;
+		 Task lastTask;
+		 HashMap endTimes = new HashMap();
+
+		 public MaxEndThunk (String customerName) {
+			 this.customerName = customerName;
+		 }
+
+		  public void apply(Object o) {
+			 if (o instanceof Task) {
+				 Task task = (Task) o;
+				 String supplyclass = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
+				 if(endTimes.containsKey(supplyclass)){
+					 Long endtime = (Long)endTimes.get(supplyclass);
+					 long endTime = TaskUtils.getEndTime(task);
+					 if (endTime > endtime.longValue()) {
+						 endTimes.put(supplyclass, new Long(endTime));
+						 maxEnd = endTime;
+						 lastTask = task;
+					 }
+				 } else {
+					 long endTime = TaskUtils.getEndTime(task);
+					 endTimes.put(supplyclass, new Long(endTime));
+					 if(endTime > maxEnd){
+						 maxEnd = endTime;
+						 lastTask = task;
+					 }
+				 }
+			 }
+		 }
+
+		 public long getMaxEndTime(){
+			 for (Iterator iterator = endTimes.keySet().iterator(); iterator.hasNext();) {
+				 String supplyClass = (String) iterator.next();
+				 Long endtime = (Long)endTimes.get(supplyClass);
+				 System.out.println("PredictorPluginLastTask " + lastTask+" MaxEndTime "+(new Date(endtime.longValue())).toString()+" Customer "+customerName+" Supplier "+cluster+
+							 " SupplyClass "+supplyClass);
+			 }
+			 return maxEnd;
+		 }
+
+		 public long getMaxEndTime(String supplyClass){
+			 if(endTimes.containsKey(supplyClass)){
+				 Long endtime = (Long)endTimes.get(supplyClass);
+				 //System.out.println("PredictorPluginLastTask " + lastTask+" MaxEndTimeForSC "+(new Date(endtime.longValue())).toString()+" Customer "+customerName+" Supplier "+cluster
+				 //+" SupplyClass "+supplyClass);
+				 return endtime.longValue();
+			 }
+			 else return -1;
+		 }
+	 }
+
 }
