@@ -50,7 +50,7 @@ public class ProcessHashData {
                 Collection c = table.values();
                 if (!c.isEmpty()) {
                     int size = c.size();
-                    Object[][] ob = new Object[size][7];
+                    Object[][] ob = new Object[size][8];
                     boolean flag = true;
                     for (Iterator iter = c.iterator(); iter.hasNext();) {
                         if (i == 0 && flag == true) {
@@ -68,12 +68,15 @@ public class ProcessHashData {
                         }
                     }
                     if (ob != null) {
-                        Hashtable ht = demandPerDay(ob);
+                        ArrayList al = demandPerDay(ob);
+                        for(int a=0; a<al.size();a++){
+                            Hashtable ht = (Hashtable) al.get(a);
                         String name = null;
                         for (int m = 1; m < 2; m++) {
                             Vector pr = (Vector) ht.get(new Integer(m));
                             StringBuffer sb = new StringBuffer().append(pr.elementAt(0).toString()).
-                                    append(pr.elementAt(1).toString()).append(pr.elementAt(2).toString());
+                                    append(pr.elementAt(1).toString()).append(pr.elementAt(2).toString()).
+                                    append(pr.elementAt(5).toString());
                             name = sb.toString();
                         }
                         try {
@@ -89,6 +92,8 @@ public class ProcessHashData {
                                 pwr.print(pr.elementAt(3));
                                 pwr.print(",");
                                 pwr.print(pr.elementAt(4));
+                                pwr.print(",");
+                                pwr.print(pr.elementAt(5));
                                 pwr.println();
                             }
                             pwr.close();
@@ -100,6 +105,7 @@ public class ProcessHashData {
                             hashTableList.add(z, ht);
                         }
                     }
+                    }
                     //System.out.print("A");
                 }
             }
@@ -110,6 +116,45 @@ public class ProcessHashData {
             return hashTableList;
     }
 
+    public ArrayList sortItemType(Object[][] ob){
+        ArrayList item_arraylist = new ArrayList();
+        int k = 7;
+        Vector item_vector = new Vector();
+        for(int i = 0; i < ob.length; i++) {
+               if(item_vector.isEmpty()) {
+                    item_vector.insertElementAt(ob[i][k],0);
+               } else if(item_vector.contains(ob[i][k])==false) {
+                    item_vector.insertElementAt(ob[i][k],item_vector.size());
+               } else
+                     continue;
+        }
+
+        for(int j=0; j<item_vector.size();j++){
+            Hashtable item_hashtable = new Hashtable();
+            int count = 0;
+            for(int n=0; n < ob.length; n++){
+               if((item_vector.elementAt(j)).toString().equalsIgnoreCase((ob[n][k]).toString())==true) {
+                   Vector temp_vector = new Vector();
+                   count++;
+                   temp_vector.insertElementAt(ob[n][0],0);
+                   temp_vector.insertElementAt(ob[n][1],1);
+                   temp_vector.insertElementAt(ob[n][2],2);
+                   temp_vector.insertElementAt(ob[n][3],3);
+                   temp_vector.insertElementAt(ob[n][4],4);
+                   temp_vector.insertElementAt(ob[n][5],5);
+                   temp_vector.insertElementAt(ob[n][6],6);
+                   temp_vector.insertElementAt(ob[n][7],7);
+                   item_hashtable.put(new Integer(count),temp_vector);
+            }  else
+                   continue;
+        }
+         if(item_hashtable!= null){
+         item_arraylist.add(item_arraylist.size(),item_hashtable);
+         } else
+             return null;
+    }
+       return item_arraylist;
+    }
 
     public void sort(Object[][] ob) {
         int k = 6;
@@ -137,9 +182,10 @@ public class ProcessHashData {
     }
 
 
-    public Hashtable demandPerDay(Object[][] ob) {
+    public ArrayList demandPerDay(Object[][] ob) {
+        ArrayList ret_arraylist = new ArrayList();
         if (ob != null) {
-            sort(ob);
+             sort(ob);
         /*    String name = null;
             for (int m = 1; m < 2; m++) {
                 String s = ob[m][0].toString();
@@ -148,17 +194,34 @@ public class ProcessHashData {
                 StringBuffer sb = new StringBuffer().append(s).
                         append(c).append(sc).append("1");
                 name = sb.toString();
-            } */
-
+            }  */
+            ArrayList item_array = sortItemType(ob);
+            for(int m=0; m < item_array.size();m++ ){
+                Hashtable item_ht = (Hashtable)item_array.get(m);
+                int size = item_ht.size();
+                if(size > 0){
+                Object[][] item_ob = new Object[size][8];
+                for(int n=1; n <=size; n++){
+                    item_ob[n-1][0] = ((Vector)item_ht.get(new Integer(n))).elementAt(0);
+                    item_ob[n-1][1] = ((Vector)item_ht.get(new Integer(n))).elementAt(1);
+                    item_ob[n-1][2] = ((Vector)item_ht.get(new Integer(n))).elementAt(2);
+                    item_ob[n-1][3] = ((Vector)item_ht.get(new Integer(n))).elementAt(3);
+                    item_ob[n-1][4] = ((Vector)item_ht.get(new Integer(n))).elementAt(4);
+                    item_ob[n-1][5] = ((Vector)item_ht.get(new Integer(n))).elementAt(5);
+                    item_ob[n-1][6] = ((Vector)item_ht.get(new Integer(n))).elementAt(6);
+                    item_ob[n-1][7] = ((Vector)item_ht.get(new Integer(n))).elementAt(7);
+                }
+            if(item_ob.length > 0){
+            //call the arraylist, take each hashtable convert to an array, process it, add to the hashtable and loop again
             newTable = new Hashtable();
             double sum_var = 0;
             int k = 6;
             int x = 0;
             int i = 0;
-            for (int j = i + 1; j < ob.length; j++) {
-                if (new Long(ob[j][k].toString()).longValue() > new Long(ob[i][k].toString()).longValue()) {
+            for (int j = i + 1; j < item_ob.length; j++) {
+                if (new Long(item_ob[j][k].toString()).longValue() > new Long(item_ob[i][k].toString()).longValue()) {
                     for (x = j - 1; x >= i; x--) {
-                        double var = new Double(ob[x][5].toString()).doubleValue();
+                        double var = new Double(item_ob[x][5].toString()).doubleValue();
                         sum_var = sum_var + var;
                         if (x == 0) {
                             break;
@@ -166,11 +229,12 @@ public class ProcessHashData {
                     }
 
                     vec1 = new Vector();
-                    vec1.insertElementAt(ob[x][0], 0);
-                    vec1.insertElementAt(ob[x][1], 1);
-                    vec1.insertElementAt(ob[x][2], 2);
-                    vec1.insertElementAt(ob[i][6], 3);
+                    vec1.insertElementAt(item_ob[x][0], 0);
+                    vec1.insertElementAt(item_ob[x][1], 1);
+                    vec1.insertElementAt(item_ob[x][2], 2);
+                    vec1.insertElementAt(item_ob[i][6], 3);
                     vec1.insertElementAt(new Double(sum_var), 4);
+                    vec1.insertElementAt(item_ob[x][7], 5);
                     sum_var = 0;
                     if (newTable.isEmpty()) {
                         newTable.put(new Integer(1), vec1);
@@ -184,8 +248,12 @@ public class ProcessHashData {
                     continue;
                 }
             }
+              ret_arraylist.add(m,newTable);
+            }
+            }
+            }
 
-            return newTable;
+            return ret_arraylist;
         }
 
         return null;

@@ -43,35 +43,37 @@ public class SupplyDataUpdate {
      * The data is added in ascending order of end time of the task
      */
 
-    public void getSupplyQuantity(String supp, String cust, String suppclass, long exe_time, long time, double quantity) {
+    public void getSupplyQuantity(String supp, String cust, String suppclass, long exe_time, long time, double quantity, String itemname) {
 
         String supplier = supp;
         String customer = cust;
         String supplyclass = suppclass;
+        String item_name = itemname;
         long time_days = time;
         long exe_days = exe_time;
         double supply_quantity = quantity;
         boolean flag = false;
 
         if (alt.isEmpty()) {
-            CreateHashtable ch = new CreateHashtable(supplier, customer, supplyclass, exe_days, time_days, supply_quantity);
+            CreateHashtable ch = new CreateHashtable(supplier, customer, supplyclass, exe_days, time_days, supply_quantity, item_name);
             hashTable = ch.setSupplyHT();
             alt.add(0, hashTable);
             flag = true;
 
         } else {
             for (int j = 0; j < alt.size(); j++) {
-                CreateHashtable ch1 = new CreateHashtable(supplier, customer, supplyclass);
+                CreateHashtable ch1 = new CreateHashtable(supplier, customer, supplyclass, item_name);
                 if (alt.get(j) != null) {
                     Vector temp = (Vector) ((Hashtable) alt.get(j)).get(new Integer(1));
                     flag = false;
                     if (temp != null) {
-                        if ((temp.elementAt(0).equals(ch1.getHT().elementAt(0))) &&
-                                (temp.elementAt(1).equals(ch1.getHT().elementAt(1))) &&
-                                (temp.elementAt(2).equals(ch1.getHT().elementAt(2)))) {
+                        if ((temp.elementAt(0).equals(ch1.getItemHT().elementAt(0))) &&
+                                (temp.elementAt(1).equals(ch1.getItemHT().elementAt(1))) &&
+                                (temp.elementAt(2).equals(ch1.getItemHT().elementAt(2)))
+                        && (temp.elementAt(6).equals(ch1.getItemHT().elementAt(3)))) {
                             flag = true;
                             hashTable = (Hashtable) alt.get(j);
-                            CreateHashtable ch2 = new CreateHashtable(supplier, customer, supplyclass, exe_days, time_days, supply_quantity);
+                            CreateHashtable ch2 = new CreateHashtable(supplier, customer, supplyclass, exe_days, time_days, supply_quantity, item_name);
                             for (int i = 1; i <= hashTable.size(); i++) {
                                 long time_prev = new Long(((Vector) hashTable.get(new Integer(i))).elementAt(4).toString()).longValue();
                                 long time_new = new Long(ch2.getSupplyHT().elementAt(4).toString()).longValue();
@@ -93,7 +95,7 @@ public class SupplyDataUpdate {
                 }
             }
             if (flag == false) {
-                CreateHashtable ch3 = new CreateHashtable(supplier, customer, supplyclass, exe_days, time_days, supply_quantity);
+                CreateHashtable ch3 = new CreateHashtable(supplier, customer, supplyclass, exe_days, time_days, supply_quantity, item_name);
                 hashTable = ch3.setSupplyHT();
                 alt.add(alt.size(), hashTable);
             }
@@ -106,11 +108,12 @@ public class SupplyDataUpdate {
      * The data in the hashtables is cleared before next day starts executing for faster output
      */
 
-    public ArrayList returnDemandQuantity(String supp, String cust, String suppclass, long exe_time, long time, double quantity) {
+    public ArrayList returnDemandQuantity(String supp, String cust, String suppclass, long exe_time, long time, double quantity, String itemname) {
 
         String supplier = supp;
         String customer = cust;
         String supplyclass = suppclass;
+        String item_name = itemname;
         long exe_days = exe_time;
         long time_days = time;
         double supply_quantity = quantity;
@@ -137,6 +140,7 @@ public class SupplyDataUpdate {
                             temp_vec.insertElementAt(new Long(((Vector) stable.get(new Integer(stable.size()))).elementAt(4).toString()), 4);
                             temp_vec.insertElementAt(new Double(total_quant), 5);
                             temp_vec.insertElementAt(new Long(first_day), 6);
+                            temp_vec.insertElementAt(((Vector) stable.get(new Integer(1))).elementAt(6).toString(), 7);
                             count++;
                             hbt.put(new Integer(count), temp_vec);
                             total_quant = 0;
@@ -152,6 +156,7 @@ public class SupplyDataUpdate {
                         temp_vec.insertElementAt(new Long(((Vector) stable.get(new Integer(stable.size()))).elementAt(4).toString()), 4);
                         temp_vec.insertElementAt(new Double(total_quant), 5);
                         temp_vec.insertElementAt(new Long(first_day), 6);
+                        temp_vec.insertElementAt(((Vector) stable.get(new Integer(1))).elementAt(6).toString(), 7);
                         count++;
                         hbt.put(new Integer(count), temp_vec);
                         total_quant = 0;
@@ -171,7 +176,7 @@ public class SupplyDataUpdate {
                         long c_day = new Long(((Vector) tempHash.get(new Integer(int_count))).elementAt(3).toString()).longValue();
                         double tot_qty = new Double(((Vector) tempHash.get(new Integer(int_count))).elementAt(5).toString()).doubleValue();
                         long f_day = new Long(((Vector) tempHash.get(new Integer(int_count))).elementAt(6).toString()).longValue();
-
+                        String items = ((Vector) tempHash.get(new Integer(int_count))).elementAt(7).toString();
                         try {
                             pr = new PrintWriter(new BufferedWriter(new FileWriter(sup + ".txt", true)));
                             pr.print(sup);
@@ -185,6 +190,8 @@ public class SupplyDataUpdate {
                             pr.print(f_day);
                             pr.print(",");
                             pr.print(tot_qty);
+                            pr.print(",");
+                            pr.print(items);
                             pr.println();
                             pr.close();
                         } catch (Exception e) {
@@ -194,7 +201,7 @@ public class SupplyDataUpdate {
                 }
             }
             alt.clear();
-            getSupplyQuantity(supplier, customer, supplyclass, exe_days, time_days, supply_quantity);
+            getSupplyQuantity(supplier, customer, supplyclass, exe_days, time_days, supply_quantity, item_name);
             return aylt;
         } else
             return null;

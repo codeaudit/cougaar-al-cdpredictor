@@ -261,6 +261,10 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                 //System.out.print("&");
                                                 long sTime = (long) task.getPreferredValue(AspectType.START_TIME);
                                                 long zTime = (long) task.getPreferredValue(AspectType.END_TIME);
+                                                //add the item type
+                                                Asset as = task.getDirectObject();
+                                                if(as!= null) {
+                                                String item_name = as.getTypeIdentificationPG().getNomenclature();
                                                 for (long i = sTime; i <= zTime; i = i + 86400000) {
                                                     if (owner != null) {
                                                         if (cluster != null) {
@@ -271,6 +275,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                                 values.insertElementAt(comp, 2);
                                                                 values.insertElementAt(new Long(sTime), 3);
                                                                 values.insertElementAt(new Long(zTime), 4);
+
                                                                 if (comp.compareToIgnoreCase("FuelSupplyCustomer") == 0) {
                                                                     AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
                                                                     FlowRate flowrate = (FlowRate) aspectrate.rateValue();
@@ -280,6 +285,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                                     t = i / 86400000;
                                                                     //System.out.println("t is "+t);
                                                                     values.insertElementAt(new Long(t), 6);
+                                                                    values.insertElementAt(item_name, 7);
                                                                     if (rate != -1) {
                                                                         //System.out.println("Rate is: "+rate);
                                                                     }
@@ -293,6 +299,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                                     t = i / 86400000;
                                                                     //System.out.println("t is "+t);
                                                                     values.insertElementAt(new Long(t), 6);
+                                                                    values.insertElementAt(item_name, 7);
                                                                     if (rate != -1) {
                                                                         //System.out.println("Rate is: "+rate);
                                                                     }
@@ -303,6 +310,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                             }
                                                         }
                                                     }
+                                                }
                                                 }
                                                 myBS.publishChange(ht);
                                             }

@@ -32,7 +32,6 @@ import java.lang.Math;
 import java.io.PrintWriter;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.Serializable;
 
 public class KalmanFilter implements java.io.Serializable {
 
@@ -40,18 +39,20 @@ public class KalmanFilter implements java.io.Serializable {
         this.alt = alt;
     }
 
-    public Hashtable getHashtable(String supplier, String customer, String supply_class) {
+    public Hashtable getHashtable(String supplier, String customer, String supply_class, String itemname) {
 
         String s = supplier;
         String c = customer;
         String sc = supply_class;
+        String item = itemname;
         Hashtable ht = null;
         for (int i = 0; i < alt.size(); i++) {
             ht = (Hashtable) alt.get(i);
             Vector vList = (Vector) ht.get(new Integer(1));
             if (s.compareToIgnoreCase((String) vList.elementAt(0)) == 0 &&
                     c.compareToIgnoreCase((String) vList.elementAt(1)) == 0 &&
-                    sc.compareToIgnoreCase((String) vList.elementAt(2)) == 0) {
+                    sc.compareToIgnoreCase((String) vList.elementAt(2)) == 0 &&
+                    item.compareToIgnoreCase((String) vList.elementAt(5)) == 0) {
                 return ht;
             }
         }
@@ -73,7 +74,8 @@ public class KalmanFilter implements java.io.Serializable {
                     String s = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(0).toString();
                     String c = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(1).toString();
                     String sc = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(2).toString();
-                    Hashtable hTable = getHashtable(s, c, sc);
+                    String item = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(7).toString();
+                    Hashtable hTable = getHashtable(s, c, sc, item);
                     if(iterTable == 1){
                         long current_day = new Long(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(3).toString()).longValue();
                         long pred_day = new Long(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(6).toString()).longValue();
@@ -92,6 +94,7 @@ public class KalmanFilter implements java.io.Serializable {
                                     temp_est_vec.insertElementAt(new Long(d), 3);
                                     temp_est_vec.insertElementAt(new Long(last_day), 4);
                                     temp_est_vec.insertElementAt(new Double(aprior_estimate), 5);
+                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(5).toString(), 6);
                                     estimate_array.add(estimate_array.size(), temp_est_vec);
                                     //System.out.println("Aprior Estimate for day " + d + " supplier " + s + " customer " + c + " supply class " + sc + " is " + aprior_estimate);
                                     break;
@@ -142,14 +145,16 @@ public class KalmanFilter implements java.io.Serializable {
                     String s = ((Vector)tempHTable.get(new Integer(1))).elementAt(0).toString();
                     String c = ((Vector)tempHTable.get(new Integer(1))).elementAt(1).toString();
                     String sc = ((Vector)tempHTable.get(new Integer(1))).elementAt(2).toString();
-                    Hashtable hTable = getHashtable(s, c, sc);
+                    String item = ((Vector)tempHTable.get(new Integer(1))).elementAt(7).toString();
+                    Hashtable hTable = getHashtable(s, c, sc, item);
                     if (hTable != null) {
                         if (estimate_array != null) {
 
                             for (int n = 0; n < estimate_array.size(); n++) {
                                 if ((((Vector) estimate_array.get(n)).elementAt(0).toString()).equals(s) &&
                                     (((Vector) estimate_array.get(n)).elementAt(1).toString()).equals(c) &&
-                                    (((Vector) estimate_array.get(n)).elementAt(2).toString()).equals(sc)) {
+                                    (((Vector) estimate_array.get(n)).elementAt(2).toString()).equals(sc) &&
+                                        (((Vector) estimate_array.get(n)).elementAt(6).toString()).equals(item)) {
 
                                     double apri_estimate = new Double(((Vector) estimate_array.get(n)).elementAt(5).toString()).doubleValue();
                                     double act_value = new Double(((Vector) tempHTable.get(new Integer(1))).elementAt(5).toString()).doubleValue();
@@ -172,6 +177,8 @@ public class KalmanFilter implements java.io.Serializable {
                                             pr.print(c);
                                             pr.print(",");
                                             pr.print(sc);
+                                            pr.print(",");
+                                            pr.print(item);
                                             pr.print(",");
                                             pr.print(day_val);
                                             pr.print(",");
