@@ -34,17 +34,18 @@ import java.util.*;
 
 public class ProcessHashData {
 
-    public ProcessHashData(ArrayList al) {
+    public ProcessHashData(PredictorArrayList1 al) {
 
         this.arrayList = al;
     }
 
     public PredictorArrayList iterateList() {
         int z = -1;
-        String supplier = ((Vector)((Hashtable)arrayList.get(0)).get(new Integer(1))).elementAt(0).toString();
+        //String supplier = ((Vector)((Hashtable)arrayList.get(0)).get(new Integer(1))).elementAt(0).toString();
         hashTableList = new PredictorArrayList(arrayList.size());
         for (int j = 0; j < arrayList.size(); j++) {
-            String customer = ((Vector)((Hashtable)arrayList.get(j)).get(new Integer(1))).elementAt(1).toString();
+            //String customer = ((Vector)((Hashtable)arrayList.get(j)).get(new Integer(1))).elementAt(1).toString();
+            String customer = ((Vector)((Hashtable)arrayList.get(j)).get(new Integer(1))).elementAt(0).toString();
             int i = 0;
             table = (Hashtable) arrayList.get(j);
             if (table != null) {
@@ -52,7 +53,8 @@ public class ProcessHashData {
                 Collection c = table.values();
                 if (!c.isEmpty()) {
                     int size = c.size();
-                    Object[][] ob = new Object[size][8];
+                    //Object[][] ob = new Object[size][8];
+                    Object[][] ob = new Object[size][5];
                     boolean flag = true;
                     for (Iterator iter = c.iterator(); iter.hasNext();) {
                         if (i == 0 && flag == true) {
@@ -70,7 +72,7 @@ public class ProcessHashData {
                         }
                     }
                     if (ob != null) {
-                        ArrayList al = demandPerDay(ob);
+                        PredictorArrayList1 al = demandPerDay(ob);
                         for(int a=0; a<al.size();a++){
                             Hashtable ht = (Hashtable) al.get(a);
                        /* String name = null;
@@ -126,9 +128,12 @@ public class ProcessHashData {
             return hashTableList;
     }
 
-    public ArrayList sortItemType(Object[][] ob){
-        ArrayList item_arraylist = new ArrayList();
-        int k = 7;
+    public PredictorArrayList1 sortItemType(Object[][] ob){
+        long start = System.currentTimeMillis();
+        System.out.println(" sortItemType start of for loop in sort function " +  new Date(start));
+        PredictorArrayList1 item_arraylist = new PredictorArrayList1();
+        //int k = 7;
+        int k = 4;
         Vector item_vector = new Vector();
         for(int i = 0; i < ob.length; i++) {
                if(item_vector.isEmpty()) {
@@ -151,9 +156,9 @@ public class ProcessHashData {
                    temp_vector.insertElementAt(ob[n][2],2);
                    temp_vector.insertElementAt(ob[n][3],3);
                    temp_vector.insertElementAt(ob[n][4],4);
-                   temp_vector.insertElementAt(ob[n][5],5);
-                   temp_vector.insertElementAt(ob[n][6],6);
-                   temp_vector.insertElementAt(ob[n][7],7);
+                   //temp_vector.insertElementAt(ob[n][5],5);
+                   //temp_vector.insertElementAt(ob[n][6],6);
+                   //temp_vector.insertElementAt(ob[n][7],7);
                    item_hashtable.put(new Integer(count),temp_vector);
             }  else
                    continue;
@@ -163,6 +168,10 @@ public class ProcessHashData {
          } else
              return null;
     }
+       long end = System.currentTimeMillis();
+    System.out.println("sortItemType End of for loop in sort function " +  new Date(end)
+                       + " total time to sort in milliseconds" +
+                       (end - start));
        return item_arraylist;
     }
 
@@ -173,8 +182,10 @@ public class ProcessHashData {
     System.out.println(" LORA SORT start of for loop in sort function " +  new Date(start));
     Arrays.sort(ob, new Comparator () {
       public int compare (Object a, Object b) {
-        Long end1 = (Long)((Object[]) a)[6];
-        Long end2 = (Long)((Object[]) b)[6];
+        //Long end1 = (Long)((Object[]) a)[6];
+        //Long end2 = (Long)((Object[]) b)[6];
+          Long end1 = (Long)((Object[]) a)[3];
+          Long end2 = (Long)((Object[]) b)[3];
         if (end1.longValue() < end2.longValue()) return -1;
         if (end1.longValue() > end2.longValue()) return +1;
         return 0;
@@ -186,7 +197,8 @@ public class ProcessHashData {
   }
 
   public void sort(Object[][] ob) {
-        int k = 6;
+        //int k = 6;
+        int k = 3;
         int j = 0;
       System.out.println("Collection Size: " + ob.length);
       long start = System.currentTimeMillis();
@@ -195,8 +207,10 @@ public class ProcessHashData {
             for (j = i + 1; j < ob.length; j++) {
                 if (new Long(ob[i][k].toString()).longValue() > new Long(ob[j][k].toString()).longValue()) {
                   // pull this out of inner j loop, constant check
-                    for (int x = 3; x <= 6; x++) {
-                        if (x == 5) {
+                    //for (int x = 3; x <= 6; x++) {
+                        //if (x == 5) {
+                      for (int x = 2; x <= 3; x++) {
+                        if (x == 2) {
                             // make this a Double or Object
                             double temp2 = new Double(ob[i][x].toString()).doubleValue();
                             ob[i][x] = ob[j][x];
@@ -219,8 +233,8 @@ public class ProcessHashData {
     }
 
 
-    public ArrayList demandPerDay(Object[][] ob) {
-        ArrayList ret_arraylist = new ArrayList();
+    public PredictorArrayList1 demandPerDay(Object[][] ob) {
+        PredictorArrayList1 ret_arraylist = new PredictorArrayList1();
         if (ob != null) {
             // sort(ob);
           loraSort(ob);
@@ -233,33 +247,36 @@ public class ProcessHashData {
                         append(c).append(sc).append("1");
                 name = sb.toString();
             }  */
-            ArrayList item_array = sortItemType(ob);
+            PredictorArrayList1 item_array = sortItemType(ob);
             for(int m=0; m < item_array.size();m++ ){
                 Hashtable item_ht = (Hashtable)item_array.get(m);
                 int size = item_ht.size();
                 if(size > 0){
-                Object[][] item_ob = new Object[size][8];
+                //Object[][] item_ob = new Object[size][8];
+                  Object[][] item_ob = new Object[size][5];
                 for(int n=1; n <=size; n++){
                     item_ob[n-1][0] = ((Vector)item_ht.get(new Integer(n))).elementAt(0);
                     item_ob[n-1][1] = ((Vector)item_ht.get(new Integer(n))).elementAt(1);
                     item_ob[n-1][2] = ((Vector)item_ht.get(new Integer(n))).elementAt(2);
                     item_ob[n-1][3] = ((Vector)item_ht.get(new Integer(n))).elementAt(3);
                     item_ob[n-1][4] = ((Vector)item_ht.get(new Integer(n))).elementAt(4);
-                    item_ob[n-1][5] = ((Vector)item_ht.get(new Integer(n))).elementAt(5);
-                    item_ob[n-1][6] = ((Vector)item_ht.get(new Integer(n))).elementAt(6);
-                    item_ob[n-1][7] = ((Vector)item_ht.get(new Integer(n))).elementAt(7);
+                    //item_ob[n-1][5] = ((Vector)item_ht.get(new Integer(n))).elementAt(5);
+                    //item_ob[n-1][6] = ((Vector)item_ht.get(new Integer(n))).elementAt(6);
+                    //item_ob[n-1][7] = ((Vector)item_ht.get(new Integer(n))).elementAt(7);
                 }
             if(item_ob.length > 0){
             //call the arraylist, take each hashtable convert to an array, process it, add to the hashtable and loop again
             newTable = new Hashtable();
             double sum_var = 0;
-            int k = 6;
+            //int k = 6;
+            int k = 3;
             int x = 0;
             int i = 0;
             for (int j = i + 1; j < item_ob.length; j++) {
                 if (new Long(item_ob[j][k].toString()).longValue() > new Long(item_ob[i][k].toString()).longValue()) {
                     for (x = j - 1; x >= i; x--) {
-                        double var = new Double(item_ob[x][5].toString()).doubleValue();
+                        //double var = new Double(item_ob[x][5].toString()).doubleValue();
+                        double var = new Double(item_ob[x][2].toString()).doubleValue();
                         sum_var = sum_var + var;
                         if (x == 0) {
                             break;
@@ -267,12 +284,17 @@ public class ProcessHashData {
                     }
 
                     vec1 = new Vector();
+                    //vec1.insertElementAt(item_ob[x][0], 0);
+                    //vec1.insertElementAt(item_ob[x][1], 1);
+                    //vec1.insertElementAt(item_ob[x][2], 2);
+                    //vec1.insertElementAt(item_ob[i][6], 3);
+                    //vec1.insertElementAt(new Double(sum_var), 4);
+                    //vec1.insertElementAt(item_ob[x][7], 5);
                     vec1.insertElementAt(item_ob[x][0], 0);
                     vec1.insertElementAt(item_ob[x][1], 1);
-                    vec1.insertElementAt(item_ob[x][2], 2);
-                    vec1.insertElementAt(item_ob[i][6], 3);
-                    vec1.insertElementAt(new Double(sum_var), 4);
-                    vec1.insertElementAt(item_ob[x][7], 5);
+                    vec1.insertElementAt(item_ob[x][3], 2);
+                    vec1.insertElementAt(new Double(sum_var), 3);
+                    vec1.insertElementAt(item_ob[x][4], 4);
                     sum_var = 0;
                     if (newTable.isEmpty()) {
                         newTable.put(new Integer(1), vec1);
@@ -299,7 +321,7 @@ public class ProcessHashData {
 
 
   private PredictorArrayList hashTableList;
-  private ArrayList arrayList;
+  private PredictorArrayList1 arrayList;
   private Hashtable table;
   private Hashtable newTable;
   private Vector vec1;

@@ -333,7 +333,7 @@ public class SupplyDataUpdate {
            return max_psal_new;
     }else
        {
-           System.out.println("max_psal is empty");
+           //System.out.println("max_psal is empty");
            return null;
        }
     }
@@ -344,8 +344,8 @@ public class SupplyDataUpdate {
         PredictorSupplyArrayList psal_new = new PredictorSupplyArrayList();
         psal_new.addAll(c);
         if(psal_new!= null && max_psal!= null) {
-            System.out.println("psal_new size is"+psal_new.size());
-            System.out.println("max_psal size is"+max_psal.size());
+            //System.out.println("psal_new size is"+psal_new.size());
+            //System.out.println("max_psal size is"+max_psal.size());
         for(int i = 0; i < max_psal.size();i++){
             Vector item_check_vector = (Vector) max_psal.get(i);
             String item_check = item_check_vector.elementAt(3).toString();
@@ -371,7 +371,7 @@ public class SupplyDataUpdate {
             }
             if(temp_bool == false){
                 psal_new.add(psal_new.size(),item_check_vector);
-                System.out.println("psal_new has new item added");
+                //System.out.println("psal_new has new item added");
             }
 
         }
@@ -400,14 +400,14 @@ public class SupplyDataUpdate {
             }
             if(temp_bool == false){
                 max_psal.add(max_psal.size(),item_check_vector);
-                System.out.println("max_psal has new item added");
+                //System.out.println("max_psal has new item added");
             }
         }
             return psal_new;
         }
         else
         {
-            System.out.println("retainAllItems didnt execute");
+            //System.out.println("retainAllItems didnt execute");
             return psal;
         }
 
@@ -498,6 +498,6 @@ public class SupplyDataUpdate {
     int j = 0;
     double total_quant = 0;
     PrintWriter pr;
-    boolean print_flag = true;
+    boolean print_flag = false;
     PredictorSupplyArrayList max_psal = new PredictorSupplyArrayList();
 }

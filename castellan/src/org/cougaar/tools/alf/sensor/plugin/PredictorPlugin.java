@@ -69,9 +69,10 @@ public class PredictorPlugin extends ComponentPlugin {
 
         public void expire() {
             expired = true;
-            myBS.openTransaction();
-            callPredictor();
-            myBS.closeTransaction();
+            //myBS.openTransaction();
+            //callPredictor();
+            myBS.signalClientActivity();
+            //myBS.closeTransaction();
             cancel();
         }
 
@@ -167,7 +168,12 @@ public class PredictorPlugin extends ComponentPlugin {
     public void retrievesalfromBB(){
         if(local_alist == null){
             myLoggingService.shout("local_alist is null");
-            Collection c1 = salSubscription.getAddedCollection();
+            Collection c = myBS.query(supplyArrayListPredicate);
+            for(Iterator iter = c.iterator();iter.hasNext() ;){
+                local_alist = (PredictorSupplyArrayList) iter.next();
+                myLoggingService.shout("local_alist added"+local_alist.size());
+            }
+            /* Collection c1 = salSubscription.getAddedCollection();
             Collection c2 = salSubscription.getChangedCollection();
             for(Iterator iter = c1.iterator();iter.hasNext() ;){
                 local_alist = (PredictorSupplyArrayList) iter.next();
@@ -176,7 +182,7 @@ public class PredictorPlugin extends ComponentPlugin {
             for(Iterator iter = c2.iterator();iter.hasNext() ;){
                 local_alist = (PredictorSupplyArrayList) iter.next();
                 myLoggingService.shout("local_alist changed"+local_alist.size());
-            }
+            }  */
         }
     }
 
@@ -184,8 +190,8 @@ public class PredictorPlugin extends ComponentPlugin {
         if(arraylist == null){
             myLoggingService.shout("arraylist is null");
             flag = false;
-            Collection c1 = arrayListSubscription.getAddedCollection();
-            for(Iterator iter = c1.iterator();iter.hasNext() ;){
+            Collection c = myBS.query(arrayListPredicate);
+            for(Iterator iter = c.iterator();iter.hasNext() ;){
                 arraylist = (PredictorArrayList) iter.next();
                 myLoggingService.shout("PredictorArraylist added"+arraylist.size());
                 if(arraylist.size()>1){
@@ -194,6 +200,16 @@ public class PredictorPlugin extends ComponentPlugin {
                     flag = true;
                 }
             }
+           /* Collection c1 = arrayListSubscription.getAddedCollection();
+            for(Iterator iter = c1.iterator();iter.hasNext() ;){
+                arraylist = (PredictorArrayList) iter.next();
+                myLoggingService.shout("PredictorArraylist added"+arraylist.size());
+                if(arraylist.size()>1){
+                    kf = new KalmanFilter(arraylist);
+                    myBS.publishAdd(kf);
+                    flag = true;
+                }
+            }  */
         }
     }
 
@@ -217,10 +233,14 @@ public class PredictorPlugin extends ComponentPlugin {
             }
             else if(flag == true && rehydrate_flag == true)
             {
-                myLoggingService.shout("Rehydration Occurred in PredictorPlugin");
+                //myLoggingService.shout("Rehydration Occurred in PredictorPlugin");
             }
             if (flag == true && !relay_added == true)
             {
+                if(alarm!= null && alarm.hasExpired()== true){
+                    callPredictor();
+                    myLoggingService.shout("Alarm fired in PredictorPlugin execute");
+                }
                 checkCommStatusSubscription();
                 getActualDemand();
             }
@@ -354,8 +374,9 @@ public class PredictorPlugin extends ComponentPlugin {
         if (status == false)
         {
             commLossTime = cs.getCommLossTime();
-            System.out.println("Comm. Loss Time is: " + commLossTime);
+            //System.out.println("Comm. Loss Time is: " + commLossTime);
             myLoggingService.shout("Communication Lost with Customer: " + customerAgentName);
+            getActualDemand();
             PredictorSupplyArrayList total_qty_alist = sd.returnDemandQuantity1();
             Collection c = new PredictorSupplyArrayList();
             c = total_qty_alist;
@@ -364,7 +385,7 @@ public class PredictorPlugin extends ComponentPlugin {
             myLoggingService.shout("local_alist size in get actualdemand method " + local_alist.size());
             alarm = new TriggerFlushAlarm(currentTimeMillis());
             as.addAlarm(alarm);
-            myLoggingService.shout("Comm. Loss Alarm Added");
+            //myLoggingService.shout("Comm. Loss Alarm Added");
             comm_count++;
         } else
         {
@@ -386,6 +407,9 @@ public class PredictorPlugin extends ComponentPlugin {
 
     public void getActualDemand() {
         Task task;
+        if(status == false){
+            myLoggingService.shout("status is false before getActualDemand");
+        }
         for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
             task = (Task) e.nextElement();
             if (task != null) {
@@ -420,6 +444,9 @@ public class PredictorPlugin extends ComponentPlugin {
                                             long commitment_date = task.getCommitmentDate().getTime() / 86400000;
                                             if (ti != -1 && qty != -1) {
                                                     if (ti == x) {
+                                                        if(status == false){
+                                                            myLoggingService.shout("status is false inside getActualDemand");
+                                                        }
                                                         sd.getSupplyQuantity(cluster, owner, comp, item_name, ti, commitment_date, sTime, qty, uid);
                                                     } else if (ti > x) {
                                                         sd.returnDemandQuantity(cluster, owner, comp, item_name, ti, commitment_date, sTime, qty, uid);
@@ -444,7 +471,14 @@ public class PredictorPlugin extends ComponentPlugin {
                                                             Collection c = new PredictorSupplyArrayList();
                                                             c = total_qty_alist;
                                                             local_alist = new PredictorSupplyArrayList(c);
+                                                            for(int a =0; a < local_alist.size(); a++){
+                                                                Vector local_vector = (Vector) local_alist.get(a);
+                                                                String supply_class_name = local_vector.elementAt(2).toString();
+                                                                String item_class_name = local_vector.elementAt(3).toString();
+                                                                myLoggingService.shout("Task UID for Supply Class: "+supply_class_name+ " for item: "+ item_class_name+ "is: "+local_vector.elementAt(8).toString());
+                                                            }
                                                             myLoggingService.shout("local_alist size in get actualdemand method1 " + local_alist.size());
+
                                                             myBS.publishChange(local_alist);
 
                                                         }
@@ -557,7 +591,7 @@ public class PredictorPlugin extends ComponentPlugin {
                             long commit_day = new Long(values_vector.elementAt(5).toString()).longValue();          //Commitment Date
                             long last_day = new Long(values_vector.elementAt(6).toString()).longValue();            //Last Supply Date
 
-                            myLoggingService.shout("Last date value for supplyclass: " + supplyclass_copy + " is " + new Date(last_day * 86400000));
+                            //myLoggingService.shout("Last date value for supplyclass: " + supplyclass_copy + " is " + new Date(last_day * 86400000));
 
                             long customer_lead_time = getCustomerLeadTime(last_day, commLossTime);                  // Customer Lead Time
                             long pred_gap = getPredictorGap(last_day, customer_lead_time);                          // Predictor Gap

@@ -49,10 +49,15 @@ public class KalmanFilter implements java.io.Serializable {
         for (int i = 0; i < alt.size(); i++) {
             ht = (Hashtable) alt.get(i);
             Vector vList = (Vector) ht.get(new Integer(1));
-            if (s.compareToIgnoreCase((String) vList.elementAt(0)) == 0 &&
+          /*  if (s.compareToIgnoreCase((String) vList.elementAt(0)) == 0 &&
                     c.compareToIgnoreCase((String) vList.elementAt(1)) == 0 &&
                     sc.compareToIgnoreCase((String) vList.elementAt(2)) == 0 &&
                     item.compareToIgnoreCase((String) vList.elementAt(5)) == 0) {
+                return ht;
+            } */
+            if (c.compareToIgnoreCase((String) vList.elementAt(0)) == 0 &&
+                    sc.compareToIgnoreCase((String) vList.elementAt(1)) == 0 &&
+                    item.compareToIgnoreCase((String) vList.elementAt(4)) == 0) {
                 return ht;
             }
         }
@@ -81,17 +86,20 @@ public class KalmanFilter implements java.io.Serializable {
                         if (hTable!= null) {
                             for (int m = 1; m <= hTable.size(); m++) {
                                 Vector vl = (Vector) hTable.get(new Integer(m));
-                                if (last_date == new Long(vl.elementAt(3).toString()).longValue()) {
+                                //if (last_date == new Long(vl.elementAt(3).toString()).longValue()) {
+                                    if (last_date == new Long(vl.elementAt(2).toString()).longValue()) {
                                     long d = last_date + 1;
-                                    double aprior_estimate = new Double(((Vector) hTable.get(new Integer(m))).elementAt(4).toString()).doubleValue();
+                                    //double aprior_estimate = new Double(((Vector) hTable.get(new Integer(m))).elementAt(4).toString()).doubleValue();
+                                    double aprior_estimate = new Double(((Vector) hTable.get(new Integer(m))).elementAt(3).toString()).doubleValue();
                                     Vector temp_est_vec = new Vector();
-                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(0).toString(), 0);
-                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(1).toString(), 1);
-                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(2).toString(), 2);
+                                    //temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(0).toString(), 0);
+                                    temp_est_vec.insertElementAt(s, 0);
+                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(0).toString(), 1);
+                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(1).toString(), 2);
                                     temp_est_vec.insertElementAt(new Long(d), 3);
                                     temp_est_vec.insertElementAt(new Long(last_date), 4);
                                     temp_est_vec.insertElementAt(new Double(aprior_estimate), 5);
-                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(5).toString(), 6);
+                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(4).toString(), 6);
                                     estimate_array.add(estimate_array.size(), temp_est_vec);
                                     System.out.println("Aprior Estimate for day " + d + " supplier " + s + " customer " + c + " supply class " + sc + " is " + aprior_estimate);
                                     break;
@@ -177,17 +185,23 @@ public class KalmanFilter implements java.io.Serializable {
                                         Vector vl = (Vector) hTable.get(new Integer(i));
                                         //if(new Long(vl.elementAt(3).toString()).longValue() == last_day) {
                                         long curr_day = new Long(ali_vector.elementAt(6).toString()).longValue();
-                                        if (new Long(vl.elementAt(3).toString()).longValue() == curr_day) {
-                                            double original_value = new Double(vl.elementAt(4).toString()).doubleValue();
+                                        //if (new Long(vl.elementAt(3).toString()).longValue() == curr_day) {
+                                          if (new Long(vl.elementAt(2).toString()).longValue() == curr_day) {
+                                            //double original_value = new Double(vl.elementAt(4).toString()).doubleValue();
+                                              double original_value = new Double(vl.elementAt(3).toString()).doubleValue();
                                             original_value = apost;
                                             if (original_value < 0) {
                                                 original_value = 0;
-                                                vl.removeElementAt(4);
-                                                vl.insertElementAt(new Double(original_value), 4);
+                                                //vl.removeElementAt(4);
+                                                //vl.insertElementAt(new Double(original_value), 4);
+                                                vl.removeElementAt(3);
+                                                vl.insertElementAt(new Double(original_value), 3);
                                                 break;
                                             } else {
-                                                vl.removeElementAt(4);
-                                                vl.insertElementAt(new Double(original_value), 4);
+                                                vl.removeElementAt(3);
+                                                vl.insertElementAt(new Double(original_value), 3);
+                                                //vl.removeElementAt(4);
+                                                //vl.insertElementAt(new Double(original_value), 4);
                                                 break;
                                             }
                                         }

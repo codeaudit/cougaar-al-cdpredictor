@@ -62,9 +62,11 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
         public void expire() {
             expired = true;
-            myBS.openTransaction();
-            executeAlarm();
-            myBS.closeTransaction();
+            //myBS.openTransaction();
+            myBS.signalClientActivity();
+            myLoggingService.shout("Alarm for PredictorDataPlugin fired");
+            //executeAlarm();
+            //myBS.closeTransaction();
             cancel();
 
         }
@@ -81,7 +83,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
         boolean expired = false;
         long expTime;
-        long delay = 120000;
+        long delay = 60000;
     }
 
 
@@ -113,7 +115,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
     UnaryPredicate hashArrayPredicate = new UnaryPredicate() {
         public boolean execute(Object o) {
-            return o instanceof ArrayList;
+            return o instanceof PredictorArrayList1;
         }
 
     };
@@ -134,9 +136,23 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
     UnaryPredicate taskPredicate = new UnaryPredicate() {
         public boolean execute(Object o) {
-            return o instanceof Task;
+            if (o instanceof Task)
+			{
+				Task tempTask = (Task) o;
+                Verb verb = tempTask.getVerb();
+                if(verb.equals("ProjectSupply")){
+                if(tempTask.getPrepositionalPhrase("For").getIndirectObject().equals("47-FSB")== true){
+                //if(Owner.equalsIgnoreCase(cluster)== false){
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            //return o instanceof Task;
+            }
+            }
+            return false;
         }
-
     };
 
 
@@ -166,28 +182,27 @@ public class PredictorDataPlugin extends ComponentPlugin {
         if (myBS.didRehydrate() == false) {
             ht = new Hashtable();
             myBS.publishAdd(ht);
-            myLoggingService.shout("ht saved");
-            hashArray = new ArrayList();
+            //myLoggingService.shout("ht saved");
+            hashArray = new PredictorArrayList1();
             myBS.publishAdd(hashArray);
-            myLoggingService.shout("hashArray saved");
+            //myLoggingService.shout("hashArray saved");
             al = new PredictorArrayList(cluster);
             myBS.publishAdd(al);
-            myLoggingService.shout("al saved");
+            //myLoggingService.shout("al saved");
             myBS.setShouldBePersisted(false);
         } else {
             //retrievehtfromBB();
+            rehydrate_flag = true;
             retrievehashArrayfromBB();
             retrieveALfromBB();
             //retrieveAlarmfromBB();
-            myLoggingService.shout("retrieveALfromBB");
+            //myLoggingService.shout("retrieveALfromBB");
         }
         //myBS.setShouldBePersisted(false);
     }
 
 
     public void execute() {
-
-
 
         InterAgentCondition tr;
 
@@ -210,33 +225,46 @@ public class PredictorDataPlugin extends ComponentPlugin {
                 break;
             }
         }
-
+        if(alarm!=null && alarm.hasExpired()==true){
+            count_alarm++;
+            if(count_alarm == 1 && rehydrate_flag == false){
+                executeAlarm();
+                myLoggingService.shout("Alarm fired in execute");
+                alarm.cancel();
+            }
+        }
         relationshipList();
         getPlannedDemand();
     }
 
     public void retrievehtfromBB(){
         if(ht == null){
-            myLoggingService.shout("ht is null");
+            //myLoggingService.shout("ht is null");
             Collection c1 = htSubscription.getAddedCollection();
             Collection c2 = htSubscription.getChangedCollection();
             for(Iterator iter = c1.iterator();iter.hasNext() ;){
                 ht = (Hashtable) iter.next();
-                myLoggingService.shout("ht size added"+ht.size());
-                myLoggingService.shout("ht Hashtable");
+                //myLoggingService.shout("ht size added"+ht.size());
+                //myLoggingService.shout("ht Hashtable");
             }
             for(Iterator iter = c2.iterator();iter.hasNext() ;){
                 ht = (Hashtable) iter.next();
-                myLoggingService.shout("ht size changed"+ht.size());
-                myLoggingService.shout("ht Hashtable");
+                //myLoggingService.shout("ht size changed"+ht.size());
+                //myLoggingService.shout("ht Hashtable");
             }
         }
     }
 
     public void retrievehashArrayfromBB(){
       if(hashArray == null){
-          myLoggingService.shout("hashArray null");
-            Collection c1 = hashArraySubscription.getAddedCollection();
+          //myLoggingService.shout("hashArray null");
+          Collection c = myBS.query(hashArrayPredicate);
+          for(Iterator iter = c.iterator();iter.hasNext() ;){
+              hashArray = (PredictorArrayList1) iter.next();
+              myLoggingService.shout("Number of unique relationships: "+hashArray.size());
+              //myLoggingService.shout("hashArray PredictorArrayList1");
+          }
+        /*    Collection c1 = hashArraySubscription.getAddedCollection();
             Collection c2 = hashArraySubscription.getChangedCollection();
             for(Iterator iter = c1.iterator();iter.hasNext() ;){
                 hashArray = (ArrayList) iter.next();
@@ -247,14 +275,32 @@ public class PredictorDataPlugin extends ComponentPlugin {
                 hashArray = (ArrayList) iter.next();
                 myLoggingService.shout("hashArray size changed"+hashArray.size());
                 myLoggingService.shout("hashArray ArrayList");
-            }
+            } */
         }
     }
 
     public void retrieveALfromBB(){
       if(al == null){
-          myLoggingService.shout("al null");
-            Collection c1 = ALSubscription.getAddedCollection();
+          //myLoggingService.shout("al null");
+          Collection c = myBS.query(ALPredicate);
+          for(Iterator iter = c.iterator();iter.hasNext() ;){
+              al = (PredictorArrayList) iter.next();
+              myLoggingService.shout("PredictorArrayList has total items = "+al.size());
+              //myLoggingService.shout("al recieved");
+              if(al.size()==0 && hashArray!= null){
+                    if (alarm != null) alarm.cancel();
+                    alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
+                    as.addAlarm(alarm);
+                    count_alarm = 0;
+                    //myLoggingService.shout("Alarm_added");
+          } else if(al.size()!= 0){
+                count_alarm = 1;
+              if(alarm!=null){
+                  alarm.cancel();
+              }
+              }
+          }
+        /*    Collection c1 = ALSubscription.getAddedCollection();
             Collection c2 = ALSubscription.getChangedCollection();
             for(Iterator iter = c1.iterator();iter.hasNext() ;){
                 al = (PredictorArrayList) iter.next();
@@ -264,8 +310,10 @@ public class PredictorDataPlugin extends ComponentPlugin {
                     if (alarm != null) alarm.cancel();
                     alarm = new TriggerFlushAlarm(currentTimeMillis() + 120000);
                     as.addAlarm(alarm);
+                    count_alarm = 0;
                     myLoggingService.shout("Alarm_added");
           }
+                count_alarm = 1;
             }
           for(Iterator iter = c2.iterator();iter.hasNext() ;){
                 al = (PredictorArrayList) iter.next();
@@ -275,26 +323,29 @@ public class PredictorDataPlugin extends ComponentPlugin {
                     if (alarm != null) alarm.cancel();
                     alarm = new TriggerFlushAlarm(currentTimeMillis() + 120000);
                     as.addAlarm(alarm);
+                    count_alarm = 0;
                     myLoggingService.shout("Alarm_added");
           }
-            }
+              count_alarm = 1;
+            } */
 
         }
         if(al == null && hashArray!= null){
            if (alarm != null) alarm.cancel();
-               alarm = new TriggerFlushAlarm(currentTimeMillis() + 120000);
+               alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
                as.addAlarm(alarm);
-               myLoggingService.shout("Alarm_added");
+               count_alarm = 0;
+               //myLoggingService.shout("Alarm_added");
         }
     }
 
      public void retrieveAlarmfromBB(){
       if(alarm == null){
-          myLoggingService.shout("alarm null");
+          //myLoggingService.shout("alarm null");
             Collection c1 = AlarmSubscription.getAddedCollection();
             for(Iterator iter = c1.iterator();iter.hasNext() ;){
                 alarm = (TriggerFlushAlarm) iter.next();
-                myLoggingService.shout("alarm recieved");
+                //myLoggingService.shout("alarm recieved");
             }
         }
     }
@@ -351,7 +402,6 @@ public class PredictorDataPlugin extends ComponentPlugin {
         }
     }
 
-
     public void getPlannedDemand() {
         Task task;
         if (!relay_added == true) {
@@ -370,7 +420,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                         String comp = stringManipulation(pol);
                                         if (comp != null) {
                                             if (alarm != null) alarm.cancel();
-                                            alarm = new TriggerFlushAlarm(currentTimeMillis() + 120000);
+                                            alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
                                             as.addAlarm(alarm);
                                             //myBS.publishAdd(alarm);
                                             CreateHashtable chash = new CreateHashtable(cluster, owner, comp);
@@ -399,28 +449,36 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                         if (cluster != null) {
                                                             if (comp != null) {
                                                                 Vector values = new Vector();
-                                                                values.insertElementAt(cluster, 0);
-                                                                values.insertElementAt(owner, 1);
-                                                                values.insertElementAt(comp, 2);
-                                                                values.insertElementAt(new Long(sTime), 3);
-                                                                values.insertElementAt(new Long(zTime), 4);
+                                                                //values.insertElementAt(cluster, 0);
+                                                                //values.insertElementAt(owner, 1);
+                                                                //values.insertElementAt(comp, 2);
+                                                                //values.insertElementAt(new Long(sTime), 3);
+                                                                //values.insertElementAt(new Long(zTime), 4);
+                                                                values.insertElementAt(owner, 0);
+                                                                values.insertElementAt(comp, 1);
                                                                 if (comp.compareToIgnoreCase("FuelSupplyCustomer") == 0) {
                                                                     AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
                                                                     FlowRate flowrate = (FlowRate) aspectrate.rateValue();
                                                                     double rate = (flowrate.getGallonsPerDay());
-                                                                    values.insertElementAt(new Double(rate), 5);
+                                                                    //values.insertElementAt(new Double(rate), 5);
+                                                                    values.insertElementAt(new Double(rate), 2);
                                                                     t = i / 86400000;
-                                                                    values.insertElementAt(new Long(t), 6);
-                                                                    values.insertElementAt(item_name, 7);
+                                                                    //values.insertElementAt(new Long(t), 6);
+                                                                    //values.insertElementAt(item_name, 7);
+                                                                    values.insertElementAt(new Long(t), 3);
+                                                                    values.insertElementAt(item_name, 4);
                                                                 } else {
                                                                     AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
                                                                     CountRate flowrate = (CountRate) aspectrate.rateValue();
                                                                     double rate = (flowrate.getUnitsPerDay());
-                                                                    values.insertElementAt(new Double(rate), 5);
+                                                                    //values.insertElementAt(new Double(rate), 5);
+                                                                    values.insertElementAt(new Double(rate), 2);
                                                                     t = i / 86400000;
                                                                     //System.out.println("t is "+t);
-                                                                    values.insertElementAt(new Long(t), 6);
-                                                                    values.insertElementAt(item_name, 7);
+                                                                    //values.insertElementAt(new Long(t), 6);
+                                                                    //values.insertElementAt(item_name, 7);
+                                                                    values.insertElementAt(new Long(t), 3);
+                                                                    values.insertElementAt(item_name, 4);
                                                                 }
 
                                                                 ht.put(new Integer((ht.size() + 1)), values);
@@ -527,13 +585,15 @@ public class PredictorDataPlugin extends ComponentPlugin {
     private CreateHashtable chashtable;
     private Hashtable ht = null;
     private Hashtable hasht = new Hashtable();
-    ArrayList hashArray = null;
+    PredictorArrayList1 hashArray = null;
 
     private int counter = 0;
     private long t = 0;
     private boolean relay_added = false;
     private boolean flagger = false;
     private PredictorArrayList al = null;
+    int count_alarm = 0;
+    boolean rehydrate_flag = false;
 
 }
 
