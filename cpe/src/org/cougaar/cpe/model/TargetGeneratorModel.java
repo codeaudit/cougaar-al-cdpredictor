@@ -13,11 +13,21 @@ import java.awt.*;
 
 public class TargetGeneratorModel implements TargetGenerator
 {
+    public static final long DEFAULT_SEED = 0xcafebabe ;
+
     private long nextClusterGenerationTime;
     private boolean isWaitingToGenerate = false;
     private float probUnitGeneration = 0.45f;
     private WorldState ws;
     private long lastGenerationTime = 0 ;
+    private long initialSeed = DEFAULT_SEED;
+    private static final String TAG_PROB_GENERATION = "ProbGeneration";
+    private static final String TAG_SEED_VALUE = "SeedValue";
+    private static final String TAG_ACTIVE_CLUSTERS = "ActiveClusters";
+    private static final String TAG_MIN_CLUSTER_TIME = "MinClusterTime";
+    private static final String TAG_MAX_CLUSTER_TIME = "MaxClusterTime";
+    private static final String TAG_MIN_CLUSTER_DELAY = "MinClusterDelay";
+    private static final String TAG_MAX_CLUSTER_DELAY = "MaxClusterDelay";
 
     public static final class Cluster {
         public Cluster(float xCenter, float clusterSize, long start, long end, float probGeneration) {
@@ -60,20 +70,6 @@ public class TargetGeneratorModel implements TargetGenerator
         return value;
     }
 
-    public void initialize(Document doc)
-    {
-        Node root = doc.getDocumentElement() ;
-        if( root.getNodeName().equals( "TargetGeneratorConfig" ) ) {
-            String probGenerationValue = getNodeValueForTag(doc, "ProbGeneration", "value" ) ;
-            if ( probGenerationValue != null ) {
-                probUnitGeneration = Float.parseFloat( probGenerationValue ) ;
-            }
-        }
-        else {
-            throw new RuntimeException( "No root document element TargetGeneratorConfig found." ) ;
-        }
-
-    }
 
     public TargetGeneratorModel( WorldState ws, int seed, int numClustersActive, float probGeneration ) {
         this.ws = ws ;
@@ -82,8 +78,70 @@ public class TargetGeneratorModel implements TargetGenerator
         maxClustersActive = numClustersActive ;
     }
 
+    public void initialize(Document doc)
+    {
+        Node root = doc.getDocumentElement() ;
+        if( root.getNodeName().equals( "TargetGenConfig" ) ) {
+            String probGenerationValue = getNodeValueForTag(doc, TAG_PROB_GENERATION, "value" ) ;
+            if ( probGenerationValue != null ) {
+                probUnitGeneration = Float.parseFloat( probGenerationValue ) ;
+            }
+
+            String seedValue = getNodeValueForTag( doc, TAG_SEED_VALUE, "value" ) ;
+            if ( seedValue != null ) {
+                initialSeed = Long.parseLong( seedValue ) ;
+            }
+
+            String numClustersValue = getNodeValueForTag( doc, TAG_ACTIVE_CLUSTERS, "value" ) ;
+            if ( seedValue != null ) {
+                maxClustersActive = Integer.parseInt( numClustersValue ) ;
+            }
+
+            String minClusterTimeValue = getNodeValueForTag( doc, TAG_MIN_CLUSTER_TIME, "value" ) ;
+            if ( minClusterTimeValue != null ) {
+                minClusterTime = Integer.parseInt( minClusterTimeValue ) ;
+            }
+
+            String maxClusterTimeValue = getNodeValueForTag( doc, TAG_MAX_CLUSTER_TIME, "value" ) ;
+            if ( maxClusterTimeValue != null ) {
+                maxClusterTime = Integer.parseInt( maxClusterTimeValue ) ;
+            }
+
+            String minClusterDelayValue = getNodeValueForTag( doc, TAG_MIN_CLUSTER_DELAY, "value" ) ;
+            if ( minClusterDelayValue != null ) {
+                minClusterTimeDelay = Integer.parseInt( minClusterDelayValue) ;
+            }
+
+            String maxClusterDelayValue = getNodeValueForTag( doc, TAG_MAX_CLUSTER_DELAY, "value" ) ;
+            if ( maxClusterDelayValue != null ) {
+                maxClusterTimeDelay = Integer.parseInt( maxClusterDelayValue ) ;
+            }
+        }
+        else {
+            throw new RuntimeException( "No root document element TargetGeneratorConfig found." ) ;
+        }
+
+        random = new Random( initialSeed ) ;
+    }
+
+    public String toString()
+    {
+        StringBuffer buf = new StringBuffer() ;
+        buf.append( "[TargetGeneratorModel " ) ;
+        buf.append( "prob=" + probUnitGeneration ) ;
+        buf.append( ",initial Seed=" + initialSeed ) ;
+        buf.append( ",minCluster=" + minClusterTime / 1000.0 + " sec." ) ;
+        buf.append( ",maxCluster=" + maxClusterTime / 1000.0 + " sec." ) ;
+        buf.append( ",minClusterDelay=" + minClusterTimeDelay / 1000.0 + " sec." ) ;
+        buf.append( ",maxClusterDelay=" + maxClusterTimeDelay / 1000.0 + " sec." ) ;
+        buf.append( "]") ;
+
+        return buf.toString() ;
+    }
+
     /**
-     * Reset this generator to the current time base.
+     * Reset this generator to the current time base. This is used to reset the internal times
+     * if a number of targets have already been generated.
      */
     public void resetTime( long time) {
         nextClusterGenerationTime = time + nextClusterGenerationTime - lastGenerationTime ;
@@ -171,12 +229,12 @@ public class TargetGeneratorModel implements TargetGenerator
     }
 
     /**
-     * These sizes are actually std. deviation numbers.
+     * These sizes are actually std. deviation values.
      */
     float maxClusterSize = 4.5f, minClusterSize = 2.5f ;
 
     /**
-     * Space out elements within the cluster by one delta t.
+     * Space out elements within the cluster by at least this amount of time.
      */
     int clusterGeneratorDelay = 5000 ;
     int minClusterTime = 35000, maxClusterTime = 60000 ;
