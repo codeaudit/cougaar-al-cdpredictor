@@ -21,6 +21,7 @@ import org.cougaar.cpe.agents.qos.QoSConstants;
 import org.cougaar.cpe.model.Plan;
 import org.cougaar.cpe.model.UnitEntity;
 import org.cougaar.cpe.model.VGWorldConstants;
+import org.cougaar.cpe.model.WorldStateModel;
 import org.cougaar.cpe.relay.GenericRelayMessageTransport;
 import org.cougaar.cpe.relay.MessageSink;
 import org.cougaar.cpe.relay.SourceBufferRelay;
@@ -28,6 +29,7 @@ import org.cougaar.cpe.relay.TargetBufferRelay;
 import org.cougaar.tools.techspecs.qos.*;
 import org.cougaar.cpe.util.CPUConsumer;
 import org.cougaar.tools.techspecs.events.MessageEvent;
+import org.cougaar.tools.techspecs.events.TimerEvent;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -77,6 +79,7 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
     private EventDurationMeasurementPoint updateUnitStatusTimeMP;
     private byte[] configBytes;
     private LoggingService ls;
+    private String UNIT_STATUS_UPDATE_TIMER = "UnitStatusUpdateTimer";
 
     protected void execute() {
         System.out.print( "E("+getAgentIdentifier()+")");
@@ -161,11 +164,14 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
         if ( msg instanceof ManueverPlanMessage ) {
             ManueverPlanMessage mpm = (ManueverPlanMessage) msg ;
             if ( !mpm.getEntityName().equals( getAgentIdentifier().getAddress() ) ) {
-               System.err.println("Manuever plan " + mpm +
+               ls.error("Manuever plan " + mpm +
                        " has unexpected entity name " + mpm.getEntityName() + ", expected=" +
                        getAgentIdentifier());
                return ;
             }
+
+            // DEBUG
+            ls.shout( getAgentIdentifier() + ":: Received plan from superior.");
 
             // This is the actual processing to resolve the new plan against the local plan
             // Set the local manuever plan, overwriting any existing plan.  We need to confirm
@@ -285,9 +291,20 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
             //System.out.println( getAgentIdentifier() + "::RECEIVED WorldStateModel " + perceivedWorldState );
             UnitStatusUpdateMessage wsum = (UnitStatusUpdateMessage) msg ;
             perceivedWorldState = wsum.getWorldState() ;
+
+            // Copy the old manuever plan to the new entity.
+            Plan manueverPlan = null ;
+            if ( entity != null ) {
+                manueverPlan = entity.getManueverPlan() ;
+            }
             refToWorldState.setState( perceivedWorldState );
             getBlackboardService().publishChange( refToWorldState );
+
+            // Copy the manuever plan over to the new entity
             entity = wsum.getEntity() ;
+            if ( entity != null && manueverPlan != null) {
+                entity.setManueverPlan( manueverPlan );
+            }
         }
         else if ( msg instanceof PublishMPMessage ) {
             BundledMPMessage bmm = new BundledMPMessage() ;
@@ -312,11 +329,12 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
      * Update the world state, depending on the
      */
 
-    protected void processUnitStatusUpdateTimer() {
-        //System.out.println( "\n\n UnitAgent " + getAgentIdentifier() + ":: EXECUTING WorldStateUpdateTimer...");
-        BlackboardService bs = getBlackboardService() ;
-        try {
-            bs.openTransaction();
+    public void ProcessUnitStatusUpdateTimer( TimerEvent e) {
+        // DEBUG
+        ls.shout( "\n\n UnitAgent " + getAgentIdentifier() + ":: EXECUTING WorldStateUpdateTimer...");
+//        BlackboardService bs = getBlackboardService() ;
+//        try {
+//            bs.openTransaction();
             // Now, broadcast a WorldStateUpdate message.
             org.cougaar.cpe.model.EntityInfo info = perceivedWorldState.getEntityInfo( getAgentIdentifier().getAddress() ) ;
             // Make an initial measurement of how much off the timer we were actually delayed?
@@ -325,7 +343,6 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
                   new TimestampMeasurementImpl( null,
                         QoSConstants.TIMER_ACTION, getAgentIdentifier(),
                          startTime ) ;
-
 
             //--------------------------------------------------------------------------------------
             // Consume some CPU time, based on a local statistical model and the current fidelity.  This is the
@@ -338,10 +355,12 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
 
             // Now, broadcast my state information.
             if ( info != null ) {
-                // Broadcast only my state information.
+                WorldStateModel newModel = new WorldStateModel( perceivedWorldState, true, false, false ) ;
+                UnitEntity ue = (UnitEntity) entity.clone() ;
+                newModel.addEntity( ue ) ;
                 UnitStatusUpdateMessage wsm =
                         new UnitStatusUpdateMessage( ( UnitEntity ) entity.clone() ,
-                            null ) ;
+                            newModel ) ;
 
                 wsm.getMeasurements().addMeasurement( timerTM ); // This is the timer action.
                 wsm.getMeasurements().addMeasurement(
@@ -356,20 +375,20 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
                         + getAgentIdentifier() );
             }
             // Now, execute again.
-            execute() ;
-        }
-        catch ( Exception e ) {
-            e.printStackTrace();
-        }
-        finally {
-            // Now, reset the alarm service to the update period.
-            if ( started ) {
-                long nextTime = getWorldStateUpdatePeriodInMillis() ;
-                // System.out.println( getAgentIdentifier() + ":  SCHEDULING NEXT WORLD STATE UPDATE " + nextTime / 1000 + " secs.");
-                getAlarmService().addRealTimeAlarm( new UpdateStateAlarm( nextTime ) ) ;
-            }
-            bs.closeTransaction() ;
-        }
+//            execute() ;
+//        }
+//        catch ( Exception e ) {
+//            e.printStackTrace();
+//        }
+//        finally {
+//            // Now, reset the alarm service to the update period.
+//            if ( started ) {
+//                long nextTime = getWorldStateUpdatePeriodInMillis() ;
+//                // System.out.println( getAgentIdentifier() + ":  SCHEDULING NEXT WORLD STATE UPDATE " + nextTime / 1000 + " secs.");
+//                getAlarmService().addRealTimeAlarm( new UpdateStateAlarm( nextTime ) ) ;
+//            }
+//            bs.closeTransaction() ;
+//        }
     }
 
     protected void startTimeAdvance( StartMessage msg ) {
@@ -377,7 +396,8 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
         System.out.println( getAgentIdentifier() + " UNIT AGENT Starting time advance... " );
         this.baseTime = msg.getBaseTime() ;
         // Set up UpdateState timer.  The timer is actually controlled by the adaptivity engine.
-        getAlarmService().addRealTimeAlarm( new UpdateStateAlarm( getWorldStateUpdatePeriodInMillis() ) ) ;
+        mt.setAlarm( "ProcessUnitStatusUpdateTimer", UNIT_STATUS_UPDATE_TIMER, getWorldStateUpdatePeriodInMillis(), true );
+        //getAlarmService().addRealTimeAlarm( new UpdateStateAlarm( getWorldStateUpdatePeriodInMillis() ) ) ;
     }
 
     protected void setupSubscriptions() {
@@ -386,8 +406,6 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
         ls.info( "Starting UnitAgent " + getAgentIdentifier() );
 
         //System.out.println("Starting agent " + getAgentIdentifier() );
-        ServiceBroker broker = getServiceBroker() ;
-
         mt = new GenericRelayMessageTransport( this, getServiceBroker(), getAgentIdentifier(), this, getBlackboardService() ) ;
 
         /**
@@ -538,11 +556,6 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
             e.printStackTrace();
         }
 
-
-    }
-
-    public static class UpdateStateMessage implements Serializable {
-
     }
 
     public class UpdateStateAlarm implements Alarm {
@@ -566,7 +579,7 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
             expired = true ;
             // TODO
             // Move this out of the plugin and back into an event!
-            processUnitStatusUpdateTimer() ;
+            ProcessUnitStatusUpdateTimer( null ) ;
             // mt.sendMessage( getAgentIdentifier(), new UpdateStateMessage());
         }
 
@@ -602,7 +615,7 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
     /**
      * The state of the world represented by this UnitAgentPlugin.
      */
-    org.cougaar.cpe.model.WorldState perceivedWorldState ;
+    org.cougaar.cpe.model.WorldStateModel perceivedWorldState ;
 
     WorldStateReference refToWorldState ;
 

@@ -18,6 +18,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.cougaar.cpe.agents.messages.*;
 import org.cougaar.cpe.agents.qos.QoSConstants;
+import org.cougaar.cpe.agents.Constants;
 import org.cougaar.cpe.model.*;
 import org.cougaar.cpe.mplan.ManueverPlanner;
 import org.cougaar.tools.techspecs.qos.*;
@@ -254,7 +255,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
          }
          else if ( message instanceof UnitStatusUpdateMessage ) {
              UnitStatusUpdateMessage wsum = (UnitStatusUpdateMessage) message ;
-             WorldStateModel newModel = wsum.getWorldState() ;
+             // WorldStateModel newModel = wsum.getWorldState() ;
              // System.out.println( getAgentIdentifier() + ":: RECEIVED NEW WORLD STATE " + newModel );
 
              // Now, copy the current perceptions of entity position into the model if the
@@ -262,20 +263,11 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
              // NOTE The unit entities have to be cloned because they retain the old manuever plan information
              // and the old state.  The WorldState UnitStatusUpdateMessage does not provide them.
-             if ( perceivedWorldState != null ) {
-                 Iterator iter = perceivedWorldState.getUnits() ;
-                 while (iter.hasNext()) {
-                     UnitEntity entity = (UnitEntity) iter.next();
-                     newModel.addEntity( (UnitEntity) entity.clone(),
-                             new BinaryEngageByFireModel(0) );
-                 }
-
-                 // Now, put the perceived world state as the new model.
-                 setPerceivedWorldState( newModel );
+             if ( perceivedWorldState == null ) {
+                 setPerceivedWorldState( wsum.getWorldState() ) ;
              }
              else {
-                 // Just assign the model to the world state.
-                 setPerceivedWorldState(  wsum.getWorldState() ) ;
+                 processUpdateFromWorldStateAgent( wsum);
              }
          }
          else if ( message instanceof PublishMPMessage ) {
@@ -302,6 +294,15 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
              gmrt.sendMessage( message.getSource(), bmm );
          }
     }
+
+    protected void processUpdateFromWorldStateAgent( UnitStatusUpdateMessage event ) {
+        WorldStateModel newSensedWorldState = event.getWorldState() ;
+        WorldStateUtils.mergeWorldStateWithReference( perceivedWorldState, newSensedWorldState );
+        perceivedWorldState.setTime( newSensedWorldState );
+
+        getBlackboardService().publishChange( perceivedWorldStateRef );
+    }
+
 
     protected void setPerceivedWorldState( WorldStateModel model ) {
         perceivedWorldState = model ;
@@ -437,6 +438,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
                     measureSendManueverPlan( mpm );
 
                     if ( subordinateCombatOrganizations.get( entity.getId()) != null ) {
+                        log.shout( "Sending " + mpm.getPlan() + " to " + entity.getId() );
                         gmrt.sendMessage( MessageAddress.getMessageAddress( entity.getId() ), mpm ) ;
                     }
                 }
@@ -563,7 +565,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     private void mergeZoneSchedule( Plan p ) {
 
         if ( zoneSchedule == null ) {
-            log.shout( "Initializing " + getAgentIdentifier() + " with schedule " + p );
+            log.shout( getAgentIdentifier() + " Initializing " + getAgentIdentifier() + " with schedule " + p );
             zoneSchedule = p ;
         }
         else {
@@ -643,19 +645,18 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
             // Fill in the perceived message state.
             if ( info == null ) {
-                perceivedWorldState.addEntity( ( UnitEntity ) entity.clone(),
-                        new BinaryEngageByFireModel(0) ) ;
+                perceivedWorldState.addEntity( ( UnitEntity ) entity.clone(), new BinaryEngageByFireModel(0) ) ;
                 info = perceivedWorldState.getEntityInfo( entity.getId() ) ;
             }
             else {
                 pue = (org.cougaar.cpe.model.UnitEntity) info.getEntity() ;
-                pue.setX( entity.getX() ) ;
-                pue.setY( entity.getY() ) ;
+                pue.setX( entity.getX() ) ; pue.setY( entity.getY() ) ;
                 pue.setAmmoQuantity( entity.getAmmoQuantity() ) ;
                 pue.setFuelQuantity( entity.getFuelQuantity() ) ;
             }
 
-            // TODO fill in the target information.
+            // Now, merge the sensor values.
+            WorldStateUtils.mergeSensorValues( perceivedWorldState, wsum.getWorldState() );
 
             long startTime = System.currentTimeMillis() ;
 

@@ -266,6 +266,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
             }
 
             // TODO merge the target locations based on fidelity/error.
+            System.out.println("Merging status report " + statusReport );
             mergeSensorValues( statusReport ) ;
 
             long startTime = System.currentTimeMillis();
@@ -279,32 +280,39 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
         }
     }
 
+    /**
+     * Merge two sensor perceived world states together.
+     *
+     * @param statusReport
+     */
     private void mergeSensorValues(WorldStateModel statusReport)
     {
-        Iterator newTargets = statusReport.getTargets() ;
-        while (newTargets.hasNext())
-        {
-            TargetEntity newSensedTarget = (TargetEntity) newTargets.next();
-            TargetContact currentContact = (TargetContact) referenceZoneWorld.getEntity( newSensedTarget.getId() );
-            if ( currentContact != null ) {
-                if ( newSensedTarget instanceof TargetContact ) {
-                    TargetContact newContact = (TargetContact) newSensedTarget ;
-                    if ( newContact.getXError() < currentContact.getXError() && newContact.getTimeStamp() >= ( currentContact.getTimeStamp() - 10000) )
-                    {
-                        currentContact.setPosition( newContact.getX(), newContact.getY() );
-                        currentContact.setError( newContact.getXError(), newContact.getYError() );
-                    }
-                }
-                else {
-                    currentContact.setPosition( newSensedTarget.getX(), newSensedTarget.getY() );
-                    currentContact.setError( 0, 0 );
-                }
-            }
-            else {
-                currentContact = (TargetContact) newSensedTarget.clone() ;
-                referenceZoneWorld.addEntity( currentContact );
-            }
-        }
+        WorldStateUtils.mergeSensorValues( referenceZoneWorld, statusReport );
+//        Iterator newTargets = statusReport.getTargets() ;
+//        while (newTargets.hasNext())
+//        {
+//            TargetEntity newSensedTarget = (TargetEntity) newTargets.next();
+//            TargetContact currentContact = (TargetContact) referenceZoneWorld.getEntity( newSensedTarget.getId() );
+//            if ( currentContact != null ) {
+//                if ( newSensedTarget instanceof TargetContact ) {
+//                    TargetContact newContact = (TargetContact) newSensedTarget ;
+//
+//                    if ( newContact.getXError() < currentContact.getXError() && newContact.getTimeStamp() >= ( currentContact.getTimeStamp() - 10000) )
+//                    {
+//                        currentContact.setPosition( newContact.getX(), newContact.getY() );
+//                        currentContact.setError( newContact.getXError(), newContact.getYError() );
+//                    }
+//                }
+//                else {
+//                    currentContact.setPosition( newSensedTarget.getX(), newSensedTarget.getY() );
+//                    currentContact.setError( 0, 0 );
+//                }
+//            }
+//            else {
+//                currentContact = (TargetContact) newSensedTarget.clone() ;
+//                referenceZoneWorld.addEntity( currentContact );
+//            }
+//        }
     }
 
     public int getPlanningDelay() {
@@ -346,7 +354,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
     }
 
     protected void doConfigure( ConfigureMessage cm ) {
-        logger.shout( " Configuring " + getAgentIdentifier() );
+        logger.shout( " CONFIGURING " + getAgentIdentifier() );
         referenceZoneWorld = ( ZoneWorld ) cm.getWorldStateModel() ;
 
         worldStateRef = new WorldStateReference( "ZoneWorld", referenceZoneWorld ) ;
@@ -355,7 +363,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
         ArrayList aggEntities = new ArrayList() ;
         for (int i=0;i<referenceZoneWorld.getNumAggUnitEntities();i++) {
             BNAggregate agg = (BNAggregate) referenceZoneWorld.getAggUnitEntity( i ) ;
-            System.out.println("Initialize aggregrate with " + agg.getCurrentZone() + " zone.");
+            // System.out.println("Initialize aggregrate with " + agg.getCurrentZone() + " zone.");
             aggEntities.add( agg.getId() ) ;
             IndexedZone currentZone = (IndexedZone) agg.getCurrentZone() ;
 
@@ -488,13 +496,13 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
     }
 
     /**
-     * Process change to the world state as reported by the simulator.
+     * Process change to the world state as reported by the simulator.  This removes contacts from the list
+     * as well as adding them.
      *
      * @param event
      */
     protected void processWorldStateUpdateMessage( UnitStatusUpdateMessage event ) {
         WorldStateModel sensedWorldState = event.getWorldState() ;
-        Iterator newTargets = sensedWorldState.getTargets() ;
 
         // DEBUG
         if ( event.getSource().getAddress().equals(Constants.WORLD_STATE_AGENT) ) {
@@ -504,47 +512,10 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
                     ",measured elapsed time=" + ( System.currentTimeMillis() - baseTime ) );
 
         }
-        // Plan with the coarsest target contact.  Do not assume sensor updates from the
-        // clients.
 
-        // Copy the newTargets.
-        while (newTargets.hasNext()) {
-            TargetContact targetContact = (TargetContact) newTargets.next();
-            //System.out.println("Reference zone world=" + referenceZoneWorld );
-            TargetContact currentContact = (TargetContact) referenceZoneWorld.getEntity( targetContact.getId() ) ;
-            if ( currentContact == null ) {
-                referenceZoneWorld.addEntity( ( Entity ) targetContact.clone() );
-            }
-            else {
-                currentContact.setPosition( targetContact.getX(), targetContact.getY() );
-                currentContact.setStrength( targetContact.getStrength() );
-                currentContact.setSuppressed( targetContact.isSuppressed(), sensedWorldState.getTime() );
-            }
-//            else {
-//                // Minimize error
-//                if ( targetContact.getXError() < currentContact.getXError() ) {
-//
-//                }
-//            }
-        }
-
-        ArrayList targetsToBeRemoved = new ArrayList();
-        Iterator oldTargets = referenceZoneWorld.getTargets() ;
-        while (oldTargets.hasNext()) {
-            TargetContact targetContact = (TargetContact) oldTargets.next();
-            TargetContact newTargetcontact = (TargetContact) sensedWorldState.getEntity( targetContact.getId() ) ;
-            if ( newTargetcontact == null ) {
-               targetsToBeRemoved.add( targetContact.getId() ) ;
-            }
-        }
-
-        // Remove the non-visible targets
-        for (int i=0;i<targetsToBeRemoved.size();i++) {
-            String id = (String) targetsToBeRemoved.get(i) ;
-            referenceZoneWorld.deleteTarget( id ) ;
-        }
+        WorldStateUtils.mergeWorldStateWithReference( referenceZoneWorld, sensedWorldState );
 //        System.out.println("Modified zone world=" + referenceZoneWorld );
-        referenceZoneWorld.setBaseTime( sensedWorldState.getTime() );
+        referenceZoneWorld.setTime( sensedWorldState );
 
         getBlackboardService().publishChange( worldStateRef );
 

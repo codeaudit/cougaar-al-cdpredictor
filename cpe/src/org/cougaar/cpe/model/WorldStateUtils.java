@@ -456,6 +456,81 @@ public class WorldStateUtils {
     }
 
     /**
+     * Merge the current world state and the new perceived world state together by updating targets.
+     *
+     * @param current The current world state.
+     * @param newModel The perceived world state to be merged.
+     */
+    public static void mergeSensorValues( WorldStateModel current, WorldStateModel newModel )
+    {
+        Iterator newTargets = newModel.getTargets() ;
+        while (newTargets.hasNext())
+        {
+            TargetEntity newSensedTarget = (TargetEntity) newTargets.next();
+            TargetContact currentContact = (TargetContact) current.getEntity( newSensedTarget.getId() );
+            if ( currentContact != null ) {
+                if ( newSensedTarget instanceof TargetContact ) {
+                    TargetContact newContact = (TargetContact) newSensedTarget ;
+
+                    // Only merge contacts with less error and a difference of 10 secs.
+                    if ( newContact.getXError() < currentContact.getXError()
+                            && ( newContact.getTimeStamp() - currentContact.getTimeStamp() ) >= - 10000 )
+                    {
+                        currentContact.setPosition( newContact.getX(), newContact.getY() );
+                        currentContact.setError( newContact.getXError(), newContact.getYError() );
+                    }
+                }
+                else {
+                    currentContact.setPosition( newSensedTarget.getX(), newSensedTarget.getY() );
+                    currentContact.setError( 0, 0 );
+                }
+            }
+            else {
+                currentContact = (TargetContact) newSensedTarget.clone() ;
+                current.addEntity( currentContact );
+            }
+        }
+    }
+
+    public static void mergeWorldStateWithReference( WorldStateModel current, WorldStateModel reference ) {
+        // Copy the newTargets.
+
+        Iterator newTargets = reference.getTargets() ;
+        while (newTargets.hasNext()) {
+            TargetContact targetContact = (TargetContact) newTargets.next();
+            //System.out.println("Reference zone world=" + referenceZoneWorld );
+            TargetContact currentContact = (TargetContact) current.getEntity( targetContact.getId() ) ;
+            if ( currentContact == null ) {
+                current.addEntity( ( Entity ) targetContact.clone() );
+            }
+            else {
+                currentContact.setPosition( targetContact.getX(), targetContact.getY() );
+                currentContact.setStrength( targetContact.getStrength() );
+                currentContact.setSuppressed( targetContact.isSuppressed(), reference.getTime() );
+            }
+        }
+
+        // Any targets which are not sensed by the reference are removed if the timestamp is removed.
+        ArrayList targetsToBeRemoved = new ArrayList();
+        Iterator oldTargets = current.getTargets() ;
+        while (oldTargets.hasNext()) {
+            TargetContact targetContact = (TargetContact) oldTargets.next();
+            TargetContact newTargetcontact = (TargetContact) reference.getEntity( targetContact.getId() ) ;
+            if ( newTargetcontact == null ) {
+               targetsToBeRemoved.add( targetContact.getId() ) ;
+            }
+        }
+
+        // Remove the non-visible targets
+        for (int i=0;i<targetsToBeRemoved.size();i++) {
+            String id = (String) targetsToBeRemoved.get(i) ;
+            current.deleteTarget( id ) ;
+        }
+
+    }
+
+
+    /**
      * The maximum distance between zones is calculated conservatively here as the maximum distance.
      *
      * @param zw
