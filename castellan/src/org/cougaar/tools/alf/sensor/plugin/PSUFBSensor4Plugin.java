@@ -25,7 +25,7 @@ import java.io.*;
 public class PSUFBSensor4Plugin extends ComponentPlugin
 {
 
-        class TriggerFlushAlarm implements PeriodicAlarm
+    class TriggerFlushAlarm implements PeriodicAlarm
     {
         public TriggerFlushAlarm(long expTime)
         {
@@ -144,14 +144,16 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
 		if (myTimestampService == null) {
             System.out.println("\n"+cluster+" ["+sensorname+"]: TimestampService is NOT available.\n");
         }
-	        AlarmService as = getAlarmService() ;
-        as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 60000 ) ) ;		
+			    as = getAlarmService() ;
+		alarm = new TriggerFlushAlarm( currentTimeMillis() + 200000 );
+        as.addAlarm(alarm) ;	
+	
     }
 
 
     public void execute()
     {
-
+		alarm.cancel();
 		if (myTimestampService == null) {
             myTimestampService = (BlackboardTimestampService) getBindingSite().getServiceBroker().getService(this, BlackboardTimestampService.class, null);
             if (myTimestampService == null) {
@@ -228,7 +230,9 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         }
         
         System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = "+((int)(loadIndex*100))/100.0+" ["+status+"]");
-
+	    as = getAlarmService() ;
+		alarm = new TriggerFlushAlarm( currentTimeMillis() + 200000 );
+        as.addAlarm(alarm) ;	
     }
  
     
@@ -297,5 +301,8 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
     private BlackboardService myBlackboardService;
     private LoggingService myLoggingService;
     private UIDService myUIDService;
+	AlarmService as;
+	TriggerFlushAlarm alarm;
+
     
 }
