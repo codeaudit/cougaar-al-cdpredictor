@@ -97,7 +97,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
     };
 
 
-    UnaryPredicate servletPredicate = new UnaryPredicate() {
+    UnaryPredicate interAgentPredicate = new UnaryPredicate() {
         public boolean execute(Object o) {
             return o instanceof InterAgentCondition;
         }
@@ -121,13 +121,13 @@ public class PredictorDataPlugin extends ComponentPlugin {
         as = (AlarmService) getBindingSite().getServiceBroker().getService(this, AlarmService.class, null);
         relationSubscription = (IncrementalSubscription) myBS.subscribe(relationPredicate);
         taskSubscription = (IncrementalSubscription) myBS.subscribe(taskPredicate);
-        servletSubscription = (IncrementalSubscription) myBS.subscribe(servletPredicate);
+        interAgentSubscription = (IncrementalSubscription) myBS.subscribe(interAgentPredicate);
         if (flagger == false) {
             if (!taskSubscription.isEmpty()) {
                 taskSubscription.clear();
             }
-            if (!servletSubscription.isEmpty()) {
-                servletSubscription.clear();
+            if (!interAgentSubscription.isEmpty()) {
+                interAgentSubscription.clear();
             }
             flagger = true;
         }
@@ -143,9 +143,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
         InterAgentCondition tr;
 
-        //if (alarm != null) alarm.cancel();
-
-        for (Enumeration ent = servletSubscription.getAddedList(); ent.hasMoreElements();) {
+        for (Enumeration ent = interAgentSubscription.getAddedList(); ent.hasMoreElements();) {
             tr = (InterAgentCondition) ent.nextElement();
             String content = tr.getContent().toString();
             String f = null;
@@ -179,17 +177,11 @@ public class PredictorDataPlugin extends ComponentPlugin {
             Collection ammo_customer = schedule.getMatchingRelationships(Constants.Role.AMMUNITIONCUSTOMER); //Get a collection of ammunition customers
             customers.addAll(ammo_customer);
 
-            //Collection food_customer = schedule.getMatchingRelationships(Constants.Role.FOODCUSTOMER);
-            //customers.addAll(food_customer);
-
             Collection fuel_customer = schedule.getMatchingRelationships(Constants.Role.FUELSUPPLYCUSTOMER);
             customers.addAll(fuel_customer);
 
             Collection packpol_customer = schedule.getMatchingRelationships(Constants.Role.PACKAGEDPOLSUPPLYCUSTOMER);
             customers.addAll(packpol_customer);
-
-            //Collection spareparts_customer = schedule.getMatchingRelationships(Constants.Role.SPAREPARTSCUSTOMER);
-            //customers.addAll(spareparts_customer);
 
             Collection subsistence_customer = schedule.getMatchingRelationships(Constants.Role.SUBSISTENCESUPPLYCUSTOMER);
             customers.addAll(subsistence_customer);
@@ -226,7 +218,6 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
     public void getPlannedDemand() {
         Task task;
-
         if (!relay_added == true) {
             for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
                 task = (Task) e.nextElement();
@@ -258,7 +249,6 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                 }
                                             }
                                             if (ht != null) {
-                                                //System.out.print("&");
                                                 long sTime = (long) task.getPreferredValue(AspectType.START_TIME);
                                                 long zTime = (long) task.getPreferredValue(AspectType.END_TIME);
                                                 //add the item type
@@ -275,38 +265,26 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                                 values.insertElementAt(comp, 2);
                                                                 values.insertElementAt(new Long(sTime), 3);
                                                                 values.insertElementAt(new Long(zTime), 4);
-
                                                                 if (comp.compareToIgnoreCase("FuelSupplyCustomer") == 0) {
                                                                     AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
                                                                     FlowRate flowrate = (FlowRate) aspectrate.rateValue();
                                                                     double rate = (flowrate.getGallonsPerDay());
                                                                     values.insertElementAt(new Double(rate), 5);
-                                                                    //t = (i / 86400000) - 13005;
                                                                     t = i / 86400000;
-                                                                    //System.out.println("t is "+t);
                                                                     values.insertElementAt(new Long(t), 6);
                                                                     values.insertElementAt(item_name, 7);
-                                                                    if (rate != -1) {
-                                                                        //System.out.println("Rate is: "+rate);
-                                                                    }
-
                                                                 } else {
                                                                     AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
                                                                     CountRate flowrate = (CountRate) aspectrate.rateValue();
                                                                     double rate = (flowrate.getUnitsPerDay());
                                                                     values.insertElementAt(new Double(rate), 5);
-                                                                    //t = (i / 86400000) - 13005;
                                                                     t = i / 86400000;
                                                                     //System.out.println("t is "+t);
                                                                     values.insertElementAt(new Long(t), 6);
                                                                     values.insertElementAt(item_name, 7);
-                                                                    if (rate != -1) {
-                                                                        //System.out.println("Rate is: "+rate);
-                                                                    }
                                                                 }
 
                                                                 ht.put(new Integer((ht.size() + 1)), values);
-                                                                //System.out.println("Size of hashtable for supplier " +owner+ " with customer " +source+ " for supply class " +pol+ " is: " +ht.size());
                                                             }
                                                         }
                                                     }
@@ -398,7 +376,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
     private BlackboardService myBS;
     private IncrementalSubscription relationSubscription;
     private IncrementalSubscription taskSubscription;
-    private IncrementalSubscription servletSubscription;
+    private IncrementalSubscription interAgentSubscription;
     private AlarmService as;
     private TriggerFlushAlarm alarm = null;
 
@@ -424,14 +402,3 @@ public class PredictorDataPlugin extends ComponentPlugin {
        }
        return (getAssetIdentifier(actualAsset).startsWith("Level2"));
    } */
-
-
-    /* 	public boolean eventIdentifier() {
-   		CougaarEvent ce = new CougaarEvent(CougaarEventType.STATUS, null, null, "PlanningComplete", true);
-   		String eve = ce.getEventText();
-   		if(eve.compareToIgnoreCase("PlanningComplete")==0){
-   			boolean toggle = true;
-   			return toggle;
-   		}
-   		return false;
-   	}*/
