@@ -75,10 +75,10 @@ public abstract class WorldState implements java.io.Serializable {
     public void setDefaultMetric(WorldMetrics defaultMetric)
     {
         if ( defaultMetric != null ) {
-            eventListenerList.remove( defaultMetric ) ;
+            removeEventListener( defaultMetric );
         }
         this.defaultMetric = defaultMetric;
-        eventListenerList.add( defaultMetric ) ;
+        addEventListener( defaultMetric );
     }
 
     /**
@@ -814,10 +814,14 @@ public abstract class WorldState implements java.io.Serializable {
     }
 
     protected boolean hasEventListeners() {
-        return eventListenerList.size() > 0 ;
+        return eventListenerList != null && eventListenerList.size() > 0 ;
     }
 
-    protected void fireEvent( CPEEvent event ) {
+    public void fireEvent( CPEEvent event ) {
+        if ( eventListenerList == null ) {
+            return ;
+        }
+
         for (int i = 0; i < eventListenerList.size(); i++) {
             CPEEventListener eventListener = (CPEEventListener) eventListenerList.get(i);
             try {
@@ -858,7 +862,17 @@ public abstract class WorldState implements java.io.Serializable {
     }
 
     public void addEventListener( CPEEventListener listener ) {
+        if ( eventListenerList == null ) {
+            eventListenerList = new ArrayList() ;
+        }
         this.eventListenerList.add( listener ) ;
+    }
+
+    public void removeEventListener( CPEEventListener listener ) {
+        if ( eventListenerList == null ) {
+            return ;
+        }
+        eventListenerList.remove( listener ) ;
     }
 
     protected float accumulatedAttritionValue ;
@@ -904,7 +918,7 @@ public abstract class WorldState implements java.io.Serializable {
      */
     protected transient ArrayList regions = new ArrayList() ;
 
-    protected transient ArrayList eventListenerList = new ArrayList() ;
+    protected transient ArrayList eventListenerList ;
 
     /**
      * A list of local events that have occured (e.g. fire events, etc.) that are buffered for consumption.
