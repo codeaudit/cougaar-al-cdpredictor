@@ -568,6 +568,11 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
             getBlackboardService().publishAdd( mwm.getPenalties() ) ;
             getBlackboardService().publishAdd( mwm.getViolations() ) ;
             getBlackboardService().publishAdd( mwm.getPredictedEntryRate() );
+            Collection c = mwm.getFuelConsumptionMeasurementPoints() ;
+            for (Iterator iterator = c.iterator(); iterator.hasNext();) {
+                MeasurementPoint measurementPoint = (MeasurementPoint) iterator.next();
+                getBlackboardService().publishAdd( measurementPoint );
+            }
 
 			// Make configuration message and send it to the subordinate.
 			if (subordinateCombatOrganizations.get(agg.getId()) == null) {
