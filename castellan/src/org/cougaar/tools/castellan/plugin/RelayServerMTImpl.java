@@ -85,6 +85,7 @@ public class RelayServerMTImpl implements ServerMessageTransport {
         // Get the added list and add them to the list of buffers.
         for ( Iterator iter = relaySubscription.getAddedCollection().iterator(); iter.hasNext(); ) {
             TargetBufferRelay relay = ( TargetBufferRelay ) iter.next() ;
+            System.out.println("RelayServerMTImpl:: Adding relay endpoint at server for " + relay.getSource().toString() );
             buffers.add( relay  ) ;
             nameToRelayMap.put( relay.getSource().toString(), relay ) ;
         }
