@@ -32,7 +32,7 @@ import org.cougaar.core.service.AgentIdentificationService;
 import org.cougaar.core.service.AlarmService;
 import org.cougaar.core.service.BlackboardService;
 import org.cougaar.core.service.LoggingService;
-import org.cougaar.core.util.UID;
+//import org.cougaar.core.util.UID;
 import org.cougaar.glm.ldm.Constants;
 import org.cougaar.glm.ldm.plan.AlpineAspectType;
 import org.cougaar.planning.ldm.asset.Asset;
@@ -64,7 +64,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
             expired = true;
             //myBS.openTransaction();
             myBS.signalClientActivity();
-            myLoggingService.shout("Alarm for PredictorDataPlugin fired");
+            //myLoggingService.shout("Alarm for PredictorDataPlugin fired");
             //executeAlarm();
             //myBS.closeTransaction();
             cancel();
@@ -99,12 +99,12 @@ public class PredictorDataPlugin extends ComponentPlugin {
     };
 
 
-    UnaryPredicate interAgentPredicate = new UnaryPredicate() {
+ /*   UnaryPredicate interAgentPredicate = new UnaryPredicate() {
         public boolean execute(Object o) {
             return o instanceof InterAgentCondition;
         }
 
-    };
+    }; */
 
     UnaryPredicate htPredicate = new UnaryPredicate() {
         public boolean execute(Object o) {
@@ -120,12 +120,12 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
     };
 
-    UnaryPredicate AlarmPredicate = new UnaryPredicate() {
+   /* UnaryPredicate AlarmPredicate = new UnaryPredicate() {
         public boolean execute(Object o) {
             return o instanceof TriggerFlushAlarm;
         }
 
-    };
+    }; */
 
     UnaryPredicate ALPredicate = new UnaryPredicate() {
         public boolean execute(Object o) {
@@ -139,8 +139,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
             if (o instanceof Task)
 			{
 				Task tempTask = (Task) o;
-                Verb verb = tempTask.getVerb();
-                if(verb.equals("ProjectSupply")){
+                if(tempTask.getVerb().equals(Constants.Verb.PROJECTSUPPLY)){
                 if(tempTask.getPrepositionalPhrase("For").getIndirectObject().equals("47-FSB")== true){
                 //if(Owner.equalsIgnoreCase(cluster)== false){
                     return true;
@@ -165,20 +164,20 @@ public class PredictorDataPlugin extends ComponentPlugin {
         as = (AlarmService) getBindingSite().getServiceBroker().getService(this, AlarmService.class, null);
         relationSubscription = (IncrementalSubscription) myBS.subscribe(relationPredicate);
         taskSubscription = (IncrementalSubscription) myBS.subscribe(taskPredicate);
-        interAgentSubscription = (IncrementalSubscription) myBS.subscribe(interAgentPredicate);
-        htSubscription = (IncrementalSubscription) myBS.subscribe(htPredicate);
-        hashArraySubscription = (IncrementalSubscription) myBS.subscribe(hashArrayPredicate);
-        ALSubscription = (IncrementalSubscription) myBS.subscribe(ALPredicate);
-        AlarmSubscription = (IncrementalSubscription) myBS.subscribe(AlarmPredicate);
-        if (flagger == false) {
+        //interAgentSubscription = (IncrementalSubscription) myBS.subscribe(interAgentPredicate);
+        //htSubscription = (IncrementalSubscription) myBS.subscribe(htPredicate);
+        //hashArraySubscription = (IncrementalSubscription) myBS.subscribe(hashArrayPredicate);
+        //ALSubscription = (IncrementalSubscription) myBS.subscribe(ALPredicate);
+        //AlarmSubscription = (IncrementalSubscription) myBS.subscribe(AlarmPredicate);
+       /* if (flagger == false) {
             if (!taskSubscription.isEmpty()) {
                 taskSubscription.clear();
-            }
-            if (!interAgentSubscription.isEmpty()) {
+            }  */
+           /* if (!interAgentSubscription.isEmpty()) {
                 interAgentSubscription.clear();
-            }
-            flagger = true;
-        }
+            }*/
+            //flagger = true;
+        //}
         if (myBS.didRehydrate() == false) {
             ht = new Hashtable();
             myBS.publishAdd(ht);
@@ -204,7 +203,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
     public void execute() {
 
-        InterAgentCondition tr;
+      /*  InterAgentCondition tr;
 
         for (Enumeration ent = interAgentSubscription.getAddedList(); ent.hasMoreElements();) {
             tr = (InterAgentCondition) ent.nextElement();
@@ -224,12 +223,18 @@ public class PredictorDataPlugin extends ComponentPlugin {
                 myBS.publishChange(tr);
                 break;
             }
-        }
+        }   */
         if(alarm!=null && alarm.hasExpired()==true){
             count_alarm++;
             if(count_alarm == 1 && rehydrate_flag == false){
+                //long time = System.currentTimeMillis();
+                //System.out.println(" Alarm start PDPAlarm function " +  new Date(time));
                 executeAlarm();
-                myLoggingService.shout("Alarm fired in execute");
+                //myLoggingService.shout("Alarm fired in execute");
+                //long end = System.currentTimeMillis();
+                //System.out.println("Alarm End PDPAlarm function " +  new Date(end)
+                     //  + " total time in milliseconds" +
+                      // (end - time));
                 alarm.cancel();
             }
         }
@@ -237,7 +242,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
         getPlannedDemand();
     }
 
-    public void retrievehtfromBB(){
+   /* public void retrievehtfromBB(){
         if(ht == null){
             //myLoggingService.shout("ht is null");
             Collection c1 = htSubscription.getAddedCollection();
@@ -253,7 +258,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
                 //myLoggingService.shout("ht Hashtable");
             }
         }
-    }
+    }  */
 
     public void retrievehashArrayfromBB(){
       if(hashArray == null){
@@ -261,7 +266,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
           Collection c = myBS.query(hashArrayPredicate);
           for(Iterator iter = c.iterator();iter.hasNext() ;){
               hashArray = (PredictorArrayList1) iter.next();
-              myLoggingService.shout("Number of unique relationships: "+hashArray.size());
+              //myLoggingService.shout("Number of unique relationships: "+hashArray.size());
               //myLoggingService.shout("hashArray PredictorArrayList1");
           }
         /*    Collection c1 = hashArraySubscription.getAddedCollection();
@@ -285,7 +290,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
           Collection c = myBS.query(ALPredicate);
           for(Iterator iter = c.iterator();iter.hasNext() ;){
               al = (PredictorArrayList) iter.next();
-              myLoggingService.shout("PredictorArrayList has total items = "+al.size());
+              //myLoggingService.shout("PredictorArrayList has total items = "+al.size());
               //myLoggingService.shout("al recieved");
               if(al.size()==0 && hashArray!= null){
                     if (alarm != null) alarm.cancel();
@@ -339,7 +344,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
         }
     }
 
-     public void retrieveAlarmfromBB(){
+   /*  public void retrieveAlarmfromBB(){
       if(alarm == null){
           //myLoggingService.shout("alarm null");
             Collection c1 = AlarmSubscription.getAddedCollection();
@@ -348,7 +353,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
                 //myLoggingService.shout("alarm recieved");
             }
         }
-    }
+    }  */
 
     public void relationshipList() {
         HasRelationships org;
@@ -404,19 +409,21 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
     public void getPlannedDemand() {
         Task task;
+        //long time = System.currentTimeMillis();
+        //System.out.println(" getPlannedDemand function " +  new Date(time));
         if (!relay_added == true) {
             for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
                 task = (Task) e.nextElement();
-                if (task != null) {
-                    UID uid = task.getUID();
-                    if (uid != null) {
-                        String verb = task.getVerb().toString();
-                        if (verb != null) {
-                            if (verb.equalsIgnoreCase("ProjectSupply") == true) {
+                //if (task != null) {
+                    //UID uid = task.getUID();
+                    //if (uid != null) {
+                        //String verb = task.getVerb().toString();
+                        //if (verb != null) {
+                            //if (verb.equalsIgnoreCase("ProjectSupply") == true) {
                                 String owner = task.getPrepositionalPhrase("For").getIndirectObject().toString();
-                                if (owner != null) {
-                                    String pol = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
-                                    if (owner.equalsIgnoreCase(cluster) == false) {
+                                //if (owner != null) {
+                                    String pol = (String)task.getPrepositionalPhrase("OfType").getIndirectObject();
+                                    //if (owner.equalsIgnoreCase(cluster) == false) {
                                         String comp = stringManipulation(pol);
                                         if (comp != null) {
                                             if (alarm != null) alarm.cancel();
@@ -430,9 +437,9 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                 if (tem != null) {
                                                     if ((chash.getHT()).equals(((Hashtable) hashArray.get(j)).get(new Integer(1)))) {
                                                         ht = (Hashtable) hashArray.get(j);
-                                                        if(j == 0){
+                                                        /*if(j == 0){
                                                             myBS.publishAdd(ht);
-                                                        }
+                                                        }*/
                                                     }
                                                 }
                                             }
@@ -487,18 +494,22 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                     }
                                                 }
                                                 }
-                                                myBS.publishChange(ht);
+                                                //myBS.publishChange(ht);
                                                 myBS.publishChange(hashArray);
                                             }
                                         }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                                    //}
+                                //}
+                            //}
+                        //}
+                    //}
+                //}
 
             }
+            //long end = System.currentTimeMillis();
+                //System.out.println("getPlannedDemand function " +  new Date(end)
+                      // + " total time in milliseconds" +
+                      // (end - time));
         } else
             return;
     }
@@ -510,7 +521,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
             if (phd != null) {
                 al = phd.iterateList();
                 if (al!= null) {
-                    myBS.publishAdd(al);
+                    myBS.publishChange(al);
                 }
             }
         } else
@@ -547,7 +558,13 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
         String s_class = a;
 
-        if (s_class.compareToIgnoreCase("Ammunition") == 0 || s_class.compareToIgnoreCase("Food") == 0) {
+        final String ammo = "AmmunitionCustomer";
+        final String packpol = "PackagedPolSupplyCustomer";
+        final String subs = "SubsistenceSupplyCustomer";
+        final String bulkpol = "FuelSupplyCustomer";
+        final String consumable = "SparePartsCustomer";
+
+      /*  if (s_class.compareToIgnoreCase("Ammunition") == 0 || s_class.compareToIgnoreCase("Food") == 0) {
             String s_class1 = s_class.concat("Customer");
             return s_class1;
         }
@@ -564,6 +581,23 @@ public class PredictorDataPlugin extends ComponentPlugin {
         {
   		    String s_class1 = "SparePartsCustomer";
   		    return s_class1;
+  	    }  */
+        if (s_class.compareToIgnoreCase("Ammunition") == 0) {
+            return ammo;
+        }
+        if (s_class.compareToIgnoreCase("Subsistence") == 0) {
+            return subs;
+        }
+        if (s_class.compareToIgnoreCase("PackagedPol") == 0) {
+            return packpol;
+        }
+        if (s_class.compareToIgnoreCase("BulkPol") == 0) {
+            return bulkpol;
+        }
+
+         if(s_class.compareToIgnoreCase("Consumable")==0)
+        {
+  		    return consumable;
   	    }
 
         return null;
@@ -574,11 +608,11 @@ public class PredictorDataPlugin extends ComponentPlugin {
     private BlackboardService myBS;
     private IncrementalSubscription relationSubscription;
     private IncrementalSubscription taskSubscription;
-    private IncrementalSubscription interAgentSubscription;
-    private IncrementalSubscription htSubscription;
-    private IncrementalSubscription hashArraySubscription;
-    private IncrementalSubscription ALSubscription;
-    private IncrementalSubscription AlarmSubscription;
+    //private IncrementalSubscription interAgentSubscription;
+    //private IncrementalSubscription htSubscription;
+    //private IncrementalSubscription hashArraySubscription;
+    //private IncrementalSubscription ALSubscription;
+    //private IncrementalSubscription AlarmSubscription;
     private AlarmService as;
     private TriggerFlushAlarm alarm = null;
 
@@ -590,7 +624,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
     private int counter = 0;
     private long t = 0;
     private boolean relay_added = false;
-    private boolean flagger = false;
+    //private boolean flagger = false;
     private PredictorArrayList al = null;
     int count_alarm = 0;
     boolean rehydrate_flag = false;
