@@ -5,7 +5,7 @@ import java.sql.*;
 import java.io.*;
 
 /**
- * Title:        View Time Series
+ * Title:        Support Vector Machine 
  * Description:
  * Copyright:    Copyright (c) 2001
  * Company:      PSU
@@ -13,7 +13,7 @@ import java.io.*;
  * @version 1.0
  */
 
-public class SvmResult {
+public class SvmResult implements java.io.Serializable {
 
 	int dim = 0, number = 0;
 	double gamma = 0;
@@ -41,8 +41,8 @@ public class SvmResult {
 
 				if (haveToReadHead)
 				{
-					String item = st.nextToken();
-					String value = st.nextToken();
+					String item = st.nextToken();	// System.out.println(item);
+					String value = st.nextToken();	// System.out.println(value);
 
 					if (item.equals("dimension"))	{
 						dim = Integer.valueOf(value).intValue();
@@ -176,7 +176,7 @@ public class SvmResult {
 	    }
 	}
 
-	public double f(double [] xx)
+	public double f(double [] xx)	// the smaller index is past.
 	{
 		double yyyy=0;
 		for (int i=0;i<number;i++)
@@ -222,5 +222,22 @@ public class SvmResult {
 		}
 
 		return normsqr;
+	}
+
+	public static void main(String[] args) {
+
+		SvmResult svmresult = new SvmResult();
+		File paramFile = new File(args[0]);
+		svmresult.readParam(paramFile);
+		File modelFile = new File(args[1]);
+		svmresult.readModel(modelFile);
+
+		double [] demand = new double[3];
+
+		demand[0] = 4.15	            ;
+		demand[1] =	4.14	            ;	
+		demand[2] =	4.14	            ;	
+
+		System.out.println(svmresult.f(demand));
 	}
 }
