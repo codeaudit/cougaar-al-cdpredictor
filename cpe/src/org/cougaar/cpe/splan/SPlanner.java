@@ -444,12 +444,14 @@ public class SPlanner {
         // Find the current planning horizon for the manuever plan.
         for (int i = 0; i < customers.size(); i++) {
             UnitEntity ue = custEntities[i] ;
-            manueverPlans[i] = ue.getManueverPlan() ;
-            if ( manueverPlans[i] != null && manueverPlans[i].getNumTasks() > 0 ) {
-                for (int j = 0; j < manueverPlans[i].getNumTasks(); j++) {
-                    Task t = manueverPlans[i].getTask( j ) ;
-                    if ( t.getEndTime() > horizon ) {
-                        horizon = t.getEndTime() ;
+            if ( ue != null ) {
+                manueverPlans[i] = ue.getManueverPlan() ;
+                if ( manueverPlans[i] != null && manueverPlans[i].getNumTasks() > 0 ) {
+                    for (int j = 0; j < manueverPlans[i].getNumTasks(); j++) {
+                        Task t = manueverPlans[i].getTask( j ) ;
+                        if ( t.getEndTime() > horizon ) {
+                            horizon = t.getEndTime() ;
+                        }
                     }
                 }
             }
