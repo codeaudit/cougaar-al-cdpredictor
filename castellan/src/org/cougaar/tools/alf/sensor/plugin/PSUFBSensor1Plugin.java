@@ -1,9 +1,8 @@
 /*
  *  This plugin is a falling behind sensor for each agent based on the imbalance 
- *  between the performances of task arrival and task allocation.
- *  This sensor deals with ProjectSupply/Supply tasks and allocation to inventory assets.
+ *  between task arrival duration and task allocation duration.
+ *  This sensor deals with ProjectSupply/Supply and Transport tasks.
  */
-
 
 package org.cougaar.tools.alf.sensor.plugin;
 
@@ -17,27 +16,42 @@ import org.cougaar.util.*;
 import org.cougaar.core.agent.ClusterIdentifier;
 import java.util.Iterator;
 import java.util.Collection;
-import java.util.Hashtable;
-import java.util.Arrays;
-import org.cougaar.core.adaptivity.OMCRangeList;
-import org.cougaar.tools.alf.sensor.plugin.PSUFBSensorCondition;
+import org.cougaar.core.service.community.CommunityService;
+import org.cougaar.multicast.AttributeBasedAddress;
+import org.cougaar.logistics.plugin.manager.LoadIndicator;
 
 public class PSUFBSensor1Plugin extends ComponentPlugin
 {
-    
-    UnaryPredicate taskPredicate = new UnaryPredicate()
-    {
-        public boolean execute(Object o)
-        {
-            return o instanceof Task;
-        }
-    };
     
     UnaryPredicate allocationPredicate = new UnaryPredicate()
     {
         public boolean execute(Object o)
         {
-            return o instanceof Allocation;
+            if (o instanceof Allocation) {
+                Allocation allocation = (Allocation) o;
+                if (same(allocation.getAsset().getUID().getOwner(), cluster)) {
+                    AllocationResult ar = allocation.getEstimatedResult();
+                    Task task = allocation.getTask();
+                    if (ar != null) {
+                        if (ar.isSuccess()) {
+                            String verb = task.getVerb().toString();
+                            String source = null;
+                            if (same(verb, "ProjectWithdraw") || same(verb, "Withdraw")) {
+                                source = task.getParentTaskUID().getOwner();
+                            }
+                            else if (same(verb, "ProjectSupply") || same(verb, "Supply") || same(verb, "Transport")) {
+                                source = task.getUID().getOwner();
+                            }
+                            if (source!= null) {
+                                if (!same(source, cluster)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
         }
     };
     
@@ -45,101 +59,114 @@ public class PSUFBSensor1Plugin extends ComponentPlugin
     {
         public boolean execute(Object o)
         {
-            return o instanceof PSUFBSensorCondition;
+            if (o instanceof LoadIndicator) {
+                LoadIndicator loadIndicator = (LoadIndicator) o;
+                if (loadIndicator.getReportingSensorClassName().endsWith(sensorname) && same(loadIndicator.getAgentName(), cluster)) {
+                    return true;
+                }
+            }
+            return false;
         }
     };
-    
 
+    
     public void setupSubscriptions()
     {
-        ServiceBroker broker = getServiceBroker();
-        bts = ( BlackboardTimestampService ) broker.getService( this, BlackboardTimestampService.class, null ) ;
-        bs = getBlackboardService();
-        taskSubscription = (IncrementalSubscription) bs.subscribe(taskPredicate);
-        allocationSubscription = (IncrementalSubscription) bs.subscribe(allocationPredicate);
-        sensorSubscription = (IncrementalSubscription) bs.subscribe(sensorPredicate);
-        if (bs.didRehydrate()==false)
-        {
-            double[] result =new double[2];
-            result[0] = 0.0; result[1] = 1.0;
-    	    PSUFBSensorCondition psu_fb = new PSUFBSensorCondition("FallingBehind", new OMCRangeList(result), new Double(0));
-		    bs.publishAdd(psu_fb);
-		}
+
+        myTimestampService = (BlackboardTimestampService) getBindingSite().getServiceBroker().getService(this, BlackboardTimestampService.class, null);
+        myBlackboardService = getBlackboardService();
+        myUIDService = (UIDService) getBindingSite().getServiceBroker().getService(this, UIDService.class, null); 
+        myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null); 
 		cluster = getBindingSite().getAgentIdentifier().toString();
-		task_series=new Hashtable();
-		allocation_series=new Hashtable();
-		bs.setShouldBePersisted(false);
+        allocationSubscription = (IncrementalSubscription) myBlackboardService.subscribe(allocationPredicate);
+        sensorSubscription = (IncrementalSubscription) myBlackboardService.subscribe(sensorPredicate);
+
+        if (myBlackboardService.didRehydrate()==false)
+        {
+            CommunityService communityService = (CommunityService) getBindingSite().getServiceBroker().getService(this, CommunityService.class, null);
+            if (communityService == null) {
+                myLoggingService.error("CommunityService not available.");
+                return;
+            }
+            Collection alCommunities = communityService.listParentCommunities(cluster, "(CommunityType=AdaptiveLogistics)");
+            if (alCommunities.size() == 0) {
+                myLoggingService.warn(cluster + " does not belong to an AdaptiveLogistics community.");
+            }
+            for (Iterator iterator = alCommunities.iterator(); iterator.hasNext();) {
+                String community = (String) iterator.next();
+                LoadIndicator loadIndicator = new LoadIndicator(this, 
+                                    cluster,
+                                    myUIDService.nextUID(),
+                                    LoadIndicator.NORMAL_LOAD);
+                loadIndicator.addTarget(new AttributeBasedAddress(community, "Role", "AdaptiveLogisticsManager"));
+                myBlackboardService.publishAdd(loadIndicator);
+            }
+		}
+		myBlackboardService.setShouldBePersisted(false);
     }
 
 
     public void execute()
     {
         Iterator iter;
-        String verb, source;
-        UID uid;
         Task task;
         Allocation allocation;
-        AllocationResult ar;
-        boolean change = false;
+        int valid_alloc=0, valid_task=0;
+        String status = LoadIndicator.NORMAL_LOAD;
+        long event_time;
+        String verb;
+
+        if (allocationSubscription.size() < 2) return;
         
-        // Gather task arrival time series for ProjectSupply and Supply Tasks.  
+        long min_alloc_time = Long.MAX_VALUE, max_alloc_time = Long.MIN_VALUE;
+        long min_task_time = Long.MAX_VALUE, max_task_time = Long.MIN_VALUE;
         
-        for (iter = taskSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
-        {
-            task = (Task)iter.next();
-            verb = task.getVerb().toString();
-            source = task.getSource().toString();
-            uid = task.getUID();
-            if ((same(verb, "ProjectSupply")||same(verb, "Supply"))&& !same(source, cluster))
-            {
-                 task_series.put(uid.toString(), new Long(bts.getCreationTime(uid)));
-                 change = true;
-            }
-        }
-        
-        // Gather allocation(not to organizational asset) time series.
-        
-        for (iter = allocationSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
+        for (iter = allocationSubscription.getCollection().iterator() ; iter.hasNext() ;)
         {
             allocation = (Allocation)iter.next();
+            event_time = myTimestampService.getModificationTime(allocation.getUID());
+            if (event_time > 0) {
+                if (event_time > max_alloc_time) max_alloc_time = event_time;
+                if (event_time < min_alloc_time) min_alloc_time = event_time;
+                valid_alloc = valid_alloc + 1;
+            }
+            else continue;
             task = allocation.getTask();
             verb = task.getVerb().toString();
-            if (!(same(verb, "ProjectWithdraw")||same(verb, "Withdraw"))) continue;
-            source = task.getParentTaskUID().getOwner();
-            if (same(source, cluster)) continue;
-            if ((ar = allocation.getEstimatedResult())==null) continue;
-            uid = task.getParentTaskUID();
-            if (allocation_series.containsKey(uid.toString())) continue;
-            if (ar.isSuccess() && ar.getConfidenceRating()==1.0)
-            {
-                 allocation_series.put(uid.toString(), new Long(bts.getCreationTime(allocation.getUID())));
-                 change = true;
+            if (same(verb, "ProjectWithdraw") || same(verb, "Withdraw")) 
+                event_time = myTimestampService.getModificationTime(task.getParentTaskUID());
+            else event_time = myTimestampService.getModificationTime(task.getUID());
+            if (event_time > 0) {
+                if (event_time > max_task_time) max_task_time = event_time;
+                if (event_time < min_task_time) min_task_time = event_time;
+                valid_task = valid_task + 1;
+            }
+            else {
+                if (valid_alloc > 0) valid_alloc = valid_alloc - 1;
+                continue;
             }
         }
         
-        // Gather allocation(not to organizational asset) time series.
+        if (valid_alloc < 2 || valid_task < 2) {
+            return;
+        }
         
-        for (iter = allocationSubscription.getChangedCollection().iterator() ; iter.hasNext() ;)
-        {
-            allocation = (Allocation)iter.next();
-            task = allocation.getTask();
-            verb = task.getVerb().toString();
-            if (!(same(verb, "ProjectWithdraw")||same(verb, "Withdraw"))) continue;
-            source = task.getParentTaskUID().getOwner();
-            if (same(source, cluster)) continue;
-            if ((ar = allocation.getEstimatedResult())==null) continue;
-            uid = task.getParentTaskUID();
-            if (allocation_series.containsKey(uid.toString())) continue;
-            if (ar.isSuccess() && ar.getConfidenceRating()==1.0)
-            {
-                 allocation_series.put(uid.toString(), new Long(bts.getModificationTime(allocation.getUID())));
-                 change = true;
+        double x = max_task_time/1000.0 - min_task_time/1000.0;
+        double y = max_alloc_time/1000.0 - min_alloc_time/1000.0;
+        double a = 0.8988, b = 12.537, sigma = 51.44;
+ 
+        for (iter = sensorSubscription.getCollection().iterator(); iter.hasNext();) {
+            LoadIndicator loadIndicator = (LoadIndicator) iter.next();
+            if (y > a * x + b + 2 * sigma) status = LoadIndicator.SEVERE_LOAD;
+            else if (y <= a * x + b + sigma) status = LoadIndicator.NORMAL_LOAD;
+            else status = LoadIndicator.MODERATE_LOAD;
+            if (!same(loadIndicator.getLoadStatus(), status)) {
+                loadIndicator.setLoadStatus(status);
+                myBlackboardService.publishChange(loadIndicator);
             }
         }
-        if (change==true)
-        {
-            updateStatus();
-        }
+        
+        System.out.println("\n"+cluster+" ["+sensorname+"]: "+valid_alloc+" tasks "+((int)(x*100))/100.0+" Sec "+((int)(y*100))/100.0+" Sec ["+status+"]");
     }
  
     
@@ -149,66 +176,13 @@ public class PSUFBSensor1Plugin extends ComponentPlugin
         else return false;
     }
 
-    
-    // Update falling behind status.   
-    void updateStatus()
-    {
-        int i, n1 = task_series.size(), n2 = allocation_series.size();
-        double x=0, y=0, status;
-        long min=0;
-        Object[] a;
-        if (n1<2 || n2<2) return;
-        if (n1 < n2)
-        {
-            status = 0.0;
-        }
-        else
-        {
-            a = task_series.values().toArray();
-            Arrays.sort(a);
-            for (i=0; i<n2; i++)
-            {
-                if ((min=((Long)a[i]).longValue())>0) break;
-            }
-            x = (((Long)a[n2-1]).longValue()-min)/1000.0;
-            a = allocation_series.values().toArray();                      
-            Arrays.sort(a);
-            for (i=0; i<n2; i++)
-            {
-                if ((min=((Long)a[i]).longValue())>0) break;
-            }            
-            y = (((Long)a[n2-1]).longValue()-min)/1000.0;
-            if (y > x * 0.8815 + 65)
-            {
-				status = 1.0;
-		    }
-		    else
-		    {
-		        status = 0.0;
-		    }
-		}
-        PSUFBSensorCondition psu_fb=null;
-        for (Iterator iter = sensorSubscription.iterator() ; iter.hasNext() ;)
-        {
-            psu_fb = (PSUFBSensorCondition)iter.next();
-            break;
-        }
-        if (!(psu_fb.getValue().compareTo(new Double(status))==0))
-        {
-            psu_fb.setValue(new Double(status)); 
-            bs.publishChange(psu_fb); 
-            System.out.print("\n"+cluster+" "+n1+"(G) "+n2+"(A) "+x+"sec. "+y+"sec. ");
-			if (status==1.0) System.out.print("Falling Behind\n");
-			else System.out.print("\n");
-		}
-	}
 
-    IncrementalSubscription taskSubscription;
     IncrementalSubscription allocationSubscription;   
     IncrementalSubscription sensorSubscription; 
-    BlackboardService bs;
-    BlackboardTimestampService bts; 
-    String cluster;
-    Hashtable task_series, allocation_series;
-
+    String cluster, sensorname = "PSUFBSensor1Plugin";
+    private BlackboardTimestampService myTimestampService;
+    private BlackboardService myBlackboardService;
+    private LoggingService myLoggingService;
+    private UIDService myUIDService;
+    
 }
