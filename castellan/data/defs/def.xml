@@ -154,8 +154,9 @@
         SID        VARCHAR(20) NOT NULL,
         TIME       BIGINT NOT NULL,
         TYPE       INT NOT NULL,
-	ARTYPE     INT NOT NULL,
-	EVENTTYPE  INT NOT NULL,
+	  ARTYPE     INT NOT NULL,
+	  EVENTTYPE  INT NOT NULL,
+	  PDU		 BLOB,
         INDEX   EPDU (TIME)
       )
 
