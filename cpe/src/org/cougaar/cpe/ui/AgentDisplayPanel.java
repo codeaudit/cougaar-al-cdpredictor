@@ -42,7 +42,10 @@ public class AgentDisplayPanel extends JFrame {
 
         sp.setRightComponent( rightTabbedPane = new JTabbedPane() );
         rightTabbedPane.add( "Measurements", spMeasurementPanel = new JScrollPane( measurementPanel = new JPanel() ) ) ;
-        spMeasurementPanel.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS );
+        if ( spMeasurementPanel != null ) {
+            spMeasurementPanel.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS );
+            spMeasurementPanel.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_NEVER );
+        }
         rightTabbedPane.add( "Controls", controlPanel = new ControlsPanel() ) ;
         sp.setDividerLocation( 400 );
 
@@ -85,6 +88,8 @@ public class AgentDisplayPanel extends JFrame {
         sp.setDividerLocation( dividerLocation );
     }
 
+    protected Dimension panelSize = new Dimension( 320, 320 ) ;
+
     protected void updateMeasurements( ArrayList measurementPoints ) {
         // System.out.println("\n\nAgentDisplayPanel:: DEBUG UPDATING MP DISPLAY ");
         measurementPanel.removeAll();
@@ -105,8 +110,8 @@ public class AgentDisplayPanel extends JFrame {
                 gbc.gridx = gridx; gbc.gridy = gridy ;
                 EventDurationMeasurementPoint emp = (EventDurationMeasurementPoint) measurementPoint ;
                 EventDurationPlotPanel panel = new EventDurationPlotPanel( plugin, emp ) ;
-                panel.setMinimumSize( new Dimension(320,240) ) ;
-                panel.setPreferredSize( new Dimension(512,384) ) ;
+                panel.setMinimumSize( panelSize ) ;
+                panel.setPreferredSize( panelSize ) ;
                 gbl.setConstraints( panel, gbc );
                 measurementPanel.add( panel ) ;
                 mpDisplayPanels.add( panel ) ;
@@ -116,9 +121,9 @@ public class AgentDisplayPanel extends JFrame {
                 gbc.gridx = gridx; gbc.gridy = gridy ;
                 // System.out.println("\n\nDEBUG: AgentDisplayPanel:: ADDING DELAY MEASUREMENT POINT FOR " + measurementPoint );
                 DelayMeasurementPoint dmp = (DelayMeasurementPoint) measurementPoint ;
-                DelayPlotPanel panel = new DelayPlotPanel( plugin, dmp ) ;
-                panel.setMinimumSize( new Dimension(320,240) ) ;
-                panel.setPreferredSize( new Dimension(512,384) ) ;
+                DelayPlotPanel2 panel = new DelayPlotPanel2( plugin, dmp ) ;
+                panel.setMinimumSize( panelSize ) ;
+                panel.setPreferredSize( panelSize ) ;
                 gbl.setConstraints( panel, gbc );
                 measurementPanel.add( panel ) ;
                 mpDisplayPanels.add( panel ) ;
@@ -133,9 +138,9 @@ public class AgentDisplayPanel extends JFrame {
 //        gbl.setConstraints( dp, gbc ) ;
 //        mpDisplayPanels.add( dp ) ;
 
-        spMeasurementPanel.invalidate();
-        spMeasurementPanel.validate();
-        spMeasurementPanel.repaint();
+        if ( spMeasurementPanel != null ) {
+            spMeasurementPanel.invalidate(); spMeasurementPanel.validate(); spMeasurementPanel.repaint();
+        }
         measurementPanel.invalidate();
         measurementPanel.repaint();
     }
@@ -150,6 +155,10 @@ public class AgentDisplayPanel extends JFrame {
             if ( o instanceof DelayPlotPanel ) {
                 DelayPlotPanel delayPlotPanel = (DelayPlotPanel) o ;
                 delayPlotPanel.updateData();
+            }
+            else if ( o instanceof DelayPlotPanel2 ) {
+                DelayPlotPanel2 p = (DelayPlotPanel2) o ;
+                p.updateData();
             }
             else if ( o instanceof EventDurationPlotPanel ) {
                 EventDurationPlotPanel ep = (EventDurationPlotPanel) o ;

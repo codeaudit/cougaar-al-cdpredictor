@@ -114,6 +114,21 @@ public class SPlanner {
             return entity;
         }
 
+        public void setQuantity(int quantity)
+        {
+            this.quantity = quantity;
+        }
+
+        public int getQuantity()
+        {
+            return quantity;
+        }
+
+        public String toString()
+        {
+            return "[Demand " + entity.getId() + ",demandType=" + SupplyTask.getStringForAction(demandType) + "]";
+        }
+
         UnitEntity entity ;
         int demandType ;
         int quantity ;
@@ -285,6 +300,7 @@ public class SPlanner {
             if ( demandRecord.getDemandType() == SupplyTask.SUPPLY_AMMO ) {
                 if ( entity.getMaxUnitAmmoLoad() - entity.getAmmoQuantity() > SupplyVehicleEntity.MAX_UNITS * minLoadFraction ) {
                     demand = Math.min( SupplyVehicleEntity.MAX_UNITS, entity.getMaxUnitAmmoLoad() - entity.getAmmoQuantity() ) ;
+                    //demandRecord.setQuantity( demand );
                     type = SupplyTask.SUPPLY_AMMO ;
                 }
             }
@@ -319,7 +335,14 @@ public class SPlanner {
                 schedules[ supplyEntityIndex].addScheduleElement( outgoingTask );
                 schedules[ supplyEntityIndex].addScheduleElement( recoveryTask );
                 allocatedNewTasks = true ;
-                break ;
+
+                // System.out.println("Allocation " + outgoingTask + " for " + suppEntities[supplyEntityIndex].getId() + " satifying demand " + demandRecord + " of type=" + SupplyTask.getStringForAction(type) ) ;
+                // Remove this break and allow multiple allocations.
+                // break ;
+                slot = ScheduleUtils.findNextEmptySlot( schedules, endTime-deliveryTime, endTime+deliveryTime, deliveryTime * 2 ) ;
+                if ( slot == null ) {
+                    break ;
+                }
             }
         }
         return allocatedNewTasks ;

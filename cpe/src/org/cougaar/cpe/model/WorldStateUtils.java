@@ -1,12 +1,12 @@
 package org.cougaar.cpe.model;
 
-import org.cougaar.util.UnaryPredicate;
-import org.cougaar.tools.castellan.util.MultiHashSet;
+import com.axiom.lib.util.MultiHashSet;
 import org.cougaar.cpe.planning.zplan.ZoneWorld;
+import org.cougaar.cpe.planning.zplan.ZoneTask;
+import org.cougaar.util.UnaryPredicate;
 
-import java.util.*;
-import java.awt.*;
 import java.awt.geom.Rectangle2D;
+import java.util.*;
 
 /**
  * User: wpeng
@@ -180,6 +180,67 @@ public class WorldStateUtils {
         }
     } ;
 
+    /**
+     * Compute the minimum distance to a uniform distribution across the zone. This is used to see how balanced
+     * coverage is.
+     *
+     * @param ws
+     * @param units
+     * @param zone
+     * @return
+     */
+    public static float computeInternalZoneCoverage( WorldState ws, ArrayList units, Interval zone ) {
+        if ( zone == null ) {
+            return 0 ;
+        }
+
+        float zoneSize = zone.getXUpper() - zone.getXLower() ;
+
+//        float[] spacing = new float[ units.size() ] ;
+//        for ( int i=0;i<units.size();i++) {
+//            spacing[i] = ( i + 0.5f ) * ( zoneSize / units.size() ) ;
+//        }
+        ArrayList sortedUnits = new ArrayList() ;
+        for ( int i=0;i<units.size();i++) {
+            UnitEntity ue = (UnitEntity) ws.getEntity( ( String ) units.get(i) ) ;
+            sortedUnits.add( ue ) ;
+        }
+        Collections.sort( sortedUnits, new Comparator() {
+            public int compare(Object o1, Object o2)
+            {
+                UnitEntity e1 = (UnitEntity) o1, e2 = (UnitEntity) o2 ;
+                if ( e1.getX() < e2.getX() ) {
+                    return -1 ;
+                }
+                if ( e1.getX() > e2.getX() ) {
+                    return 1 ;
+                }
+                return e1.getId().compareTo(e2.getId()) ;
+            }
+        } ) ;
+
+        float distance = 0 ;
+        for (int i = 0; i < sortedUnits.size(); i++) {
+            UnitEntity unitEntity = (UnitEntity)sortedUnits.get(i);
+            float pos =  ( i + 0.5f ) * ( zoneSize / units.size() ) + zone.getXLower() ;
+            float dist = Math.abs( unitEntity.getX() - pos ) ;
+            if ( dist < 1E-5 ) {
+                dist = 0 ;
+            }
+            distance += dist ;
+        }
+
+        return distance ;
+    }
+
+    /**
+     * The zone coverage is defined by whether or not the units are within the zone.
+     *
+     * @param ws
+     * @param units
+     * @param zone
+     * @return A negative value.  If the units are within the zone, the zone coverage is 0.
+     */
     public static float computeZoneCoverage( WorldState ws, ArrayList units, Interval zone ) {
         float coverage = 0 ;
         for (int i=0;i<units.size();i++) {
@@ -383,9 +444,11 @@ public class WorldStateUtils {
             UnitEntity unitEntity = (UnitEntity) iter.next();
 
             // We are not in the current zone, ignore.
-            if ( unitEntity.getX() < zone.getXLower() - VGWorldConstants.getUnitRangeWidth()/2
-                && unitEntity.getX() > zone.getXUpper() + VGWorldConstants.getUnitRangeWidth()/2) {
-                continue ;
+            if ( zone != null ) {
+                if ( unitEntity.getX() < zone.getXLower() - VGWorldConstants.getUnitRangeWidth()/2
+                    && unitEntity.getX() > zone.getXUpper() + VGWorldConstants.getUnitRangeWidth()/2) {
+                    continue ;
+                }
             }
             double localCoverage = 0 ;
             for (int i = 0; i < targets.size(); i++) {
@@ -545,6 +608,37 @@ public class WorldStateUtils {
             current.deleteTarget( id ) ;
         }
 
+    }
+
+    public static Plan convertIndexPlanToIntervalPlan( ZoneWorld zw, Plan p ) {
+        Plan result = null ;
+        ArrayList tasks = new ArrayList() ;
+        for (int i=0;i<p.getNumTasks();i++) {
+            ZoneTask zt = (ZoneTask) p.getTask(i) ;
+            Zone sz = zt.getStartZone() ;
+            if ( sz instanceof IndexedZone ) {
+                sz = zw.getIntervalForZone( ( IndexedZone ) sz ) ;
+            }
+            else {
+                sz = (Zone) sz.clone() ;
+            }
+            Zone ez = zt.getEndZone() ;
+            if ( ez instanceof IndexedZone ) {
+                ez = zw.getIntervalForZone( ( IndexedZone ) ez ) ;
+            }
+            else {
+                ez = (Zone) sz.clone() ;
+            }
+            ZoneTask nt = new ZoneTask( zt.getStartTime(), zt.getEndTime(), sz, ez ) ;
+            nt.setDisposition( zt.getDisposition() );
+            if ( zt.getObservedResult() != null  ) {
+                nt.setObservedResult( ( ZoneExecutionResult ) zt.getObservedResult().clone() );
+            }
+            tasks.add( nt ) ;
+        }
+
+        result = new Plan( tasks ) ;
+        return result ;
     }
 
 

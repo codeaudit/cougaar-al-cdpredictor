@@ -1,6 +1,7 @@
 package org.cougaar.cpe.ui;
 
 import org.cougaar.cpe.model.*;
+import org.cougaar.cpe.model.events.EngageByFireEvent;
 import org.cougaar.cpe.planning.zplan.ZoneWorld;
 import org.cougaar.cpe.planning.zplan.Aggregate;
 import org.cougaar.cpe.planning.zplan.BNAggregate;
@@ -47,7 +48,7 @@ public class WorldDisplayPanel extends JPanel
         this.ws = ws;
     }
 
-    public synchronized void paint(Graphics g)
+    public void paint(Graphics g)
     {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, getWidth(), getHeight());
@@ -63,7 +64,7 @@ public class WorldDisplayPanel extends JPanel
 
         Rectangle bounds = getBounds();
         double boardWidth = ws.getBoardWidth() , boardHeight = ws.getBoardHeight();
-        borderSize = borderRatio * Math.max( boardWidth, boardHeight ) ;
+        borderSize = borderRatio * Math.max(boardWidth, boardHeight);
         double scale = Math.min((bounds.getWidth()) / (boardWidth + borderSize * 2),
                 (bounds.getHeight()) / (boardHeight + Math.abs(ws.getRecoveryLine()) + borderSize * 2));
 
@@ -79,160 +80,170 @@ public class WorldDisplayPanel extends JPanel
 
         // This is the default xform.
         AffineTransform originalTransform = g2.getTransform();
-        Iterator units = ws.getUnits();
-
-        // Draw the zones.
-        drawZones( originalTransform, g2, scale);
-
-        FontMetrics fm = g2.getFontMetrics();
-        float width = (float) (fm.getWidths()[0] / scale) * 0.7f;
-        float height = (float) ((float) (fm.getMaxAscent() + fm.getMaxDescent()) / scale);
-
-        while (units.hasNext())
+        synchronized (ws)
         {
-            org.cougaar.cpe.model.UnitEntity unitEntity = (org.cougaar.cpe.model.UnitEntity) units.next();
-            drawUnitIcon(g2, unitEntity.getPosition(), scale, unitEntity.getRangeShape());
-            g2.setColor(Color.WHITE);
-            g2.translate(unitEntity.getX() - ((width * unitEntity.getId().length()) / 2), unitEntity.getY() - height * 1.1);
-            g2.scale(1 / scale, -1 / scale);
-            g2.drawString(unitEntity.getId(), 0, 0);
+            Iterator units = ws.getUnits();
 
-            // Reset back to the default xform.
-            g2.setTransform(originalTransform);
-        }
+            // Draw the zones.
+            drawZones(originalTransform, g2, scale);
 
-        drawUnitTasks( g2, scale, originalTransform ) ;
+            FontMetrics fm = g2.getFontMetrics();
+            float width = (float) (fm.getWidths()[0] / scale) * 0.7f;
+            float height = (float) ((float) (fm.getMaxAscent() + fm.getMaxDescent()) / scale);
 
-        Iterator supplyUnits = ws.getSupplyVehicleEntities();
-        while (supplyUnits.hasNext())
-        {
-            SupplyVehicleEntity supplyEntity = (SupplyVehicleEntity) supplyUnits.next();
-            g2.setColor(Color.YELLOW);
-            drawUnitIcon(g2, supplyEntity.getPosition(), scale, null);
-            g2.setColor(Color.WHITE);
-            g2.translate(supplyEntity.getX() - width * supplyEntity.getId().length() / 2, supplyEntity.getY() - height * 1.1);
-            g2.scale(1 / scale, -1 / scale);
-            if (supplyEntity.getId() != null)
+            while (units.hasNext())
             {
-                g2.drawString(supplyEntity.getId(), 0, 0);
+                org.cougaar.cpe.model.UnitEntity unitEntity = (org.cougaar.cpe.model.UnitEntity) units.next();
+                drawUnitIcon(g2, unitEntity.getPosition(), scale, unitEntity.getRangeShape());
+                g2.setColor(Color.WHITE);
+                g2.translate(unitEntity.getX() - ((width * unitEntity.getId().length()) / 2), unitEntity.getY() - height * 1.1);
+                g2.scale(1 / scale, -1 / scale);
+                g2.drawString(unitEntity.getId(), 0, 0);
+
+                // Reset back to the default xform.
+                g2.setTransform(originalTransform);
             }
-            g2.setTransform(originalTransform);
-        }
 
-        Iterator targets = ws.getTargets();
-        while (targets.hasNext())
-        {
-            org.cougaar.cpe.model.Entity e = (org.cougaar.cpe.model.Entity) targets.next();
-            GeneralPath path = new GeneralPath();
-            if (e.isActive())
-            {
-                g2.setColor(Color.MAGENTA);
-            }
-            else
-            {
-                g2.setColor(Color.GREEN.darker());
-            }
-            path.moveTo((float) (targetPoints[0][0] / scale + e.getX()), (float) (targetPoints[0][1] / scale + e.getY()));
-            for (int i = 1; i < targetPoints.length; i++)
-            {
-                double[] targetPoint = targetPoints[i];
-                path.lineTo((float) (targetPoint[0] / scale + e.getX()), (float) (targetPoint[1] / scale + e.getY()));
-            }
-            path.lineTo((float) (targetPoints[0][0] / scale + e.getX()), (float) (targetPoints[0][1] / scale + e.getY()));
-            g2.draw(path);
-        }
+            drawUnitTasks(g2, scale, originalTransform);
 
-        g2.setColor(Color.YELLOW);
-        g2.draw(new Line2D.Double(0, ws.getPenaltyHeight(), ws.getBoardWidth(), ws.getPenaltyHeight()));
-
-        if (ws.isLogEvents())
-        {
-            ArrayList events = ws.clearEvents();
-            if (events != null)
+            Iterator supplyUnits = ws.getSupplyVehicleEntities();
+            while (supplyUnits.hasNext())
             {
-                for (int i = 0; i < events.size(); i++)
+                SupplyVehicleEntity supplyEntity = (SupplyVehicleEntity) supplyUnits.next();
+                g2.setColor(Color.YELLOW);
+                drawUnitIcon(g2, supplyEntity.getPosition(), scale, null);
+                g2.setColor(Color.WHITE);
+                g2.translate(supplyEntity.getX() - width * supplyEntity.getId().length() / 2, supplyEntity.getY() - height * 1.1);
+                g2.scale(1 / scale, -1 / scale);
+                if (supplyEntity.getId() != null)
                 {
-                    Object o = events.get(i);
-                    if (o instanceof WorldState.EngageByFireEvent)
+                    g2.drawString(supplyEntity.getId(), 0, 0);
+                }
+                g2.setTransform(originalTransform);
+            }
+
+            Iterator targets = ws.getTargets();
+            while (targets.hasNext())
+            {
+                org.cougaar.cpe.model.Entity e = (org.cougaar.cpe.model.Entity) targets.next();
+                GeneralPath path = new GeneralPath();
+                if (e.isActive())
+                {
+                    g2.setColor(Color.MAGENTA);
+                }
+                else
+                {
+                    g2.setColor(Color.GREEN.darker());
+                }
+                path.moveTo((float) (targetPoints[0][0] / scale + e.getX()), (float) (targetPoints[0][1] / scale + e.getY()));
+                for (int i = 1; i < targetPoints.length; i++)
+                {
+                    double[] targetPoint = targetPoints[i];
+                    path.lineTo((float) (targetPoint[0] / scale + e.getX()), (float) (targetPoint[1] / scale + e.getY()));
+                }
+                path.lineTo((float) (targetPoints[0][0] / scale + e.getX()), (float) (targetPoints[0][1] / scale + e.getY()));
+                g2.draw(path);
+            }
+
+            g2.setColor(Color.YELLOW);
+            g2.draw(new Line2D.Double(0, ws.getPenaltyHeight(), ws.getBoardWidth(), ws.getPenaltyHeight()));
+
+            if (ws.isLogEvents())
+            {
+                ArrayList events = ws.clearEvents();
+                if (events != null)
+                {
+                    for (int i = 0; i < events.size(); i++)
                     {
-                        WorldState.EngageByFireEvent e = (WorldState.EngageByFireEvent) o;
-                        EntityInfo info = ws.getEntityInfo(e.getUnitId());
-                        UnitEntity entity = (UnitEntity) info.getEntity();
-                        EntityInfo tinfo = ws.getEntityInfo(e.getEr().getTargetId());
-                        TargetEntity tentity = (TargetEntity) tinfo.getEntity();
-                        GeneralPath path = new GeneralPath();
-                        path.moveTo((float) entity.getX(), (float) entity.getY());
-                        path.lineTo((float) tentity.getX(), (float) tentity.getY());
-                        if (e.getEr().getAttritValue() == 0)
+                        Object o = events.get(i);
+                        if (o instanceof EngageByFireEvent)
                         {
-                            g2.setColor(Color.WHITE);
+                            EngageByFireEvent e = (EngageByFireEvent) o;
+                            EntityInfo info = ws.getEntityInfo(e.getUnitId());
+                            UnitEntity entity = (UnitEntity) info.getEntity();
+                            EntityInfo tinfo = ws.getEntityInfo(e.getEr().getTargetId());
+                            TargetEntity tentity = (TargetEntity) tinfo.getEntity();
+                            GeneralPath path = new GeneralPath();
+                            path.moveTo((float) entity.getX(), (float) entity.getY());
+                            path.lineTo((float) tentity.getX(), (float) tentity.getY());
+                            if (e.getEr().getAttritValue() == 0)
+                            {
+                                g2.setColor(Color.WHITE);
+                            }
+                            else
+                            {
+                                g2.setColor(Color.DARK_GRAY);
+                            }
+                            g2.draw(path);
                         }
-                        else
-                        {
-                            g2.setColor(Color.DARK_GRAY);
-                        }
-                        g2.draw(path);
                     }
                 }
             }
         }
     }
 
-    // TODO Finish this.
-    private void drawUnitTasks(Graphics2D g2, double scale, AffineTransform originalTransform )
+    private void drawUnitTasks(Graphics2D g2, double scale, AffineTransform originalTransform)
     {
         g2.setStroke(new BasicStroke((float) (1 / scale)));
         FontMetrics fm = g2.getFontMetrics();
         float width = (float) (fm.getWidths()[0] / scale) * 0.7f;
         float height = (float) ((float) (fm.getMaxAscent() + fm.getMaxDescent()) / scale);
 
-        Iterator iter = ws.getUnits() ;
+        Iterator iter = ws.getUnits();
         while (iter.hasNext())
         {
             UnitEntity unitEntity = (UnitEntity) iter.next();
-            if ( unitEntity.getManueverPlan() != null ) {
-                Plan p = unitEntity.getManueverPlan() ;
-                if ( p.getNumTasks() == 0 ) {
-                    continue ;
+            if (unitEntity.getManueverPlan() != null)
+            {
+                Plan p = unitEntity.getManueverPlan();
+                if (p.getNumTasks() == 0)
+                {
+                    continue;
                 }
 
                 // Find the first task to plot.
-                for (int i=0;i<p.getNumTasks();i++) {
-                    UnitTask task = (UnitTask) p.getTask(i) ;
-                    if ( task.included( ws.getTime() ) || task.getStartTime() >= ws.getTime() ) {
-                        long startTime = Math.max( ws.getTime(), task.getStartTime() ) ;
-                        long visibleTime = ws.getTime() + ( long ) ( ws.getUpperY() / ( VGWorldConstants.getTargetMoveRate() ) * 1000 ) ;
+                for (int i = 0; i < p.getNumTasks(); i++)
+                {
+                    UnitTask task = (UnitTask) p.getTask(i);
+                    if (task.included(ws.getTime()) || task.getStartTime() >= ws.getTime())
+                    {
+                        long startTime = Math.max(ws.getTime(), task.getStartTime());
+                        long visibleTime = ws.getTime() + (long) (ws.getUpperY() / (VGWorldConstants.getTargetMoveRate()) * 1000);
                         // When this zone ends.
-                        long endTime = Math.min( task.getEndTime(),  visibleTime )  ;
+                        long endTime = Math.min(task.getEndTime(), visibleTime);
 
-                        if ( startTime > visibleTime || endTime < ws.getTime() || endTime < startTime ) {
-                            continue ;
+                        if (startTime > visibleTime || endTime < ws.getTime() || endTime < startTime)
+                        {
+                            continue;
                         }
-                        float taskStartX ;
-                        if ( i > 0 ) {
-                            UnitTask prev = (UnitTask) p.getTask( i-1) ;
-                            taskStartX = (float) prev.getDestX() ;
+                        float taskStartX;
+                        if (i > 0)
+                        {
+                            UnitTask prev = (UnitTask) p.getTask(i - 1);
+                            taskStartX = (float) prev.getDestX();
                         }
-                        else {
-                            taskStartX = unitEntity.getX() ;
+                        else
+                        {
+                            taskStartX = unitEntity.getX();
                         }
-                        float yLower = (float) ((VGWorldConstants.getTargetMoveRate() / 1000) * (startTime - ws.getTime())) + ( float ) ws.getLowerY() ;
-                        float yUpper = (float) ((VGWorldConstants.getTargetMoveRate() / 1000) * (endTime - ws.getTime())) + ( float ) ws.getLowerY() ;
+                        float yLower = (float) ((VGWorldConstants.getTargetMoveRate() / 1000) * (startTime - ws.getTime())) + (float) ws.getLowerY();
+                        float yUpper = (float) ((VGWorldConstants.getTargetMoveRate() / 1000) * (endTime - ws.getTime())) + (float) ws.getLowerY();
 
-                        float lowerX = ( ( float ) (startTime - task.getStartTime() ) ) /
-                                ( task.getEndTime() - task.getStartTime() )
-                                * ( float ) ( task.getDestX() - taskStartX ) + taskStartX ;
-                        float upperX = (float) (( ( endTime - task.getStartTime() ) /
-                                ( task.getEndTime() - task.getStartTime() ) ) * ( task.getDestX() - taskStartX ) + taskStartX) ;
-                        GeneralPath s = new GeneralPath() ;
-                        s.moveTo( lowerX, yLower );
-                        s.lineTo( upperX, yUpper );
-                        g2.setColor( Color.LIGHT_GRAY );
-                        g2.draw( s );
+                        float lowerX = ((float) (startTime - task.getStartTime())) /
+                                (task.getEndTime() - task.getStartTime())
+                                * (float) (task.getDestX() - taskStartX) + taskStartX;
+                        float upperX = (float) (((endTime - task.getStartTime()) /
+                                (task.getEndTime() - task.getStartTime())) * (task.getDestX() - taskStartX) + taskStartX);
+                        GeneralPath s = new GeneralPath();
+                        s.moveTo(lowerX, yLower);
+                        s.lineTo(upperX, yUpper);
+                        g2.setColor(Color.LIGHT_GRAY);
+                        g2.draw(s);
 
-                        if ( i == p.getNumTasks() -1 ) {
+                        if (i == p.getNumTasks() - 1)
+                        {
                             g2.setColor(Color.LIGHT_GRAY);
-                            g2.translate( upperX - ((width * unitEntity.getId().length()) / 2), yUpper + height * 1.1);
+                            g2.translate(upperX - ((width * unitEntity.getId().length()) / 2), yUpper + height * 1.1);
                             g2.scale(1 / scale, -1 / scale);
                             g2.drawString(unitEntity.getId(), 0, 0);
 
@@ -247,7 +258,7 @@ public class WorldDisplayPanel extends JPanel
 
     static Color[] c = {Color.BLUE.darker(), Color.GREEN.darker().darker()};
 
-    private void drawZones( AffineTransform originalXForm, Graphics2D g2, double scale)
+    private void drawZones(AffineTransform originalXForm, Graphics2D g2, double scale)
     {
         if (ws instanceof ZoneWorld)
         {
@@ -264,7 +275,7 @@ public class WorldDisplayPanel extends JPanel
                 // Set the color associated with this zone
                 g2.setStroke(new BasicStroke((float) (1 / scale)));
 
-                float lower, upper ;
+                float lower, upper;
                 if (z != null)
                 {
                     if (z instanceof IndexedZone)
@@ -285,7 +296,7 @@ public class WorldDisplayPanel extends JPanel
 
                     // Draw the text at the appropriate location
                     g2.setColor(Color.WHITE);
-                    g2.translate(lower + (upper - lower) / 2 - ( width * agg.getId().length() ) / 2, ws.getRecoveryLine() - 0.4 - height );
+                    g2.translate(lower + (upper - lower) / 2 - (width * agg.getId().length()) / 2, ws.getRecoveryLine() - 0.4 - height);
                     g2.scale(1 / scale, -1 / scale);
                     g2.drawString(agg.getId(), 0, 0);
 
@@ -302,44 +313,47 @@ public class WorldDisplayPanel extends JPanel
                     for (int j = 0; j < psz.getNumTasks(); j++)
                     {
                         ZoneTask t = (ZoneTask) psz.getTask(j);
-                        Zone sz = t.getStartZone() ;
-                        Zone ez = t.getEndZone() ;
-                        if ( sz instanceof  IndexedZone ) {
-                            sz = zw.getIntervalForZone( ( IndexedZone ) sz ) ;
+                        Zone sz = t.getStartZone();
+                        Zone ez = t.getEndZone();
+                        if (sz instanceof IndexedZone)
+                        {
+                            sz = zw.getIntervalForZone((IndexedZone) sz);
                         }
-                        if ( ez instanceof  IndexedZone ) {
-                            ez = zw.getIntervalForZone( ( IndexedZone ) ez ) ;
+                        if (ez instanceof IndexedZone)
+                        {
+                            ez = zw.getIntervalForZone((IndexedZone) ez);
                         }
-                        Interval si = (Interval) sz ;
-                        Interval ei = (Interval) ez ;
+                        Interval si = (Interval) sz;
+                        Interval ei = (Interval) ez;
 
                         // When this zone starts.
-                        long startTime = Math.max( ws.getTime(), t.getStartTime() ) ;
-                        long visibleTime = ws.getTime() + ( long ) ( ws.getUpperY() / ( VGWorldConstants.getTargetMoveRate() ) * 1000 ) ;
+                        long startTime = Math.max(ws.getTime(), t.getStartTime());
+                        long visibleTime = ws.getTime() + (long) (ws.getUpperY() / (VGWorldConstants.getTargetMoveRate()) * 1000);
                         // When this zone ends.
-                        long endTime = Math.min( t.getEndTime(),  visibleTime )  ;
+                        long endTime = Math.min(t.getEndTime(), visibleTime);
 
-                        if ( startTime > visibleTime || endTime < ws.getTime() || endTime < startTime ) {
-                            continue ;
+                        if (startTime > visibleTime || endTime < ws.getTime() || endTime < startTime)
+                        {
+                            continue;
                         }
 
-                        si = zw.interpolateIntervalForTask( t, startTime ) ;
-                        ei = zw.interpolateIntervalForTask( t, endTime ) ;
-                        float yLower = (float) ((VGWorldConstants.getTargetMoveRate() / 1000) * (startTime - ws.getTime())) + ( float ) ws.getLowerY() ;
-                        float yUpper = (float) ((VGWorldConstants.getTargetMoveRate() / 1000) * (endTime - ws.getTime())) + ( float ) ws.getLowerY() ;
+                        si = zw.interpolateIntervalForTask(t, startTime);
+                        ei = zw.interpolateIntervalForTask(t, endTime);
+                        float yLower = (float) ((VGWorldConstants.getTargetMoveRate() / 1000) * (startTime - ws.getTime())) + (float) ws.getLowerY();
+                        float yUpper = (float) ((VGWorldConstants.getTargetMoveRate() / 1000) * (endTime - ws.getTime())) + (float) ws.getLowerY();
 
                         // Now, paint this "trapezoid"
-                        GeneralPath path = new GeneralPath() ;
-                        path.moveTo( si.getXLower(), yLower );
-                        path.lineTo( si.getXUpper(), yLower );
-                        path.lineTo( ei.getXUpper(), yUpper );
-                        path.lineTo( ei.getXLower(), yUpper );
-                        path.lineTo( si.getXLower(), yLower );
+                        GeneralPath path = new GeneralPath();
+                        path.moveTo(si.getXLower(), yLower);
+                        path.lineTo(si.getXUpper(), yLower);
+                        path.lineTo(ei.getXUpper(), yUpper);
+                        path.lineTo(ei.getXLower(), yUpper);
+                        path.lineTo(si.getXLower(), yLower);
                         g2.setColor(c[i % c.length]);
-                        g2.fill( path );
+                        g2.fill(path);
                         // Draw on top of this.
                         g2.setColor(Color.DARK_GRAY);
-                        g2.draw( path );
+                        g2.draw(path);
                     }
 
 //                    int index = psz.getIndexForTime( ws.getTime() ) ;
@@ -431,7 +445,7 @@ public class WorldDisplayPanel extends JPanel
     static final double iconWidth = 17, iconHeight = 17;
     // static Rectangle2D unitShape = new Rectangle2D.Double( -10, -10, 20, 20 ) ;
     double borderSize = 1;
-    double borderRatio = 0.08 ;
+    double borderRatio = 0.08;
     org.cougaar.cpe.model.WorldState ws;
 
 }

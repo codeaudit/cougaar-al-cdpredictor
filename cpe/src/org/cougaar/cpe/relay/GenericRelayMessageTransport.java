@@ -240,6 +240,7 @@ public class GenericRelayMessageTransport {
             }
         }
         finally {
+
             if ( wasClosed ) {
                bb.closeTransaction();
             }
@@ -288,6 +289,9 @@ public class GenericRelayMessageTransport {
                 System.out.print("*");
                 //System.out.println("GMRT::Firing alarm=" + qa);
 
+                long fireTime = System.currentTimeMillis() ;
+                System.out.println("Firing " + qa + " at " + fireTime + " ms");
+
                 // Now, do the invocation of the alarm within this plugin.
                 try
                 {
@@ -298,13 +302,15 @@ public class GenericRelayMessageTransport {
                     e.printStackTrace();
                 }
 
-                // Reschedule the timer if it hasn't been stopped yet.
+                // Reschedule the timer immediately since we don't want clock skew if it hasn't been stopped yet.
                 if ( qa.isPeriodic() && !qa.isStopped() ) {
                     //System.out.println("GMRT::Resetting periodic timer.");
                     AlarmService as = (AlarmService) broker.getService( component, AlarmService.class, null ) ;
                     qa = (QueuedAlarm) qa.clone() ;
+                    // Replace the old alarm
                     alarms.put( qa.getAlarmId(), qa ) ;
                     qa.reset( System.currentTimeMillis() );
+                    System.out.println("Resetting " + qa + " to " + qa.getExpirationTime() + " ms");
                     as.addRealTimeAlarm( qa );
                 }
             }
@@ -344,6 +350,9 @@ public class GenericRelayMessageTransport {
                 e.printStackTrace();
             }
         }
+
+        // Clear the list!
+        selfMessages.clearList() ;
         selfMessages.setChanged( false );
 
         /**

@@ -280,6 +280,9 @@ public class ManueverPlanner extends Planner {
     public void setZonePlan(Plan plan)
     {
         zonePlan = plan ;
+        if ( vss != null ) {
+            vss.setZoneSchedule( zonePlan );
+        }
     }
 
 }

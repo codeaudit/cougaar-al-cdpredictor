@@ -1,18 +1,19 @@
-/**
- * User: wpeng
- * Date: Mar 26, 2003
- * Time: 5:44:03 PM
- */
 package org.cougaar.cpe.unittests;
 
 import org.cougaar.cpe.ui.WorldDisplayPanel;
 import org.cougaar.cpe.model.WorldState;
 import org.cougaar.cpe.model.VGWorldConstants;
+import org.cougaar.cpe.model.ReferenceWorldState;
+import org.cougaar.cpe.mplan.ManueverPlanner;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 public class VGFrame extends JFrame {
     private RefreshThread refreshThread;
@@ -21,8 +22,10 @@ public class VGFrame extends JFrame {
     private CPESimulator simulator;
     private WorldDisplayPanel zoneDisplayPanel;
     private boolean isStarted;
+    private MetricsPanel metricsPanel;
+    private JCheckBoxMenuItem miDebugPlanningNodes;
 
-    public VGFrame( WorldState ws, CPESimulator simulator ) {
+    public VGFrame( ReferenceWorldState ws, CPESimulator simulator ) {
         super( "CPE Society Simulator" ) ;
         this.simulator = simulator ;
         JMenuBar menuBar = new JMenuBar( ) ;
@@ -30,7 +33,7 @@ public class VGFrame extends JFrame {
 
         JMenu fileMenu = new JMenu( "File" ) ;
         menuBar.add( fileMenu );
-        JMenuItem miConfigureTargets = new JMenuItem( "Configure" ) ;
+        JMenuItem miConfigureTargets = new JMenuItem( "Configure Targets" ) ;
         fileMenu.add( miConfigureTargets ) ;
 
         JMenu runMenu = new JMenu( "Run" ) ;
@@ -42,6 +45,14 @@ public class VGFrame extends JFrame {
         runMenu.add( miRun ) ;
         JMenuItem miStop = new JMenuItem( "Stop" ) ;
         runMenu.add( miStop ) ;
+
+        JMenu debugMenu = new JMenu( "Debug" ) ;
+        menuBar.add( debugMenu ) ;
+        JMenuItem miConfigureZoneTest;
+        miConfigureZoneTest = new JMenuItem( "Zone test" ) ;
+        debugMenu.add( miConfigureZoneTest ) ;
+        miDebugPlanningNodes = new JCheckBoxMenuItem( "Print BN planning nodes" ) ;
+        debugMenu.add( miDebugPlanningNodes ) ;
 
         miConfigureTargets.addActionListener( new ActionListener() {
             public void actionPerformed(ActionEvent e)
@@ -71,15 +82,61 @@ public class VGFrame extends JFrame {
             }
         });
 
+        miConfigureZoneTest.addActionListener( new ActionListener() {
+            public void actionPerformed(ActionEvent e)
+            {
+                doConfigureZoneTest() ;
+            }
+        });
+
+        miDebugPlanningNodes.addActionListener( new ActionListener() {
+            public void actionPerformed(ActionEvent e)
+            {
+                doPrintPlanningNodes() ;
+            }
+        });
+
         setSize( 800, 600 ) ;
         getContentPane().setLayout( new BorderLayout());
         getContentPane().add( mainTabbedPane, BorderLayout.CENTER ) ;
         mainTabbedPane.addTab( "Display", displayPanel = new WorldDisplayPanel( ws ) );
         mainTabbedPane.addTab( "Zones", zoneDisplayPanel = new WorldDisplayPanel( simulator.getZoneWorld() ) ) ;
         mainTabbedPane.addTab( "Inspector", searchPanel = new SearchInspectorPanel( this ) );
+        mainTabbedPane.addTab( "Metrics", metricsPanel = new MetricsPanel( ws ) );
 
         refreshThread = new RefreshThread();
         refreshThread.start();
+    }
+
+    private void doConfigureZoneTest()
+    {
+        simulator.configureZoneTestScenario();
+        displayPanel.setWorldState( simulator.getWorldState() );
+        zoneDisplayPanel.setWorldState( simulator.getZoneWorld() );
+        metricsPanel.setWorldState( simulator.getWorldState() );
+    }
+
+    private void doPrintPlanningNodes()
+    {
+        if ( miDebugPlanningNodes.isSelected() ) {
+
+            JFileChooser fc = new JFileChooser( );
+            int value = fc.showSaveDialog( this ) ;
+            if ( value != JFileChooser.APPROVE_OPTION ) {
+                return ;
+            }
+
+            File f = fc.getSelectedFile() ;
+            if ( f == null ) {
+                return ;
+            }
+
+            simulator.setDebugDumpPlanNodes( true );
+            simulator.setDebugPlanFile( f );
+        }
+        else {
+            simulator.setDebugDumpPlanNodes( false );
+        }
     }
 
     private void doConfigure()

@@ -1,15 +1,14 @@
 package org.cougaar.cpe.mplan;
 
-import com.axiom.pspace.search.Strategy;
 import com.axiom.pspace.search.GraphNode;
-import org.cougaar.cpe.*;
+import com.axiom.pspace.search.Strategy;
+import org.cougaar.cpe.model.*;
 import org.cougaar.cpe.planning.zplan.ZoneTask;
 import org.cougaar.cpe.planning.zplan.ZoneWorld;
-import org.cougaar.cpe.model.*;
 import org.cougaar.cpe.util.PowerSetEnumeration;
-import java.util.* ;
 
-import org.cougaar.tools.castellan.util.MultiHashSet;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 public class VGSearchStrategy implements Strategy {
 
@@ -66,14 +65,29 @@ public class VGSearchStrategy implements Strategy {
 
         ZoneTask currentTask = getCurrentZoneTask( wsm1 ) ;
 
-        // Interpolate the
+        // It is most important for the current zone to be preserved.  This is even more important than having a good score.
         Interval currentZoneInterval = null ;
-
         if ( currentTask != null ) {
             currentZoneInterval = ZoneWorld.interpolateIntervals(currentTask, wsm1.getTime());
         }
 
-        // Just compute the score alone.
+        // Measure how much "outside" we are of the zone.  Penalize out of zone entities more harshly.
+        if ( currentZoneInterval != null ) {
+            if ( wsn1.getZoneCoverage() == 1 ) {
+                wsn1.setZoneCoverage( WorldStateUtils.computeZoneCoverage( wsn1.getState(), subordinateEntities, currentZoneInterval ));
+            }
+            if ( wsn2.getZoneCoverage() == 1 ) {
+                wsn2.setZoneCoverage( WorldStateUtils.computeZoneCoverage( wsn2.getState(), subordinateEntities, currentZoneInterval ));
+            }
+            float zcd = wsn1.getZoneCoverage() - wsn2.getZoneCoverage() ;
+            if ( Math.abs( zcd ) > 0 ) {
+                return ( zcd > 0 ) ? -1 : 1 ;
+            }
+        }
+
+        // Look at the current projected score next,
+        // TODO Make this a function only of the current ZoneSchedule we have been given! Ignore all scoring events
+        // TODO outside the current zone.  This way, we have less incentive to deviate from the zone schedule.
         if ( wsn1.getScore() < wsn2.getScore() ) {
             return 1 ;
         }
@@ -99,20 +113,6 @@ public class VGSearchStrategy implements Strategy {
             return ( cc > 0 ) ? -1 : 1 ;
         }
 
-        // Measure how much "outside" we are of the zone.  Penalize out of zone entities more harshly.
-        if ( currentZoneInterval != null ) {
-            if ( wsn1.getZoneCoverage() == 1 ) {
-                wsn1.setZoneCoverage( WorldStateUtils.computeZoneCoverage( wsn1.getState(), subordinateEntities, currentZoneInterval ));
-            }
-            if ( wsn2.getZoneCoverage() == 1 ) {
-                wsn2.setZoneCoverage( WorldStateUtils.computeZoneCoverage( wsn2.getState(), subordinateEntities, currentZoneInterval ));
-            }
-            float zcd = wsn1.getZoneCoverage() - wsn2.getZoneCoverage() ;
-            if ( Math.abs( zcd ) > 0 ) {
-                return ( zcd > 0 ) ? -1 : 1 ;
-            }
-        }
-
         //
         // Look at overall coverage only within the current zone interval.  This is not exactly accurate but an approximation.
         //
@@ -131,6 +131,20 @@ public class VGSearchStrategy implements Strategy {
         if ( Math.abs( cd ) > coverageThreshold ) {
             return ( cd > 0 ) ? -1 : 1 ;
             // return  -cd ;  // Prefer arrangements with high coverage over low.
+        }
+
+        if ( wsn1.getInternalZoneCoverage() == 1 ) {
+            wsn1.setInternalZoneCoverage( -WorldStateUtils.computeInternalZoneCoverage( wsn1.getState(), subordinateEntities, currentZoneInterval ) );
+        }
+        if ( wsn2.getInternalZoneCoverage() == 1 ) {
+            wsn2.setInternalZoneCoverage( -WorldStateUtils.computeInternalZoneCoverage( wsn2.getState(), subordinateEntities, currentZoneInterval ) );
+        }
+        float izcd = wsn1.getInternalZoneCoverage() - wsn2.getInternalZoneCoverage() ;
+        if ( izcd > 0 ) {
+            return -1 ;
+        }
+        else if ( izcd < 0 ) {
+            return 1 ;
         }
 
         // Look at projected fuel consumption.  This will minimize motion by favoring units with less fuel consumption.
@@ -304,19 +318,19 @@ public class VGSearchStrategy implements Strategy {
                     // Handle zone assignments.
 
                     // If I am currently outside the zone, only move towards the zone or hold my position!
-                    if ( e.getX() < currentZoneInterval.getXLower() && targetX < e.getX() ) {
-                        break ;
-                    }
-                    if ( e.getX() > currentZoneInterval.getXUpper() && targetX > e.getX() ) {
-                        break ;
-                    }
-
-                    // If I am currently inside the zone, do not move outside the zone!
-                    if ( e.getX() >= currentZoneInterval.getXLower() && e.getY() <= currentZoneInterval.getXUpper() ) {
-                       if ( targetX < currentZoneInterval.getXLower() || targetX > currentZoneInterval.getXUpper() ) {
-                           break ;
-                       }
-                    }
+//                    if ( e.getX() < currentZoneInterval.getXLower() && targetX < e.getX() ) {
+//                        break ;
+//                    }
+//                    if ( e.getX() > currentZoneInterval.getXUpper() && targetX > e.getX() ) {
+//                        break ;
+//                    }
+//
+//                    // If I am currently inside the zone, do not move outside the zone!
+//                    if ( e.getX() >= currentZoneInterval.getXLower() && e.getY() <= currentZoneInterval.getXUpper() ) {
+//                       if ( targetX < currentZoneInterval.getXLower() || targetX > currentZoneInterval.getXUpper() ) {
+//                           break ;
+//                       }
+//                    }
                 }
 
                 double fuelConsumption = j * maxDistanceMovedPerDeltaT * VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE ;

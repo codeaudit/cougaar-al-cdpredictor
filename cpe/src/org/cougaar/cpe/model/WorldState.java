@@ -1,5 +1,6 @@
 package org.cougaar.cpe.model;
 import org.cougaar.util.UnaryPredicate;
+import org.cougaar.cpe.model.events.*;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
@@ -8,6 +9,7 @@ import java.io.Serializable;
 import java.util.*;
 
 public abstract class WorldState implements java.io.Serializable {
+    public static final String DEFAULT_METRIC = "DefaultWorldMetric";
 
     protected WorldState() {
         targets = new ArrayList() ;
@@ -15,7 +17,6 @@ public abstract class WorldState implements java.io.Serializable {
         supplyVehicleEntities = new ArrayList(0) ;
         idToInfoMap = new HashMap() ;
     }
-
 
     public WorldState(double boardWidth, double boardHeight, double penaltyHeight) {
         this() ;
@@ -65,6 +66,19 @@ public abstract class WorldState implements java.io.Serializable {
 
     public boolean isModel() {
         return false ;
+    }
+
+    public WorldMetrics getDefaultMetric() {
+        return defaultMetric ;
+    }
+
+    public void setDefaultMetric(WorldMetrics defaultMetric)
+    {
+        if ( defaultMetric != null ) {
+            eventListenerList.remove( defaultMetric ) ;
+        }
+        this.defaultMetric = defaultMetric;
+        eventListenerList.add( defaultMetric ) ;
     }
 
     /**
@@ -314,6 +328,7 @@ public abstract class WorldState implements java.io.Serializable {
     protected void computePenalties( ) {
         for (int i = 0; i < targets.size(); i++) {
            TargetEntity targetEntity = (TargetEntity)targets.get(i);
+            // Fire an event for each penalty which is detected.
            if ( targetEntity.isActive() && targetEntity.getY() < getPenaltyHeight() && targetEntity.getY() > 0 ) {
                PenaltyEvent pe = new PenaltyEvent( getTime(), targetEntity.getId(), targetEntity.getX(), targetEntity.getY() ) ;
                fireEvent( pe );
@@ -516,6 +531,14 @@ public abstract class WorldState implements java.io.Serializable {
             maxDistance = maxDistanceByFuel ;
         }
 
+        // Calculate the fuel shortfall and transmit an event to any interested parties.
+        double mvt ;
+        if ( ( mvt = Math.min( VGWorldConstants.UNIT_NORMAL_MOVEMENT_RATE * getDeltaT(), distance) ) > maxDistanceByFuel ) {
+            double shortFall = ( mvt - maxDistanceByFuel ) * VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE ;
+            FuelShortfallEvent fse = new FuelShortfallEvent( getTime(), entity.getId(), ( float ) shortFall ) ;
+            fireEvent( fse );
+        }
+
         if ( distance <= maxDistance ) {
             entity.setPosition( x, y );
             double fuelConsumption = VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE * distance ;
@@ -564,12 +587,33 @@ public abstract class WorldState implements java.io.Serializable {
             // Target has moved off the bottom of the board!
             if ( y < 0 ) {
                 accumulatedViolations ++ ;
-                ViolationEvent ve = new ViolationEvent( getTime(), 0, entity.getId(), ( float ) x, ( float ) y ) ;
-                fireEvent( ve );
                 entity.setActive( false );
+                if ( hasEventListeners() ) {
+                    ViolationEvent ve = new ViolationEvent( getTime(), entity.getId(), ( float ) x, ( float ) y ) ;
+                    fireEvent( ve );
+                }
             }
-            entity.setX( x ) ;
-            entity.setY( y ) ;
+
+            if ( hasEventListeners() ) {
+                for (int i = 0; i < regions.size(); i++) {
+                    Region region = (Region) regions.get(i);
+                    Shape area = region.getArea() ;
+                    if ( area.contains( entity.getX(), entity.getY() ) && !area.contains( x, y) ) {
+                        RegionEvent re = new RegionEvent( getTime(), RegionEvent.EVENT_REGION_EXIT,
+                                                          entity.getId(), (float) x, (float) y,
+                                                          entity.getX(), entity.getY(), region ) ;
+                        fireEvent( re );
+                    }
+                    else if ( !area.contains( entity.getX(), entity.getY()) && area.contains(x,y) ) {
+                        RegionEvent re = new RegionEvent( getTime(), RegionEvent.EVENT_REGION_ENTRY,
+                                                          entity.getId(), (float) x, (float) y,
+                                                          entity.getX(), entity.getY(), region ) ;
+                        fireEvent( re );
+                    }
+                }
+            }
+
+            entity.setPosition( x, y ); ;
         }
     }
 
@@ -582,6 +626,11 @@ public abstract class WorldState implements java.io.Serializable {
 
     public boolean isLogEvents() {
         return logEvents;
+    }
+
+    public boolean isTargetRoutEnabled()
+    {
+        return info.isTargetRoutEnabled();
     }
 
     public ArrayList getEvents() {
@@ -609,178 +658,6 @@ public abstract class WorldState implements java.io.Serializable {
 
     public void moveTarget( TargetEntity entity, Point2D dest ) {
         moveTarget( entity, dest.getX(), dest.getY() );
-    }
-
-    public static class TimeAdvanceEvent extends CPEEvent {
-        public TimeAdvanceEvent(long oldTime, long newTime)
-        {
-            super ( newTime ) ;
-            this.oldTime = oldTime;
-        }
-
-        public long getOldTime()
-        {
-            return oldTime;
-        }
-
-        public long getNewTime()
-        {
-            return time;
-        }
-
-        private long oldTime ;
-    }
-
-    /**
-     * Every target that enters a (predefined) area.
-     */
-    public static class EntryEvent extends CPEEvent {
-        private String targetId;
-
-        public EntryEvent(long time, float height, String targetId, float xTarget, float yTarget)
-        {
-            super( time ) ;
-            this.height = height;
-            this.xTarget = xTarget;
-            this.yTarget = yTarget;
-            this.targetId = targetId ;
-        }
-
-        public String getTargetId()
-        {
-            return targetId;
-        }
-
-        public float getHeight()
-        {
-            return height;
-        }
-
-        public long getTime()
-        {
-            return time;
-        }
-
-        public float getxTarget()
-        {
-            return xTarget;
-        }
-
-        public float getyTarget()
-        {
-            return yTarget;
-        }
-
-        private float height ;
-        private float xTarget, yTarget ;
-    }
-
-    public static class ViolationEvent extends EntryEvent {
-        public ViolationEvent(long time, float height, String targetId, float xTarget, float yTarget )
-        {
-            super(time, height, targetId, xTarget, yTarget);
-        }
-    }
-
-    public static class PenaltyEvent extends CPEEvent {
-        public PenaltyEvent( long time, String targetId, float xTarget, float yTarget)
-        {
-            super( time ) ;
-            this.targetId = targetId;
-            this.xTarget = xTarget;
-            this.yTarget = yTarget;
-        }
-
-        public String getTargetId()
-        {
-            return targetId;
-        }
-
-        public float getxTarget()
-        {
-            return xTarget;
-        }
-
-        public float getyTarget()
-        {
-            return yTarget;
-        }
-
-        String targetId ;
-        float xTarget, yTarget ;
-    }
-
-    public static class KillEvent extends CPEEvent {
-        private String targetId;
-        private String unitId;
-
-        public KillEvent(long time, String unit, String targetId )
-        {
-            super(time);
-            this.targetId = targetId ;
-            this.unitId = unit ;
-        }
-
-        public String getTargetId()
-        {
-            return targetId;
-        }
-
-        public String getUnitId()
-        {
-            return unitId;
-        }
-    }
-
-    public static class EngageByFireEvent extends CPEEvent {
-        public EngageByFireEvent(String unitId, EngageByFireResult er, long time, float xTarget, float yTarget, float xUnit, float yUnit)
-        {
-            super( time ) ;
-            this.unitId = unitId;
-            this.er = er;
-            this.xTarget = xTarget;
-            this.yTarget = yTarget;
-            this.xUnit = xUnit;
-            this.yUnit = yUnit;
-        }
-
-        public float getxTarget()
-        {
-            return xTarget;
-        }
-
-        public float getyTarget()
-        {
-            return yTarget;
-        }
-
-        public float getxUnit()
-        {
-            return xUnit;
-        }
-
-        public float getyUnit()
-        {
-            return yUnit;
-        }
-
-        public long getTime()
-        {
-            return time;
-        }
-
-        public EngageByFireResult getEr() {
-            return er;
-        }
-
-        public String getUnitId() {
-            return unitId;
-        }
-
-        String unitId ;
-        EngageByFireResult er ;
-        float xUnit, yUnit ;
-        float xTarget, yTarget ;
     }
 
     /**
@@ -910,7 +787,7 @@ public abstract class WorldState implements java.io.Serializable {
                 if ( t.getStrength() <= 0 ) {
                     t.setStrength( 0);
                     t.setActive( false );
-                    KillEvent ke = new KillEvent( getTime(), entity.getId(), t.getId() ) ;
+                    KillEvent ke = new KillEvent( getTime(), entity.getId(), t.getId(), t.getX(), t.getY() ) ;
                     fireEvent( ke );
                     accumulatedKills ++ ;
                 }
@@ -936,9 +813,13 @@ public abstract class WorldState implements java.io.Serializable {
         }
     }
 
+    protected boolean hasEventListeners() {
+        return eventListenerList.size() > 0 ;
+    }
+
     protected void fireEvent( CPEEvent event ) {
         for (int i = 0; i < eventListenerList.size(); i++) {
-          CPEEventListener eventListener = (CPEEventListener) eventListenerList.get(i);
+            CPEEventListener eventListener = (CPEEventListener) eventListenerList.get(i);
             try {
                 eventListener.notify( event );
             }
@@ -946,6 +827,34 @@ public abstract class WorldState implements java.io.Serializable {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void addEntity(Entity entity) {
+        if (idToInfoMap.get(entity.getId()) != null) {
+            throw new RuntimeException("Entity " + entity + " already exists.");
+        }
+
+        EntityInfo info = new EntityInfo(entity, null);
+        if (entity instanceof TargetEntity) {
+            targets.add(entity);
+        } else if (entity instanceof UnitEntity) {
+            units.add(entity);
+        }
+        idToInfoMap.put(entity.getId(), info);
+    }
+
+    public void addEntity(Entity entity, EngageByFireModel model) {
+        if (idToInfoMap.get(entity.getId()) != null) {
+            throw new RuntimeException("Entity " + entity + " already exists.");
+        }
+
+        EntityInfo info = new EntityInfo(entity, model);
+        if (entity instanceof TargetEntity) {
+            targets.add(entity);
+        } else if (entity instanceof UnitEntity) {
+            units.add(entity);
+        }
+        idToInfoMap.put(entity.getId(), info);
     }
 
     public void addEventListener( CPEEventListener listener ) {
@@ -983,51 +892,33 @@ public abstract class WorldState implements java.io.Serializable {
      * Number of targets created thus far.
      */
     private static int targetCount = 0 ;
+
     protected ArrayList targets ;
     protected ArrayList units ;
     protected ArrayList supplyUnits ;
     protected ArrayList supplyVehicleEntities ;
     protected HashMap idToInfoMap ;
 
-    protected ArrayList eventListenerList = new ArrayList() ;
+    /**
+     * A set of regions to test against and to emit events for.
+     */
+    protected transient ArrayList regions = new ArrayList() ;
+
+    protected transient ArrayList eventListenerList = new ArrayList() ;
 
     /**
-     * These are a list of local events that have occured (e.g. fire events, etc.)
+     * A list of local events that have occured (e.g. fire events, etc.) that are buffered for consumption.
      */
     protected ArrayList events = null ;
     private boolean logEvents;
 
-    public void addEntity(Entity entity) {
-        if (idToInfoMap.get(entity.getId()) != null) {
-            throw new RuntimeException("Entity " + entity + " already exists.");
-        }
-
-        EntityInfo info = new EntityInfo(entity, null);
-        if (entity instanceof TargetEntity) {
-            targets.add(entity);
-        } else if (entity instanceof UnitEntity) {
-            units.add(entity);
-        }
-        idToInfoMap.put(entity.getId(), info);
-    }
-
-    public void addEntity(Entity entity, EngageByFireModel model) {
-        if (idToInfoMap.get(entity.getId()) != null) {
-            throw new RuntimeException("Entity " + entity + " already exists.");
-        }
-
-        EntityInfo info = new EntityInfo(entity, model);
-        if (entity instanceof TargetEntity) {
-            targets.add(entity);
-        } else if (entity instanceof UnitEntity) {
-            units.add(entity);
-        }
-        idToInfoMap.put(entity.getId(), info);
-    }
+    protected transient WorldMetrics defaultMetric ;
 
     protected BinaryEngageByFireModel defaultEngageByFireModel = new BinaryEngageByFireModel( VGWorldConstants.UNIT_STANDARD_HIT_PROBABILITY,
                         VGWorldConstants.UNIT_MULTI_HIT_PROBABILITY,
                         VGWorldConstants.UNIT_STANDARD_ATTRITION,
                         0 ) ;
+
+
 
 }

@@ -490,7 +490,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
             Map.Entry entry = (Map.Entry) iterator.next();
             names[i] = (String) entry.getKey() + ".WorldStateTimestamp";
             MeasurementPoint mp = (MeasurementPoint) entry.getValue() ;
-            measurements[i] = mp.getLastMeasurement();
+            measurements[i] = (Measurement) mp.getLastMeasurement();
             i++ ;
         }
 
@@ -500,7 +500,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
                 QoSConstants.PLAN_MANUEVER_ACTION,
                 names, measurements );
         Measurement freshnessMeasurement =
-                worldStateFreshnessMeasurementPoint.getLastMeasurement() ;
+                (Measurement) worldStateFreshnessMeasurementPoint.getLastMeasurement() ;
 
         // This is the vector freshness associated with the planning results.
         mpm.getMeasurements().addMeasurement( freshnessMeasurement );

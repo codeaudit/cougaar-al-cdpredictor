@@ -103,6 +103,16 @@ public class WorldStateInfo implements Serializable {
         return attritionFactor;
     }
 
+    public boolean isTargetRoutEnabled()
+    {
+        return targetRoutEnabled;
+    }
+
+    public void setTargetRoutEnabled(boolean targetRoutEnabled)
+    {
+        this.targetRoutEnabled = targetRoutEnabled;
+    }
+
     /**
      * Standard simulation delta T size in seconds.
      */
@@ -117,5 +127,7 @@ public class WorldStateInfo implements Serializable {
     private float penaltyFactor = 5;
     private float violationFactor = 50;
     private float attritionFactor = 1 ;
+    private boolean targetRoutEnabled = true ;
+
 
 }

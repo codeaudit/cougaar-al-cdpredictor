@@ -1,14 +1,11 @@
 package org.cougaar.cpe.model;
 
 /**
- * User: wpeng
- * Date: Mar 18, 2004
- * Time: 11:07:52 AM
+ * This describes the closed interval [xlower,xUpper].
  */
 public class Interval extends Zone
 {
     private float xLower, xUpper;
-    private float yHeight = Float.MAX_VALUE ;
 
     public Interval(float xLower, float xUpper) {
         this.xLower = xLower;
@@ -19,20 +16,13 @@ public class Interval extends Zone
         //xCenter = ( xUpper - xLower ) / 2 ;
     }
 
-    public Interval(float xLower, float xUpper, float yHeight)
-    {
-        this.xLower = xLower;
-        this.xUpper = xUpper;
-        if ( xUpper < xLower ) {
-            throw new IllegalArgumentException( "xUpper " + xUpper + " must be > uLower." ) ;
-        }
-        // xCenter = ( xUpper - xLower ) / 2 ;
-        this.yHeight = yHeight ;
+    public boolean isInInterval( float value ) {
+        return value >= xLower && value <= xUpper ;
     }
 
     public Object clone()
     {
-        return new Interval( xLower, xUpper, yHeight ) ;
+        return new Interval( xLower, xUpper ) ;
     }
 
     public String toString() {
@@ -45,10 +35,6 @@ public class Interval extends Zone
 
     public float getXUpper() {
         return xUpper;
-    }
-
-    public float getYHeight() {
-        return yHeight;
     }
 
     public float getXCenter()

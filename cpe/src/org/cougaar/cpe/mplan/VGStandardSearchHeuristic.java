@@ -7,7 +7,7 @@ import org.cougaar.cpe.model.VGWorldConstants;
 
 import java.util.*;
 
-import org.cougaar.tools.castellan.util.MultiHashSet;
+import com.axiom.lib.util.MultiHashSet;
 
 public class VGStandardSearchHeuristic implements Comparator
 {

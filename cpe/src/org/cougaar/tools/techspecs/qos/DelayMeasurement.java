@@ -8,8 +8,17 @@ import org.cougaar.core.mts.MessageAddress;
  * Time: 12:02:48 PM
  */
 public class DelayMeasurement extends TimestampMeasurementImpl {
-    public DelayMeasurement(String action, String name, MessageAddress source, long timestamp, long localTime ) {
-        super(action, name, source, timestamp);
+
+    /**
+     *
+     * @param actionName
+     * @param eventName The event name
+     * @param source
+     * @param timestamp
+     * @param localTime
+     */
+    public DelayMeasurement(String eventName, String actionName, MessageAddress source, long timestamp, long localTime ) {
+        super(eventName, actionName, source, timestamp);
         this.localTime = localTime ;
 //        if ( localTime < timestamp ) {
 //            throw new IllegalArgumentException(

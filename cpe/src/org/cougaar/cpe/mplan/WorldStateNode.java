@@ -98,6 +98,16 @@ public class WorldStateNode extends DefaultGraphNode {
         this.score = (float) score;
     }
 
+    public float getInternalZoneCoverage()
+    {
+        return internalZoneCoverage;
+    }
+
+    public void setInternalZoneCoverage(float internalZoneCoverage)
+    {
+        this.internalZoneCoverage = internalZoneCoverage;
+    }
+
     /**
      * The projected world state at this time.
      */
@@ -105,12 +115,19 @@ public class WorldStateNode extends DefaultGraphNode {
 
     protected int id ;
     protected float score ;
+
+
     /**
      * You are given a zero if you are in the current zone.
      * You are given a -distance from the zone if you are not in the current zone.  A +1 indicates
      * the zone coverage has not been inited.
      */
     protected float zoneCoverage = 1 ;
+
+    /**
+     * Measures how evenly spaced the units are within the zone.  A zero is "optimal".
+     */
+    protected float internalZoneCoverage = 1 ;
 
     protected int ammoConsumption ;
     protected double fuelConsumption ;

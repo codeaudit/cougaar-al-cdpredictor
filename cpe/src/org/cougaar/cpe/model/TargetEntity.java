@@ -53,12 +53,12 @@ public class TargetEntity extends Entity {
             isRouted = true ;
         }
 
-        // Engage the nearest target
-        if (!isRouted() ) {
-           ws.getUnitsInRange( getX(), getY(), rangeShape, results );
-        }
+        // Engage the nearest unit.  This is commented out for now
+//        if (!isRouted() ) {
+//           ws.getUnitsInRange( getX(), getY(), rangeShape, results );
+//        }
 
-        if ( !isRouted ) {
+        if ( !isRouted || ws.isTargetRoutEnabled() ) {
             if (!isSuppressed) {
                 tx = getX() + dx * ws.getDeltaT() ;
                 ty = getY() + dy * ws.getDeltaT() ;

@@ -1,6 +1,6 @@
 package org.cougaar.tools.techspecs.config;
 
-import org.cougaar.tools.castellan.util.MultiHashSet;
+import com.axiom.lib.util.MultiHashSet ;
 import org.cougaar.tools.techspecs.RelationshipSpec;
 import org.cougaar.tools.techspecs.RoleImplSpec;
 

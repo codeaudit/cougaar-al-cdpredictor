@@ -27,6 +27,7 @@ import org.cougaar.tools.techspecs.events.TimerEvent;
 import java.io.*;
 import java.util.*;
 import java.lang.reflect.Method;
+import java.text.DecimalFormat;
 
 /**
  * Responsible for initializing the actual world state.
@@ -48,6 +49,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     private ZoneWorld initialZoneWorld;
     private int numInitialTargetGenerationDeltas = 110 ;
     private TargetGeneratorModel targetGeneratorModel;
+    private DecimalFormat format;
 
     protected void execute() {
         // First, check to see if there are any new client relays.
@@ -254,7 +256,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
         System.out.println( getAgentIdentifier() +
                 "::WorldStateExecutorPlugin:: ADVANCING time at simTime=" + referenceWorldState.getTime() +
                 ", elapsed=" + elapsedTime * VGWorldConstants.SECONDS_PER_MILLISECOND +
-                ", advanceRate =" + rate + "x Real Time" ) ;
+                ", advanceRate =" + format.format(rate) + "x Real Time" ) ;
 
         // Start transaction
         boolean wasClosed = false ;
@@ -533,19 +535,8 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             TargetBufferRelay o = (TargetBufferRelay) iterator.next();
             String agentId = o.getSource().getAddress() ;
             if ( agentId.startsWith( "BDE") ) {
-                ConfigureMessage msg = new ConfigureMessage( initialZoneWorld ) ;
                 // Send this data.
-                ByteArrayOutputStream bos = new ByteArrayOutputStream() ;
-                try
-                {
-                    ObjectOutputStream oos = new ObjectOutputStream( bos ) ;
-                    oos.writeObject( msg );
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                }
-                mt.sendMessage( o.getSource(), msg  );
+                mt.sendMessage( o.getSource(), new ConfigureMessage( initialZoneWorld ) );
             }
         }
     }
@@ -615,6 +606,8 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
 
        uiFrame = new CPESimulatorUIFrame( getAgentIdentifier().getAddress(), this ) ;
        uiFrame.setVisible( true );
+
+        format = new DecimalFormat( "#0.0") ;
     }
 
     protected void getConfigInfo() {

@@ -27,7 +27,7 @@ public abstract class MeasurementPoint implements java.io.Serializable
         return history.iterator() ;
     }
 
-    public synchronized void addMeasurement( Measurement m ) {
+    public synchronized void addMeasurement( Record m ) {
         history.add( m ) ;
         if ( history.size() > maxSize ) {
             history.removeFirst() ;
@@ -51,7 +51,7 @@ public abstract class MeasurementPoint implements java.io.Serializable
         buf.append( ",last=").append( getLastMeasurement() ) ;
     }
 
-    public boolean isValidMeasurement( Measurement m ) {
+    public boolean isValidMeasurement( Record m ) {
         return true ;
     }
 
@@ -72,18 +72,18 @@ public abstract class MeasurementPoint implements java.io.Serializable
         }
     }
 
-    public Measurement getFirstMeasurement() {
+    public Record getFirstMeasurement() {
         if ( history.size() == 0 ) {
             return null ;
         }
-        return (Measurement) history.getFirst() ;
+        return (Record) history.getFirst() ;
     }
 
-    public Measurement getLastMeasurement() {
+    public Record getLastMeasurement() {
         if ( history.size() == 0 ) {
             return null ;
         }
-        return (Measurement) history.getLast() ;
+        return (Record) history.getLast() ;
     }
     private int maxSize = 3000 ;
     protected LinkedList history = new LinkedList() ;

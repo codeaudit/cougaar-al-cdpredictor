@@ -63,7 +63,7 @@ public class VGSimulator {
             subordinateEntities.add( entity.getId() ) ;
             // Each entity is assigned a zone proportional to its position on the board.
             Zone z = new Interval( ( float) ( i * ws.getBoardWidth() / numEntities) ,
-                    ( float ) ( (i+1) * ws.getBoardWidth() / numEntities ) , ( float ) ws.getBoardHeight()  ) ;
+                    ( float ) ( (i+1) * ws.getBoardWidth() / numEntities ) ) ;
             entity.setZoneSchedule( new FixedZoneSchedule( z ) );
         }
 

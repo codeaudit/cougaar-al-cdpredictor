@@ -89,7 +89,7 @@ public class VGWorldConstants {
     /**
      * Consumption rate in fuel units/ coordinate unit traveled.
      */
-    public static final double UNIT_FUEL_CONSUMPTION_RATE = 15.0 ;
+    public static final double UNIT_FUEL_CONSUMPTION_RATE = 10.0 ;
 
     public static final double UNIT_STANDARD_ATTRITION_RATE = 5.0 ;
 

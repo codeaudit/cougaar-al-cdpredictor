@@ -1,69 +1,66 @@
 package org.cougaar.cpe.model;
 
 import org.cougaar.tools.techspecs.qos.MeasurementPoint;
-import org.cougaar.tools.techspecs.qos.SyntheticMeasurementPoint;
-import org.cougaar.tools.techspecs.qos.SyntheticTimestampedMeasurement;
+import org.cougaar.tools.techspecs.qos.TimePeriodMeasurementPoint;
+import org.cougaar.tools.techspecs.qos.TimePeriodMeasurement;
+import org.cougaar.cpe.model.events.*;
+import org.cougaar.cpe.planning.zplan.ZoneTask;
+import org.cougaar.cpe.planning.zplan.ZoneWorld;
 
 /**
- * Measure scoring rate.
+ * This is a general way to measure score.
  */
-public class WorldMetrics
+public class WorldMetrics implements CPEEventListener
 {
-    MeasurementPoint fuelShortFalls = new SyntheticMeasurementPoint( "Fuel Shortfalls", Float.class ) ;
-    MeasurementPoint ammoShortFalls = new SyntheticMeasurementPoint( "Ammo Shortfalls", Float.class ) ;
-    MeasurementPoint attrition = new SyntheticMeasurementPoint( "Attrition", Double.class ) ;
-    MeasurementPoint kills = new SyntheticMeasurementPoint( "Kills", Integer.class ) ;
-    MeasurementPoint penalties = new SyntheticMeasurementPoint( "Penalties", Integer.class ) ;
-    MeasurementPoint violations = new SyntheticMeasurementPoint( "Violations", Integer.class ) ;
-    MeasurementPoint score = new SyntheticMeasurementPoint( "Score", Float.class ) ;
-    MeasurementPoint scoringRate = new SyntheticMeasurementPoint( "ScoringRate", Float.class ) ;
-    MeasurementPoint entryRate = new SyntheticMeasurementPoint( "EntryRate", Integer.class ) ;
+    private WorldState parent;
 
-    public WorldMetrics( int integrationPeriod )
+    /**
+     * Associate the metric with a zone schedule.
+     */
+    private Plan zoneSchedule ;
+    private String name;
+
+    public WorldMetrics( String name, WorldState state, int integrationPeriod )
     {
+        this.name = name ;
+        this.parent = state ;
         this.integrationPeriod = integrationPeriod ;
-        fuelShortFalls.setMaximumHistorySize( Integer.MAX_VALUE );
-        ammoShortFalls.setMaximumHistorySize( Integer.MAX_VALUE );
-        attrition.setMaximumHistorySize( Integer.MAX_VALUE );
-        kills.setMaximumHistorySize( Integer.MAX_VALUE);
-        penalties.setMaximumHistorySize( Integer.MAX_VALUE );
-        violations.setMaximumHistorySize( Integer.MAX_VALUE );
-        score.setMaximumHistorySize( Integer.MAX_VALUE );
+        // Keep all data!
     }
 
-    public MeasurementPoint getAmmoShortFalls()
+    public String getName()
     {
-        return ammoShortFalls;
+        return name;
     }
 
-    public MeasurementPoint getAttrition()
-    {
-        return attrition;
+    public Plan getZoneSchedule() {
+        return zoneSchedule;
     }
 
-    public MeasurementPoint getFuelShortFalls()
-    {
-        return fuelShortFalls;
+    public void setZoneSchedule( Plan zoneSchedule) {
+        this.zoneSchedule = zoneSchedule;
     }
 
-    public MeasurementPoint getKills()
-    {
-        return kills;
-    }
-
-    public MeasurementPoint getPenalties()
-    {
-        return penalties;
-    }
-
-    public MeasurementPoint getScore()
-    {
-        return score;
-    }
-
-    public MeasurementPoint getViolations()
-    {
-        return violations;
+    public void notify(CPEEvent e) {
+        //System.out.println("WorldMetrics:: Processing " + e );
+        if ( e instanceof TimeAdvanceEvent ) {
+            processTimeAdvanceEvent( ( TimeAdvanceEvent ) e );
+        }
+        else if ( e instanceof ViolationEvent ) {
+            processViolationEvent( ( ViolationEvent ) e );
+        }
+        else if ( e instanceof RegionEvent ) {
+            processRegionEvent( (RegionEvent) e );
+        }
+        else if ( e instanceof EngageByFireEvent ) {
+            processEngageByFireEvent( ( EngageByFireEvent ) e );
+        }
+        else if ( e instanceof PenaltyEvent ) {
+            processPenaltyEvent( ( PenaltyEvent ) e );
+        }
+        else if ( e instanceof KillEvent ) {
+            processKillEvent( ( KillEvent ) e );
+        }
     }
 
     protected void initTime( long time ) {
@@ -73,27 +70,93 @@ public class WorldMetrics
         lastTime = time ;
     }
 
-    public void processViolationEvent(WorldState.ViolationEvent ve )
+    private boolean checkInZone(long time, float x, float y)
     {
-        initTime( ve.getTime() ) ;
-        accumViolations ++ ;
+        ZoneTask z = (ZoneTask) zoneSchedule.getNearestTaskForTime( time ) ;
+        Interval interval = ZoneWorld.interpolateIntervals( z, time ) ;
+
+        if ( interval.isInInterval(x) ) {
+            return true ;
+        }
+        return false ;
     }
 
-    public void processFireEvent( WorldState.EngageByFireEvent ef )
+    public void processViolationEvent(ViolationEvent ve )
     {
+        if ( zoneSchedule != null ) {
+           if ( !checkInZone( ve.getTime(), ve.getxTarget(), ve.getyTarget()) ) {
+               return ;
+           }
+        }
+        initTime( ve.getTime() ) ;
+        accumViolations ++ ;
+        totalViolations ++ ;
+    }
+
+    public void processPenaltyEvent(PenaltyEvent pe ) {
+        if ( zoneSchedule != null ) {
+           if ( !checkInZone( pe.getTime(), pe.getxTarget(), pe.getyTarget()) ) {
+               return ;
+           }
+        }
+
+        initTime( pe.getTime() );
+        accumPenalties ++ ;
+        totalPenalties ++ ;
+    }
+
+    public void processEngageByFireEvent( EngageByFireEvent ef )
+    {
+        if ( zoneSchedule != null ) {
+           if ( !checkInZone( ef.getTime(), ef.getxTarget(), ef.getyTarget()) ) {
+               return ;
+           }
+        }
+
         initTime( ef.getTime() );
         EngageByFireResult er = ef.getEr() ;
         accumAttrition += er.getAttritValue() ;
+        totalAttrition += er.getAttritValue() ;
     }
 
-    public void processTimeAdvanceEvent( WorldState.TimeAdvanceEvent ev ) {
+    public void processKillEvent( KillEvent ke ) {
+        initTime( ke.getTime() );
+
+        if ( zoneSchedule != null ) {
+           if ( !checkInZone( ke.getTime(), ke.getTargetX(), ke.getTargetY()) ) {
+               return ;
+           }
+        }
+
+        accumKills ++ ;
+        totalKills ++ ;
+    }
+
+    public void processTimeAdvanceEvent( TimeAdvanceEvent ev ) {
         if ( ev.getNewTime() - lastIntegrationTime >= integrationPeriod ) {
             lastIntegrationTime = ev.getNewTime() ;
-
-            // Integrate!
-            attrition.addMeasurement( new SyntheticTimestampedMeasurement( null, null, null, ev.getOldTime(), new Double( accumAttrition )));
+            accumAttrition = 0 ;
+            accumPenalties = 0 ;
+            accumKills = 0 ;
+            accumViolations = 0 ;
+            accumEntries = 0 ;
         }
         lastTime = ev.getNewTime() ;
+    }
+
+    public void processRegionEvent( RegionEvent ev ) {
+
+        if ( zoneSchedule != null ) {
+           if ( !checkInZone( ev.getTime(), ev.getNewX(), ev.getNewY() ) ) {
+               return ;
+           }
+        }
+
+        if ( ev.getRegion().getRegionName().equals(ReferenceWorldState.REGION_OP_TEMPO)
+                && ev.getType() == RegionEvent.EVENT_REGION_ENTRY )
+        {
+           accumEntries++ ;
+        }
     }
 
     long lastIntegrationTime = -1 ;
@@ -104,8 +167,20 @@ public class WorldMetrics
      */
     int integrationPeriod = 40000 ;
 
+    /**
+     * entryHeight for op tempo measurement.
+     */
+    protected double entryHeight ;
+
     protected int accumViolations ;
     protected int accumPenalties ;
     protected int accumKills ;
     protected double accumAttrition ;
+    protected int accumEntries ;
+
+    protected int totalViolations ;
+    protected int totalPenalties ;
+    protected int totalKills ;
+    protected double totalAttrition ;
+
 }

@@ -9,6 +9,10 @@ import org.cougaar.cpe.planning.zplan.ZonePlanner;
 import org.cougaar.cpe.planning.zplan.ZoneTask;
 
 import java.util.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 public class CPESimulator
 {
@@ -35,7 +39,7 @@ public class CPESimulator
      */
     protected int numIncrementsPerPlan = 2 ;
     protected int searchDepth = 7 ;
-    protected int maxBranchFactor = 60 ;
+    protected int maxBranchFactor = 80 ;
 
     protected int zoneSearchDepth = 7 ;
     protected int zoneBranchFactor = 60 ;
@@ -48,7 +52,7 @@ public class CPESimulator
     public static final int ASSUMED_SUPPLY_PLANNING_DELAY = ASSUMED_BN_PLANNING_DELAY + 5000 ;
 
     private ArrayList allSupplyEntities = new ArrayList();
-    private boolean verbose = true ;
+    private boolean verbose = false ;
     /**
      * The number of delta Ts to run this for.
      */
@@ -57,20 +61,35 @@ public class CPESimulator
     int numBNEntities = 3 ;
     int numCPYEntitiesPerBN = 3 ;
     int numSupplyOrganizations = 2 ;
-    int numSupplyUnitsPerOrg = 3 ;
+    int numSupplyUnitsPerOrg = 5 ;
 
     private ArrayList allBNUnits = new ArrayList() ;
     private ArrayList allCPYUnits = new ArrayList() ;
     private long zonePlannerDelay = ( long ) ( numTimeDeltasPerZoneSchedule * deltaT * VGWorldConstants.MILLISECONDS_PER_SECOND ) ;
     private boolean isInited = false ;
+    private boolean debugDumpPlanNodes = false ;
+    private File debugPlanFile = null ;
+
     private int deltaIndex = 0 ;
     private boolean isRunning = false ;
 
     private ArrayList[] supplyVehicles;
     private TargetGeneratorModel targetGeneratorModel;
     private int numInitialTargetGenerationDeltas = 120 ;
+    private FileWriter writer;
+    private PrintWriter planDebugPrintWriter;
+    private boolean configured = false ;
+    private boolean doZonePlanning = true ;
 
     public CPESimulator() {
+        configureDefaultScenario();
+
+        runThread.start() ;
+    }
+
+    public void configureDefaultScenario()
+    {
+        configured = true ;
         ws = new ReferenceWorldState( boardWidth, boardHeight, penaltyHeight, recoveryHeight, deltaT ) ;
 
         // The zone world is maintained to be "independent" of the ws.  It must be updated from the reference worldState
@@ -175,6 +194,106 @@ public class CPESimulator
         }
     }
 
+    public void configureZoneTestScenario() {
+        doZonePlanning = false ;
+        allBNUnits.clear();
+        allCPYUnits.clear();
+        ws = new ReferenceWorldState( boardWidth, boardHeight, penaltyHeight, recoveryHeight, deltaT ) ;
+        zoneWorld = new ZoneWorld( ws, zoneGridSize ) ;
+
+        manueverPlanners = new ManueverPlanner[ 1 ] ;
+
+        double averageZoneSize = ( ws.getUpperX() / ( numBNEntities * zoneGridSize ) ) ;
+        double currentZoneIndex = averageZoneSize ;
+
+        int lowerZoneIndex = (int ) Math.floor( currentZoneIndex ) ;
+        currentZoneIndex += averageZoneSize ;
+        int upperZoneIndex = (int ) Math.floor( currentZoneIndex ) - 1 ;
+
+        IndexedZone zone = new IndexedZone( lowerZoneIndex, upperZoneIndex ) ;
+        float lower = zoneWorld.getZoneLower( zone ) ;
+        float upper = zoneWorld.getZoneUpper( zone ) ;
+
+        /*
+         * Space the CPY entities evenly within the zone.
+         */
+        ArrayList subordinateEntities = new ArrayList() ;
+        String[] subentities = new String[numCPYEntitiesPerBN] ;
+
+        int cpyCount = 4 ;
+        for (int j=0;j<numCPYEntitiesPerBN;j++) {
+            UnitEntity entity = ws.addUnit( (j + 0.5 ) * ( upper - lower ) / numCPYEntitiesPerBN + lower , 0, "CPY" + cpyCount++ ) ;
+            subordinateEntities.add( entity.getId() ) ;
+            subentities[j] = entity.getId() ;
+            allCPYUnits.add( entity.getId() ) ;
+        }
+
+        manueverPlanners[0] = new ManueverPlanner( "BN2", subordinateEntities ) ;
+        manueverPlanners[0].setDeltaValues( numTimeDeltasPerTask, numIncrementsPerPlan );
+        replanFrequency = ( searchDepth * numTimeDeltasPerTask * 3 ) / 4 ;
+        // Max Depth * numDeltas = search depth in delta Ts.
+        manueverPlanners[0].setMaxDepth( searchDepth );
+        manueverPlanners[0].setMaxBranchFactor( maxBranchFactor );
+
+        BNAggregate bnAggregate = new BNAggregate( "BN2", subentities) ;
+        bnAggregate.setCurrentZone( zone );
+        zoneWorld.addAggUnitEntity( bnAggregate );
+
+        //
+        // Make a plan and convert it to
+        //
+        ArrayList zoneTasks = new ArrayList() ;
+        ZoneTask t1 = new ZoneTask( 0, numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS(), zone,
+                new IndexedZone( zone.getStartIndex() + 1, zone.getEndIndex() - 1 ) ) ;
+        zoneTasks.add( t1 ) ;
+        ZoneTask t2 = new ZoneTask( numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS(),
+                                    2 * numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS(),
+                                    new IndexedZone( zone.getStartIndex() + 1, zone.getEndIndex() - 1 ),
+                                    new IndexedZone( zone.getStartIndex() + 2, zone.getEndIndex() - 2 ) ) ;
+        zoneTasks.add( t2 ) ;
+        ZoneTask t3 = new ZoneTask( numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS() * 2,
+                                    numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS() * 3 ,
+                                    new IndexedZone( zone.getStartIndex() + 2, zone.getEndIndex() - 2 ),
+                                    new IndexedZone( zone.getStartIndex() + 2, zone.getEndIndex() - 2 ) ) ;
+        zoneTasks.add( t3 ) ;
+        ZoneTask t4 = new ZoneTask( numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS() * 3,
+                                    numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS() * 4 ,
+                                    new IndexedZone( zone.getStartIndex() + 2, zone.getEndIndex() - 2 ),
+                                    new IndexedZone( zone.getStartIndex() + 1, zone.getEndIndex() - 1 ) ) ;
+        zoneTasks.add( t4 ) ;
+        ZoneTask t5 = new ZoneTask( numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS() * 4,
+                                    numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS() * 5 ,
+                                    new IndexedZone( zone.getStartIndex() + 1, zone.getEndIndex() - 1 ),
+                                    new IndexedZone( zone.getStartIndex() + 2, zone.getEndIndex() ) ) ;
+        zoneTasks.add( t5 ) ;
+        ZoneTask t6 = new ZoneTask( numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS() * 5,
+                                    numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS() * 6 ,
+                                    new IndexedZone( zone.getStartIndex() + 2, zone.getEndIndex() ),
+                                    new IndexedZone( zone.getStartIndex() + 3, zone.getEndIndex() + 1) ) ;
+        zoneTasks.add( t6 ) ;
+
+        Plan zonePlan = new Plan( zoneTasks ) ;
+        bnAggregate.setZonePlan( zonePlan );
+
+        Plan intervalPlan = WorldStateUtils.convertIndexPlanToIntervalPlan( zoneWorld, zonePlan ) ;
+        manueverPlanners[0].setZonePlan( intervalPlan );
+
+        // Add a supplier for this one entity.
+        supplyCustomers = new ArrayList[1] ;
+        supplyCustomers[0] = new ArrayList() ;
+        supplyCustomers[0].addAll( allCPYUnits ) ;
+        supplyVehicles = new ArrayList[1] ;
+        supplyVehicles[0] = new ArrayList( ) ;
+
+        int numTestSupplyVehicles = 6 ;
+        for (int i=0;i<numTestSupplyVehicles;i++) {
+            SupplyVehicleEntity se = ws.addSupplyVehicle( (i + 0.5) * ws.getBoardWidth()/( numTestSupplyVehicles ),
+                    ws.getRecoveryLine(), "Supply" + (i+1) ) ;
+            supplyVehicles[0].add( se.getId() ) ;
+        }
+
+    }
+
     public void setBoardParameters( float width, float height, float penaltyHeight, float recoveryHeight ) {
         this.boardWidth = width ;
         this.boardHeight = height ;
@@ -193,6 +312,51 @@ public class CPESimulator
         System.out.println("Search depth=" + searchDepth );
         System.out.println("Branch Factor=" + maxBranchFactor );
         System.out.println("----------------------------------------");
+    }
+
+    public boolean isDebugDumpPlanNodes()
+    {
+        return debugDumpPlanNodes;
+    }
+
+    public void setDebugDumpPlanNodes(boolean debugDumpPlanNodes )
+    {
+        this.debugDumpPlanNodes = debugDumpPlanNodes;
+        if ( !debugDumpPlanNodes ) {
+            if ( writer != null ) {
+                try
+                {
+                    writer.close();
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            writer = null ;
+            planDebugPrintWriter = null ;
+        }
+    }
+
+    public File getDebugPlanFile()
+    {
+        return debugPlanFile;
+    }
+
+    public void setDebugPlanFile(File debugPlanFile)
+    {
+        this.debugPlanFile = debugPlanFile;
+        if ( isDebugDumpPlanNodes() ) {
+            try
+            {
+                writer = new FileWriter( debugPlanFile ) ;
+                planDebugPrintWriter = new PrintWriter( writer ) ;
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
     }
 
     public ZoneWorld getZoneWorld()
@@ -245,13 +409,15 @@ public class CPESimulator
         this.verbose = verbose;
     }
 
-    public void planAndDistribute() {
-        System.out.println("\nCREATING ZONE and MANUEVER PLAN...");
+    public void planZones() {
+
+        WorldState longRangeSensedWorld = null ;
 
         // Copy over the results from the ws before invoking the zone planner.
-        WorldState longRangeSensedWorld = ws.filter( WorldStateModel.SENSOR_LONG, false, false, null ) ;
-
-        zoneWorld.copyUnitAndTargetStatus( longRangeSensedWorld, true, false, false );
+        synchronized ( ws ) {
+            longRangeSensedWorld = ws.filter( WorldStateModel.SENSOR_LONG, false, false, null ) ;
+            zoneWorld.copyUnitAndTargetStatus( longRangeSensedWorld, true, false, false );
+        }
 
         System.out.println("ZONE PLANNER: Planning with (delayed) start time " + ( zoneWorld.getTimeInSeconds() + zonePlannerDelay/1000.0 )
                 + " and horizon=" + zonePlanner.getMaxDepth() * zonePlanner.getDeltaTPerPhase() * zoneWorld.getDeltaT() + " sec.");
@@ -278,7 +444,15 @@ public class CPESimulator
             }
         }
         zonePlanner.release();
+    }
 
+    public void planAndDistribute() {
+
+        if ( doZonePlanning ) {
+            planZones();
+        }
+
+        System.out.println("\nCREATING MANUEVER PLAN...");
         //
         // Initialize the manuever planners with the initial assumed zone.  The initial assumed zone must
         // be extracted from the reference zone world.
@@ -301,8 +475,12 @@ public class CPESimulator
 
             planner.plan( ws, ASSUMED_BN_PLANNING_DELAY );
 
-            //System.out.println("DUMPING PLAN NODES:");
-            //mp.dumpPlanNodes();
+            if ( isDebugDumpPlanNodes() ) {
+                planDebugPrintWriter.println( "\n\n------------------------------------\nNodes for " + planner.getId() );
+                planner.dump( planDebugPrintWriter );
+                planDebugPrintWriter.flush();
+            }
+
             Object[][] plans = planner.getPlans() ;
             planner.release() ;
             System.out.println("SIMULATOR:: ELAPSED PLANNING TIME = " +
@@ -316,7 +494,7 @@ public class CPESimulator
                 ( ASSUMED_BN_PLANNING_DELAY + ASSUMED_SUPPLY_PLANNING_DELAY ) );
 
         // Now make a sustainment plan for each organization.
-        for (int i=0;i<numSupplyOrganizations;i++) {
+        for (int i=0;i<supplyCustomers.length;i++) {
             SPlanner sp = new SPlanner() ;
             sp.plan( ws, ASSUMED_BN_PLANNING_DELAY + ASSUMED_SUPPLY_PLANNING_DELAY, supplyCustomers[i], supplyVehicles[i] ) ;
 
@@ -338,7 +516,7 @@ public class CPESimulator
 //        }
 //    }
 
-    public WorldState getWorldState() {
+    public ReferenceWorldState getWorldState() {
         return ws ;
     }
 
@@ -347,6 +525,9 @@ public class CPESimulator
         return isRunning;
     }
 
+    public ManueverPlanner[] getPlanners( ) {
+        return manueverPlanners ;
+    }
 
     private void updateZonePlans(Object[][] zplans)
     {
@@ -469,11 +650,11 @@ public class CPESimulator
     public void run() {
         isRunning = true ;
         System.out.println("Running simulation for a total of " + ( ( maxDeltaTs * ws.getDeltaT() )  ) + " seconds.");
-        Thread.currentThread().setPriority( Thread.NORM_PRIORITY - 2 );
+        runThread.interrupt();
 
-        while ( deltaIndex < maxDeltaTs && isRunning ) {
-            step();
-        }
+//        while ( deltaIndex < maxDeltaTs && isRunning ) {
+//            step();
+//        }
     }
 
     public void stop() {
@@ -509,9 +690,10 @@ public class CPESimulator
         System.out.println("Iteration " + deltaIndex + ", time=" + ws.getTime() );
 
         // Generate new targets.
-        generateNewTargets();
 
         synchronized ( ws ) {
+            generateNewTargets();
+
             ws.updateWorldState() ;
 
             // Project what zone we are currently in.
@@ -593,6 +775,32 @@ public class CPESimulator
         this.display = display;
     }
 
+    protected class RunThread extends Thread {
+        public void run()
+        {
+            while ( true ) {
+                while ( !isRunning() ) {
+                    try
+                    {
+                        sleep( 5000 );
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
+                }
+                if ( isRunning ) {
+                    if ( deltaIndex < maxDeltaTs ) {
+                        step();
+                    }
+                    else {
+                        break ;
+                    }
+                }
+            }
+            System.out.println("CPESimulator:: Run terminated at " + ws.getTime() );
+        }
+    }
+
     public static final void main( String[] args) {
         CPESimulator simulator = new CPESimulator() ;
         VGFrame frame = new VGFrame( simulator.getWorldState(), simulator ) ;
@@ -623,5 +831,6 @@ public class CPESimulator
     ZonePlanner zonePlanner ;
 
     VGFrame display ;
+    RunThread runThread = new RunThread() ;
 
 }

@@ -8,11 +8,10 @@ import java.io.Serializable;
 /**
  * A measurement is a single observed event or QoS measurement.
  */
-public interface Measurement extends Serializable {
+public interface Measurement extends Record {
 
     /**
-     * The triggering input, timer event, or action.  Actions
-     * may trigger other actions.
+     * The triggering input, timer event, or action.
      *
      * @return
      */

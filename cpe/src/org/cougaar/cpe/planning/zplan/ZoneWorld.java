@@ -388,7 +388,7 @@ public class ZoneWorld extends WorldStateModel
             return nextZone ;
         }
 
-        float ratio =  ( time - startTime ) / ( endTime - startTime ) ;
+        float ratio =  ( ( float ) time - ( float ) startTime ) / ( ( float ) endTime - ( float ) startTime ) ;
         float leftValue = ( nextZone.getXLower() - currentZone.getXLower() ) * ratio + currentZone.getXLower() ;
         float rightValue = ( nextZone.getXUpper() - currentZone.getXUpper() ) * ratio + currentZone.getXUpper() ;
         currentZoneInterval = new Interval( leftValue, rightValue ) ;

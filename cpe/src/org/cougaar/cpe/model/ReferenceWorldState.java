@@ -1,14 +1,22 @@
 package org.cougaar.cpe.model;
 
+import org.cougaar.cpe.model.events.*;
+
 import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.util.*;
 
-public class ReferenceWorldState extends WorldState implements CPEEventListener
+public class ReferenceWorldState extends WorldState
 {
     private StandardSensor longRangeSensor;
     private StandardSensor mediumRangeSensor;
     private StandardSensor shortRangeSensor ;
-    private int defaultIntegrationPeriod = 40000 ;
+    private int defaultIntegrationPeriod = 20000 ;
+
+    /**
+     * The identifier for the region used to measure op tempo.
+     */
+    public static final String REGION_OP_TEMPO = "OpTempoRegion";
 
     public ReferenceWorldState(double boardWidth, double boardHeight, double penaltyHeight, double recoveryLine, double deltaT)
     {
@@ -19,6 +27,8 @@ public class ReferenceWorldState extends WorldState implements CPEEventListener
         sensors.add( longRangeSensor ) ;
         sensors.add( mediumRangeSensor ) ;
         sensors.add( shortRangeSensor ) ;
+        regions.add( new Region(new Rectangle2D.Double(0,0,boardWidth,VGWorldConstants.getUnitRangeHeight()), REGION_OP_TEMPO ) ) ;
+        setDefaultMetric( new MeasuredWorldMetrics( WorldState.DEFAULT_METRIC, this, defaultIntegrationPeriod ) ) ;
     }
 
     static abstract class SensorModel {
@@ -205,50 +215,19 @@ public class ReferenceWorldState extends WorldState implements CPEEventListener
 
     /**
      *
-     * @param scoringZone
+     * @param scoringZone The name of the associated scoring zone.  This is useful primarily for testing purposes.
      * @param zs
      */
-    public void addScoringZoneSchedule( String scoringZone, ZoneSchedule zs ) {
-        zoneSchedules.put( scoringZone, zs ) ;
-        metricsForZone.put( scoringZone, new WorldMetrics( defaultIntegrationPeriod ) ) ;
+    public void addScoringZoneSchedule( String scoringZone, Plan zs ) {
+        MeasuredWorldMetrics metrics;
+        nameToMetricsMap.put( scoringZone, metrics = new MeasuredWorldMetrics( scoringZone, this, defaultIntegrationPeriod ) ) ;
+        metrics.setZoneSchedule( zs );
+        addEventListener( metrics );
     }
 
-    public void notify( CPEEvent e )
-    {
-        if ( e instanceof ViolationEvent ) {
-            ViolationEvent ve = (WorldState.ViolationEvent) e ;
-            for (Iterator iterator = zoneSchedules.entrySet().iterator(); iterator.hasNext();)
-            {
-                Map.Entry entry = (Map.Entry) iterator.next() ;
-                String name = (String) entry.getKey() ;
-                ZoneSchedule zoneSchedule = (ZoneSchedule) entry.getValue() ;
-                Interval z = (Interval) zoneSchedule.getZoneForTime( getTime() ) ;
-                if ( z != null && z.getXLower() <= ve.getxTarget() && z.getXUpper()  >= ve.getxTarget() ) {
-                    WorldMetrics metrics = (WorldMetrics) metricsForZone.get( name ) ;
-                    metrics.processViolationEvent( ve ) ;
-                }
-            }
-        }
-        else if ( e instanceof EngageByFireEvent ) {
-            EngageByFireEvent ee = (WorldState.EngageByFireEvent) e ;
-            for (Iterator iterator = zoneSchedules.entrySet().iterator(); iterator.hasNext();)
-            {
-                Map.Entry entry = (Map.Entry) iterator.next() ;
-                String name = (String) entry.getKey() ;
-                ZoneSchedule zoneSchedule = (ZoneSchedule) entry.getValue() ;
-                Interval z = (Interval) zoneSchedule.getZoneForTime( getTime() ) ;
-                if ( z != null && z.getXLower() <= ee.getxTarget() && z.getXUpper()  >= ee.getxTarget() ) {
-                    WorldMetrics metrics = (WorldMetrics) metricsForZone.get( name ) ;
-                    metrics.processFireEvent( ee );
-                }
-            }
-        }
+    private HashMap nameToZoneScheduleMap = new HashMap() ;
 
-    }
-
-    private HashMap zoneSchedules = new HashMap() ;
-
-    private HashMap metricsForZone = new HashMap() ;
+    private HashMap nameToMetricsMap = new HashMap() ;
 
     private ArrayList inactiveTargets = new ArrayList() ;
 
