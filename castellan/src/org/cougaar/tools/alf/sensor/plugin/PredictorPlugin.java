@@ -264,8 +264,8 @@ public class PredictorPlugin extends ComponentPlugin {
             arraylist = (PredictorArrayList) et.nextElement();
             if (arraylist!= null)
             {
-                myLoggingService.shout("Demand Model Received by agent " + cluster);
-                myLoggingService.shout("Model size: "+arraylist.size());
+                myLoggingService.debug("Demand Model Received by agent " + cluster);
+                myLoggingService.debug("Model size: "+arraylist.size());
                 kf = new KalmanFilter(arraylist);
                 myBS.publishAdd(kf);
                 flag = true;
@@ -395,7 +395,7 @@ public class PredictorPlugin extends ComponentPlugin {
         {
             commLossTime = cs.getCommLossTime();
             //System.out.println("Comm. Loss Time is: " + commLossTime);
-            myLoggingService.shout("Communication Lost with Customer: " + customerAgentName);
+            myLoggingService.debug("Communication Lost with Customer: " + customerAgentName);
             getActualDemand();
             PredictorSupplyArrayList total_qty_alist = sd.returnDemandQuantity1();
             //Collection c = new PredictorSupplyArrayList();
@@ -419,7 +419,7 @@ public class PredictorPlugin extends ComponentPlugin {
                     //alarm = new TriggerFlushAlarm(currentTimeMillis());
                     //as.addAlarm(alarm);
                     //comm_restore_flag = true;
-                    myLoggingService.shout("Communication Re-Established with Customer: " + customerAgentName);
+                    myLoggingService.debug("Communication Re-Established with Customer: " + customerAgentName);
                     comm_count = 0;
                 }
             }
@@ -678,11 +678,11 @@ public class PredictorPlugin extends ComponentPlugin {
                                  if (new_task!= null)
                                  {
                                       myBS.publishAdd(new_task);
-                                      myLoggingService.shout(cluster + ": NEW TASK ADDED PPOUTPUT" + new_task);
+                                      myLoggingService.debug(cluster + ": NEW TASK ADDED PPOUTPUT" + new_task);
                                  }
                                  else
                                  {
-                                     myLoggingService.shout(cluster + ": NO TASK COULD BE PUBLISHED " + new_task);
+                                     myLoggingService.debug(cluster + ": NO TASK COULD BE PUBLISHED " + new_task);
                                  }
                                     }
                            // }
@@ -697,7 +697,7 @@ public class PredictorPlugin extends ComponentPlugin {
                             }
                             else
                             {
-                                myLoggingService.shout("GAP HAS ZERO VALUE HENCE NO PREDICTOR TASK");
+                                myLoggingService.debug("GAP HAS ZERO VALUE HENCE NO PREDICTOR TASK");
                             }
                         }
                     }
@@ -705,7 +705,7 @@ public class PredictorPlugin extends ComponentPlugin {
         }
         else
         {
-           myLoggingService.shout("COMMUNICATION SERVICE IS ON OR THE PREDICTOR IS TURNED OFF");
+           myLoggingService.debug("COMMUNICATION SERVICE IS ON OR THE PREDICTOR IS TURNED OFF");
         }
         }
 
@@ -855,15 +855,15 @@ public class PredictorPlugin extends ComponentPlugin {
         String content1 = radio_selection;
         if (content1.equalsIgnoreCase("Algorithm_Relay = 1") == true) {
             selectedPredictor = MovingAverage;
-            myLoggingService.shout("Predictor with Moving Average");
+            //myLoggingService.shout("Predictor with Moving Average");
         }
         if (content1.equalsIgnoreCase("Algorithm_Relay = 2") == true) {
             selectedPredictor = SupportVectorMachine;
-            myLoggingService.shout("Predictor with Support Vector Machine");
+            //myLoggingService.shout("Predictor with Support Vector Machine");
         }
         if (content1.equalsIgnoreCase("Algorithm_Relay = 3") == true) {
             selectedPredictor = KalmanFilter;
-            myLoggingService.shout("Predictor with Kalman Filter");
+            //myLoggingService.shout("Predictor with Kalman Filter");
         }
     }
 
