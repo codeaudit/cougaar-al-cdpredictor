@@ -2,6 +2,8 @@ package org.cougaar.cpe.unittests;
 
 import org.cougaar.tools.techspecs.qos.TimePeriodMeasurementPoint;
 import org.cougaar.tools.techspecs.qos.TimePeriodMeasurement;
+import org.cougaar.tools.techspecs.qos.MeasurementPoint;
+import org.cougaar.cpe.ui.MPObserver;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimePeriod;
@@ -21,7 +23,7 @@ import java.util.Iterator;
  * A graph corresponding to each metric type.
  */
 
-public class MetricsGraphPanel extends JPanel{
+public class MetricsGraphPanel extends JPanel implements MPObserver {
     private XYSeriesCollection collection;
     private JFreeChart chart;
     private XYSeries series;
@@ -38,6 +40,11 @@ public class MetricsGraphPanel extends JPanel{
                 collection, PlotOrientation.VERTICAL, false, false, false ) ;
         panel = new ChartPanel( chart ) ;
         add( panel, BorderLayout.CENTER );
+    }
+
+    public MeasurementPoint getMeasurementPoint()
+    {
+        return tmp ;
     }
 
     public void updateData() {

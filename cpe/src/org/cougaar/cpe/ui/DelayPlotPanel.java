@@ -9,11 +9,12 @@ import com.axiom.lib.util.DoubleArray;
 import org.cougaar.tools.techspecs.qos.DelayMeasurementPoint;
 import org.cougaar.tools.techspecs.qos.DelayMeasurement;
 import org.cougaar.tools.techspecs.qos.TimestampMeasurement;
+import org.cougaar.tools.techspecs.qos.MeasurementPoint;
 
 import java.awt.*;
 import java.util.Iterator;
 
-public class DelayPlotPanel extends PlotComponent {
+public class DelayPlotPanel extends PlotComponent implements MPObserver {
     private long[] timeArray;
     private long[] values;
     private long baseTime = 0 ;
@@ -40,6 +41,11 @@ public class DelayPlotPanel extends PlotComponent {
         baseTime = System.currentTimeMillis() ;
     }
 
+    public MeasurementPoint getMeasurementPoint()
+    {
+        return dmp ;
+    }
+
     public long getBaseTime() {
         return baseTime;
     }
@@ -52,7 +58,7 @@ public class DelayPlotPanel extends PlotComponent {
         super.paint(g);
     }
 
-    protected void updateData() {
+    public void updateData() {
 //        System.out.println("DEBUG:: Updating displayed data for " + dmp );
         synchronized ( dmp ) {
             Plot2DContext pc = getPlotContext() ;
