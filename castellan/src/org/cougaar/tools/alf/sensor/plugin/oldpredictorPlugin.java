@@ -335,11 +335,11 @@ public class predictorPlugin extends ComponentPlugin {
   		    String s_class1 = "FuelSupplyCustomer";
   		    return s_class1;
   		}
-  		if(s_class.compareToIgnoreCase("Consumable")==0) 
+  		/*if(s_class.compareToIgnoreCase("Consumable")==0) 
   		 {
   		    	String s_class1 = "SparePartsCustomer";
   		    	return s_class1;
-  		}
+  		}*/
   		
    		return null;
    	}

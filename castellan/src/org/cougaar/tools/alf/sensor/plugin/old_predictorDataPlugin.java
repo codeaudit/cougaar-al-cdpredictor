@@ -323,7 +323,7 @@ public class predictorDataPlugin extends ComponentPlugin  {
            if(fl == false) 
            {
             	st_time = currentTimeMillis();
-            	st_time1 = st_time + 360000;
+            	st_time1 = st_time + 250000;
             	fl = true;
            }
         	      
@@ -533,11 +533,11 @@ public class predictorDataPlugin extends ComponentPlugin  {
   		return s_class1;
   	}
   		    	
-     if(s_class.compareToIgnoreCase("Consumable")==0) 
+    /* if(s_class.compareToIgnoreCase("Consumable")==0) 
     {
   		String s_class1 = "SparePartsCustomer";
   		return s_class1;
-  	}
+  	}*/
   		    	
    		return null;
    	}
