@@ -1,0 +1,8 @@
+@kernel
+type radial
+gamma 0.1
+@parameters
+C 1000000000
+epsilon 0.000001
+max_iterations 1000000
+no_scale
