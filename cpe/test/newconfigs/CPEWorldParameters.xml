@@ -1,0 +1,25 @@
+<CPEWorld>
+    <UnitRangeWidth value="2.0" />
+    <UnitRangeHeight value="8.0" />
+    <LongSensorMaxError value="0" />
+    <MediumSensorRange value="14.0" />
+    <MediumSensorMaxError value="0" />
+    <CpySensorWidth value="4.0" />
+    <CpySensorHeight value="8.0" />
+    <MaxUnitFuelLoad value="50.0" />
+    <MaxUnitAmmoLoad value="40" />
+    <TargetMoveRate value="0.04" />
+    <TargetSuppressedMovementFactor value="0.25" />
+    <TargetRoutStrength value="20.0" />
+    <TargetSuppressedTime value="50000" />
+    <TargetFullStrength value="50.0" />
+    <TargetStandardAttrition value="1.0" />
+    <UnitFuelConsumptionRate value="10.0" />
+    <UnitStandardAttritionRate value="5.0" />
+    <UnitStandardHitProbability value="0.65" />
+    <UnitMultiHitProbability value="0.85" />
+    <UnitStandardAttrition value="5.0" />
+    <UnitNormalMovementRate value="0.04" />
+    <SupplyVehicleMovementRate value="0.08" />
+    <MaxSupplyUnitLoad value="20" />
+</CPEWorld>
