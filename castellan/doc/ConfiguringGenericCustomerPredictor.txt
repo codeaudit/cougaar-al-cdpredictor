@@ -2,16 +2,16 @@ Configuring Generic Customer Predictor Plugins and Predictor Servlet
 
 Create recipes in csmart. 
 
-1) Specific Insertion: PredictorDataPlugin
-	Class Name: org.cougaar.tools.alf.sensor.plugin.PredictorDataPlugin
-	Component Name: PredictorDataPlugin
+1) Specific Insertion: predictorDataPlugin
+	Class Name: org.cougaar.tools.alf.sensor.plugin.predictorDataPlugin
+	Component Name: predictorDataPlugin
 	Component Priority: COMPONENT
 	No. of Arguments: 0
 	Target Component Selection Query: recipeQueryAllAgents
 	Type of Insertion:  plugin
 
 
-2) Specific Insertion: PredictorPlugin
+2) Specific Insertion: predictorPlugin
 	Class Name: org.cougaar.tools.alf.sensor.plugin.predictorPlugin
 	Component Name: predictorPlugin
 	Component Priority: COMPONENT
@@ -22,7 +22,7 @@ Create recipes in csmart.
 
 For the Predictor Turn OFF Servlet
 
-3) Specific Insertion: PredictorPlugin
+3) Specific Insertion: predictorServlet
 	Class Name: org.cougaar.tools.alf.sensor.servlet.predictorServlet
 	Component Name:	predictorServlet
 	Component Priority: COMPONENT
