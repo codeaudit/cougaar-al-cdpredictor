@@ -2,6 +2,7 @@ package org.cougaar.tools.techspecs.qos;
 
 import org.cougaar.core.mts.MessageAddress;
 import java.util.HashMap;
+import java.util.*;
 
 /**
  * User: Nathan Gnanasambandam
@@ -14,19 +15,24 @@ public class ControlMeasurementPoint extends MeasurementPoint {
 		super(name);
 	}
 
-	public void addMeasurement( String eventName, String action, MessageAddress source,  HashMap opmodeMap, double[][] times) {
+	public void addMeasurement(String eventName, String action, MessageAddress source, HashMap opmodeMap, double[][] times) {
 		//HashMap timeMap= convertTimesToMap(times);		
-		ControlMeasurement cm = new ControlMeasurement(eventName, action, source,System.currentTimeMillis(),opmodeMap,times) ;
-		super.addMeasurement( cm );
+		ControlMeasurement cm = new ControlMeasurement(eventName, action, source, System.currentTimeMillis(), opmodeMap, times);		
+		super.addMeasurement(cm);
 	}
-	
-	//TODO finsih this function
-	private HashMap convertTimesToMap(double[][] d){
-		return null;
-	}
+
 	
 	public void toString(StringBuffer buf) {
-		  super.toString();
+		super.toString(buf);
+		Iterator itr = this.getMeasurements(5);
+		String s = "\n";
+		if (itr != null) {
+			while (itr.hasNext()) {
+				ControlMeasurement cm = (ControlMeasurement) itr.next();
+				s += cm.toString() + "\n";
+			}
+		}
+		buf.append(s);
 	}
 
 }
