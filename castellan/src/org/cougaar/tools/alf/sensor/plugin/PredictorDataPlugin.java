@@ -559,7 +559,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
         String s_class = a;
 
         final String ammo = "AmmunitionCustomer";
-        final String packpol = "PackagedPolSupplyCustomer";
+        final String packpol = "PackagedPOLSupplyCustomer";
         final String subs = "SubsistenceSupplyCustomer";
         final String bulkpol = "FuelSupplyCustomer";
         final String consumable = "SparePartsCustomer";
