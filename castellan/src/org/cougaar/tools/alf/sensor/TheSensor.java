@@ -35,16 +35,23 @@ import org.cougaar.core.agent.ClusterIdentifier;
 import org.cougaar.core.plugin.*;
 import org.cougaar.core.service.*;
 import org.cougaar.core.adaptivity.OMCRangeList;
+import org.cougaar.util.ConfigFinder;
 
+import org.w3c.dom.*;
 
 import java.util.* ;
 import java.lang.Float;
+import java.lang.Double;
+import java.lang.Integer;
+import java.lang.String;
+import java.io.File;
 
 /**
  *
  * @author  Yunho Hong
  * @version
  */
+
 public class TheSensor {
 
 
@@ -54,19 +61,15 @@ public class TheSensor {
 	private int hari;	
 
 	SensorPlugin sensorplugin;
-	InterAgentOperatingMode[] psu_fb;
 	InterAgentOperatingMode[] psu_lf3;
 
-    	//CONSTRUCTORS
-	 public TheSensor(String FileNameOfThreshold) {
-
-	}
-
-	public TheSensor(SensorPlugin plugin) {
+   	// Costructor
+	public TheSensor(SensorPlugin plugin, String fbtype) {
 	  
 	  sensorplugin = plugin;
-	  int length = 133;
-	  String [] agent = new String[length];
+
+	  int num_agent = 133;
+	  String [] agent = new String[num_agent];
 
 	  hari = 0;
 
@@ -214,35 +217,19 @@ public class TheSensor {
 	  // TRANSPORT
         agent[129]="TheaterGround";
         agent[130]="GlobalSea";
-	  agent[131]="CONUSGround";
-	  agent[132]="TRANSCOM";
+		agent[131]="CONUSGround";
+		agent[132]="TRANSCOM";
 
 	  UIDService us=(UIDService) sensorplugin.getUIDService();
 
-	  psu_fb = new InterAgentOperatingMode[agent.length];
 	  psu_lf3 = new InterAgentOperatingMode[agent.length];
-
-	  // falling behind result
-        double [] fbresult =new double[2];
-        fbresult[0]=0; // normal
-	  fbresult[1]=1; // mild falling behind
-//	  fbresult[2]=2; // severe falling behind
-
-	  for (int i=0; i<agent.length; i++) {
-
-		psu_fb[i]= new InterAgentOperatingMode("FallingBehind", new OMCRangeList(fbresult),new Double(0));
-		psu_fb[i].setTarget(new ClusterIdentifier(agent[i]));
-		psu_fb[i].setUID(us.nextUID());
-		sensorplugin.publishAdd(psu_fb[i]);
-
-	  }
-
+	  
   	  for (int i=0; i<agent.length; i++) {
 
 		psu_lf3[i]= new InterAgentOperatingMode("PSU_Loadforecaster_Class3", new OMCRangeList(new Double(0),new Double(Double.MAX_VALUE)),new Double(0));
 		psu_lf3[i].setTarget(new ClusterIdentifier(agent[i]));
 		psu_lf3[i].setUID(us.nextUID());
-		sensorplugin.publishAdd(psu_fb[i]);
+		sensorplugin.publishAdd(psu_lf3[i]);
 	  }
 
 	  try
@@ -255,169 +242,303 @@ public class TheSensor {
 		    System.err.println ("can't write file, io error" );
 	  }
 
-		TallyTableMap = new HashMap();
+	  // Table for checking number of tasks by agents
+	  TallyTableMap = new HashMap();
 
+	  // July 1, 2002
+	  // get Threshold from a file
+	  // Two types of files : SV or user defined threshold 
+	  if (fbtype.compareToIgnoreCase("LookupTable") == 0)
+	  {
+		  getThresholdforLookupTable(); // read user defined threshold values from a file
+	  } else {
+		  getSV();						// read support vector in order to build classifier from files which correspond to each agent one by one.
+	  }
+    }
 
-		for (int i=0;i<agent.length;i++)
-		{
-			Vector LookupTable = null;
+	// read user defined threshold values from a file
+	private void getThresholdforLookupTable() {
 
-/*
-			Vector LookupTable = null;
-			long timelimit = Long.MAX_VALUE;
-			// String src, int ut, float mildfb1, float obviousfb1, float checktime, float th
-			if (agent[i].compareToIgnoreCase("47-FSB") == 0)
-			{
-				LookupTable	= new Vector();
-				LookupTable.add(new criteria(    0,45000,3200,1)); 
-				LookupTable.add(new criteria(45000,65000,3600,1)); 
-				LookupTable.add(new criteria(65000,85000,3800,1)); 
-				LookupTable.add(new criteria(85000,105000,4200,1)); 
-				LookupTable.add(new criteria(105000,Long.MAX_VALUE,4400,1)); 
+		ConfigFinder finder = sensorplugin.obtainConfigFinder() ;
+		String inputName = "lookup.txt";
+       
+		try {
 
-				LookupTable.add(new criteria(    0,30000,1800,0)); 
-				LookupTable.add(new criteria(30000,45000,2000,0)); 
-				LookupTable.add(new criteria(45000,60000,2200,0)); 
-				LookupTable.add(new criteria(60000,75000,2400,0)); 
-				LookupTable.add(new criteria(75000,95000,2600,0)); 
-				LookupTable.add(new criteria(95000,110000,2800,0)); 
-				LookupTable.add(new criteria(110000,Long.MAX_VALUE,3000,0)); 
-				timelimit = 70000;
-			}
-*/
-			int num_tasklimit = Integer.MAX_VALUE;
-			// String src, int ut, float mildfb1, float obviousfb1, float checktime, float th
-			if (agent[i].compareToIgnoreCase("47-FSB") == 0)
-			{
-				LookupTable	= new Vector();
-				// Severe
-/*
-				LookupTable.add(new ConditionByNo(    0,45000,3200,1)); // range (from, to), threshold, type={m,s}
-				LookupTable.add(new ConditionByNo(45000,65000,3600,1)); 
-				LookupTable.add(new ConditionByNo(65000,85000,3800,1)); 
-				LookupTable.add(new ConditionByNo(85000,105000,4200,1)); 
-				LookupTable.add(new ConditionByNo(105000,Integer.MAX_VALUE,4400,1)); 
-*/
-				// Mild
-				LookupTable.add(new ConditionByNo(    0, 100, 9000,0)); 
-				LookupTable.add(new ConditionByNo(  100, 250,11000,0)); 
-//				LookupTable.add(new ConditionByNo(110000,Integer.MAX_VALUE,3000,0)); 
-				num_tasklimit = Integer.MAX_VALUE;
-			} 
-			else 	if (agent[i].compareToIgnoreCase("TheaterGround") == 0)
-			{
-				LookupTable	= new Vector();
-				// Severe
-/*
-				LookupTable.add(new ConditionByNo(    0,45000,3200,1)); // range (from, to), threshold, type={m,s}
-				LookupTable.add(new ConditionByNo(45000,65000,3600,1)); 
-				LookupTable.add(new ConditionByNo(65000,85000,3800,1)); 
-				LookupTable.add(new ConditionByNo(85000,105000,4200,1)); 
-				LookupTable.add(new ConditionByNo(105000,Integer.MAX_VALUE,4400,1)); 
-*/
-				// Mild
-				LookupTable.add(new ConditionByNo(    0, 1000,27000,0)); 
-				LookupTable.add(new ConditionByNo( 1000, 2250,29000,0)); 
-				LookupTable.add(new ConditionByNo( 2250, 5000,32000,0)); 
-				LookupTable.add(new ConditionByNo( 5000, 8000,42000,0)); 
-//				LookupTable.add(new ConditionByNo(110000,Integer.MAX_VALUE,3000,0)); 
-				num_tasklimit = Integer.MAX_VALUE;
-			}
-			else 	if (agent[i].compareToIgnoreCase("GlobalSea") == 0)
-			{
-				// Trasport, Transit task
-				LookupTable	= new Vector();
-/*
-				// Severe
-				LookupTable.add(new ConditionByNo(    0, 1,18000,1)); // range (from, to), threshold, type={m,s}
-				LookupTable.add(new ConditionByNo(1,5000,28000,1)); 
-				LookupTable.add(new ConditionByNo(45000,65000,3600,1)); 
-				LookupTable.add(new ConditionByNo(65000,85000,3800,1)); 
-				LookupTable.add(new ConditionByNo(85000,105000,4200,1)); 
-				LookupTable.add(new ConditionByNo(105000,Integer.MAX_VALUE,4400,1)); 
-*/
-				// Mild
-				LookupTable.add(new ConditionByNo(    0,  500,17000,0)); 
-				LookupTable.add(new ConditionByNo(  500, 5000,25000,0)); 
-				LookupTable.add(new ConditionByNo( 5000,10000,55000,0)); 
-				LookupTable.add(new ConditionByNo(10000,15000,140000,0)); 
-//				LookupTable.add(new ConditionByNo(110000,Integer.MAX_VALUE,3000,0)); 
-				num_tasklimit = Integer.MAX_VALUE;
-			}
-			else 	if (agent[i].compareToIgnoreCase("CONUSGround") == 0)
-			{
-				LookupTable	= new Vector();
-/*
-				// Severe
-				LookupTable.add(new ConditionByNo(    0,45000,3200,1)); // range (from, to), threshold, type={m,s}
-				LookupTable.add(new ConditionByNo(45000,65000,3600,1)); 
-				LookupTable.add(new ConditionByNo(65000,85000,3800,1)); 
-				LookupTable.add(new ConditionByNo(85000,105000,4200,1)); 
-				LookupTable.add(new ConditionByNo(105000,Integer.MAX_VALUE,4400,1)); 
-*/
+			if ( inputName != null && finder != null ) {
 
-				// Mild
-				LookupTable.add(new ConditionByNo(    0, 1000,120000,0)); 
-				LookupTable.add(new ConditionByNo( 1000, 3000,140000,0)); 
-				LookupTable.add(new ConditionByNo( 3000, 6000,150000,0)); 
-				num_tasklimit = Integer.MAX_VALUE;
-			}			
-			else 	if (agent[i].compareToIgnoreCase("TRANSCOM") == 0)
-			{
-				LookupTable	= new Vector();
+				File inputFile = finder.locateFile( inputName ) ;
 
-				// Mild
-				LookupTable.add(new ConditionByNo(    0,  300, 8000,0)); 
-				LookupTable.add(new ConditionByNo(  300, 1000, 9000,0)); 
-				LookupTable.add(new ConditionByNo( 1000, 2000,10000,0)); 
-				LookupTable.add(new ConditionByNo( 2000, 3000,11000,0)); 
-				LookupTable.add(new ConditionByNo( 3000, 4000,14000,0)); 
-				num_tasklimit = Integer.MAX_VALUE;
-			}
+                if ( inputFile != null && inputFile.exists() ) {
+                    
+					java.io.BufferedReader input_file = new java.io.BufferedReader ( new java.io.FileReader(inputFile));					
 
+					read_lookupTable(input_file);
 
-			TallyTableMap.put(agent[i], new info(agent[i], i, 1000, num_tasklimit , LookupTable)); // unit time = 1000 msec.
-		}
+					input_file.close();
+                }
 
-		// The part for reading threshold data from a file.
-//		java.io.BufferedReader fb = null;
-/*		
+            }
+        } catch ( Exception e ) {
+            e.printStackTrace() ;
+        }
+
+	}
+
+	// 	Read threshold values specified by user and put them into lookup tables
+	private void read_lookupTable(java.io.BufferedReader input_stream) {
+
+		String current_agent = null;
+		Vector LookupTable = null;
+		String s = null;
+		int From = 0 , To = 0, Threshold = 0;
+		int lt = 0; 
+		int st = 0;
+
 		try
 		{
-			java.io.BufferedReader fb = new java.io.BufferedReader ( new java.io.FileReader(FileNameOfThreshold));
-			// Detection phase 
-			// Retrieve threshold data from a file. the data will be used for detecting falling behind.
-			// File structure : source, checktime, threshold
-			while (fb.ready())
+			while ((s = input_stream.readLine()) != null)
 			{
-				String rt = fb.readLine(); 
+				int is = 0;
+				int ix = s.indexOf(" ");
 
-				long [] table = new long[5];
-				int ib = 0, ie = 0;
+				String temp_string = s.substring(is,ix);
+				
+				if(temp_string.charAt(0) == '#'){   // # represents Comment
 
-				ie = rt.indexOf(" ", ib);
-				String src = rt.substring(ib,ie-1);
+					continue;
 
-				ib = ie + 1;
-	
-				ie = rt.indexOf(" ", ib);
-				table[0] = (Long.valueOf(rt.substring(ib,ie-1))).longValue();
+				} else if (temp_string.compareToIgnoreCase("@agent") == 0)	{
 
-				ib = ie + 1;
+					if (current_agent != null)
+					{
+						TallyTableMap.put(current_agent, new info(current_agent, 1000, Integer.MAX_VALUE , LookupTable));
+					}
+					
+					st = ix+1;
+					current_agent = s.substring(st);
+					current_agent = current_agent.trim();
+					LookupTable	= new Vector();
 
-				table[1] = (Long.valueOf(rt.substring(ib))).longValue() ;
-	
-			    TallyTableMap.put(new String(src),table); 
+					// debug
+					System.out.println("agent : " + current_agent);
+
+					continue;
+				}
+
+				// from		
+				From = (Integer.valueOf(temp_string.trim())).intValue();
+
+				// to
+				is = ix + 1;
+				ix = s.indexOf(" ",is);	
+				To = (Integer.valueOf(s.substring(is,ix).trim())).intValue();
+
+				// threshold value
+				st = ix+1;
+				Threshold = (Integer.valueOf(s.substring(st).trim())).intValue();
+				
+				// debug
+				System.out.println("lookup: " + From + ", " + To + ", " + Threshold);
+
+				LookupTable.add(new ConditionByNo(    From, To, Threshold, 0));  // Last part represents level of falling behindness. 
+																				 // Here, I just set one level of falling behindness. 
+																				 // In the future, if we specify more levels, then it will have meaning. 
+
 			}
-		
-		}
+
+			TallyTableMap.put(current_agent, new info(current_agent, 1000, Integer.MAX_VALUE , LookupTable));
+
+		} 
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't read or write file, io error" );
-			System.err.println ("RbfRidgeRegression constructor");
+		    System.err.println ("can't read the input file, io error" );
 	    }
-*/
-    }
+	}
+
+	// retrieve support vector to build threshold function
+	private void getSV() {
+
+
+		ConfigFinder finder = sensorplugin.obtainConfigFinder() ;
+		String inputName = "param.dat";
+		String paramName = "txt.svm";
+       
+		try {
+
+			if ( paramName != null && finder != null ) {
+                File inputFile = finder.locateFile( inputName ) ;
+                File paramFile = finder.locateFile( paramName ) ;
+
+                if ( paramFile != null && paramFile.exists() ) {
+
+					java.io.BufferedReader param_File = new java.io.BufferedReader ( new java.io.FileReader(paramFile));					
+
+					read_input(param_File, "47-FSB");
+
+					param_File.close();
+
+				}
+
+                if ( inputFile != null && inputFile.exists() ) {
+                    
+					java.io.BufferedReader input_file = new java.io.BufferedReader ( new java.io.FileReader(inputFile));					
+
+					read_input(input_file, "47-FSB");
+
+					input_file.close();
+                }
+
+            }
+        } catch ( Exception e ) {
+            e.printStackTrace() ;
+        }
+	}
+
+	private void read_param(java.io.BufferedReader param_stream){ // read parameters
+
+		String s = null;
+		String type = null;
+		float gamma, degree, a, b, v, C, epsilon;
+		int lt = 0, st = 0;
+
+		try
+		{
+			while ((s = param_stream.readLine()) != null)
+			{
+				int is = 0;
+				int ix = s.indexOf(" ");
+
+				String temp_string = s.substring(is,ix);
+				
+				if(temp_string.charAt(0) == '#'){   // # represents Comment
+					continue;
+				}
+
+				if(temp_string.compareToIgnoreCase("type") == 0) {	// kernel type
+				
+					lt = s.length(); st = ix+1;
+					type =	(s.substring(st, lt)).trim();
+
+				} else if (temp_string.compareToIgnoreCase("gamma") == 0) {
+
+					lt = s.length(); st = ix+1;
+					gamma =	(Float.valueOf((String) s.substring(st, lt))).floatValue();
+
+				} else if (temp_string.compareToIgnoreCase("degree") == 0) {
+	
+					lt = s.length(); st = ix+1;
+					degree = (Float.valueOf((String) s.substring(st, lt))).floatValue();
+
+				} else if (temp_string.compareToIgnoreCase("a") == 0) {
+	
+					lt = s.length(); st = ix+1;
+					a =	(Float.valueOf((String) s.substring(st, lt))).floatValue();
+
+				} else if (temp_string.compareToIgnoreCase("b") == 0) {
+
+					lt = s.length(); st = ix+1;
+					b =	(Float.valueOf((String) s.substring(st, lt))).floatValue();
+
+				} else if (temp_string.compareToIgnoreCase("C") == 0) {
+
+					lt = s.length(); st = ix+1;
+					C =	(Float.valueOf((String) s.substring(st, lt))).floatValue();
+
+				} else if (temp_string.compareToIgnoreCase("epsilon") == 0) {
+
+					lt = s.length(); st = ix+1;
+					epsilon = (Float.valueOf((String) s.substring(st, lt))).floatValue();
+
+				} else if (temp_string.compareToIgnoreCase("") == 0) {
+
+					lt = s.length(); st = ix+1;
+					epsilon = (Float.valueOf((String) s.substring(st, lt))).floatValue();
+				}  
+			}
+		} 
+		catch (java.io.IOException ioexc)
+	    {
+		    System.err.println ("can't read the input file, io error" );
+	    }
+	}
+
+	// read SV from files.
+	private void read_input(java.io.BufferedReader input_stream, String agent){ 
+
+		String s = null;
+		int is_linear=1; // linear kernel?
+		int i=0;
+		int dimension = 0;
+		int number = 0;
+		float b = 0;
+
+		// SV 
+		double [][] X = null;
+		double [] y = null;
+		double [] lamda = null;
+		boolean param = true;
+
+		try
+		{
+			while ((s = input_stream.readLine()) != null)
+			{
+				int is = 0;
+				int ix = s.indexOf(" ");
+
+				String temp_string = s.substring(is,ix);
+				
+				if(temp_string.charAt(0) == '#'){   // # represents Comment
+					continue;
+				}
+
+				if (param == true)
+				{
+					if(temp_string.compareToIgnoreCase("dimension") == 0) {	// read parameters
+
+						dimension =	(Integer.valueOf((String) s.substring(ix+1, s.length()))).intValue();
+	
+					} else if(temp_string.compareToIgnoreCase("number") == 0) {	// read parameters
+						
+						number =	(Integer.valueOf((String) s.substring(ix+1, s.length()))).intValue();
+	
+					} else if(temp_string.compareToIgnoreCase("b") == 0) {	// read parameters
+
+						b =	(Float.valueOf((String) s.substring(ix+1, s.length()))).floatValue();
+					} else if(temp_string.compareToIgnoreCase("format") == 0) {	// read parameters
+
+						param = false;
+						X = new double[number][dimension];
+						y = new double[number];
+						lamda = new double[number];
+					}
+
+				} else {
+					
+					X[i][0] = (Double.valueOf((String) s.substring(is,ix))).doubleValue();
+					is = ix+1;
+
+					for (int j=1;j<dimension;j++)
+					{
+							ix = s.indexOf(" ",is);	
+							X[i][j] = (Double.valueOf((String) s.substring(is,ix))).doubleValue();
+							is = ix+1;
+					}
+
+					ix = s.indexOf(" ",is);	
+					y[i] = (Double.valueOf((String) s.substring(is,ix))).doubleValue();
+
+					lamda[i] = (Double.valueOf((String) s.substring(ix+1, s.length()))).doubleValue();
+				}
+			}
+		} 
+		catch (java.io.IOException ioexc)
+	    {
+		    System.err.println ("can't read the input file, io error" );
+	    }
+
+
+		
+	}
 
     // METHODS
     public synchronized void add( PDU p ) {
@@ -605,7 +726,14 @@ public class TheSensor {
 
 	class info 
 	{
-		public info(String src, int srcn, long ut, long timelimit1, Vector lookuptable) {
+		/*
+		 *	src : Agent name
+		 *	ut :  Unit time
+		 *	timelimit1 : timelimit
+		 *	lookuptable : lookuptable
+		 */
+
+		public info(String src, long ut, long timelimit1, Vector lookuptable) { 
 
 			hari = 0;
 			StartTime = 0;
@@ -616,14 +744,11 @@ public class TheSensor {
 			CTFinish = 0;
 			NoTasks = 0;
 			source=src;
-			srcno = srcn;
 			currentstate = 0;
 			timelimit = timelimit1;
 			lookup = lookuptable;
-			if (lookuptable == null)
-			{
-				over=true;
-			}
+	
+			if (lookuptable == null) {	over=true;	}
 			
 			stime = new Hashtable();
 
@@ -634,6 +759,18 @@ public class TheSensor {
 			stime.put("5",new Long("0"));
 			stime.put("9",new Long("0"));
 			stime.put("10",new Long("0"));
+	
+			// preparing for falling behind result
+		    double [] fbresult =new double[2];
+		    fbresult[0]=0; // normal
+ 	  	    fbresult[1]=1; // mild falling behind
+
+		    UIDService us=(UIDService) sensorplugin.getUIDService();
+			psu_fb = new InterAgentOperatingMode("FallingBehind", new OMCRangeList(fbresult),new Double(0));
+			psu_fb.setTarget(new ClusterIdentifier(source));
+			psu_fb.setUID(us.nextUID());
+			sensorplugin.publishAdd(psu_fb);
+
 		}
 
 		public void add(TaskPDU tpdu) {
@@ -650,52 +787,102 @@ public class TheSensor {
 			}
 		}
 
-		public void checkfallingbehindness2(long curr_time, int num_task) {
+		public void checkfallingbehindness2(long curr_time, int num_task) { // for the number of tasks
 
 			int []c = { -1, -1 };
-			
-			for (Enumeration e = lookup.elements() ; e.hasMoreElements() ;) {
-				 ConditionByNo k = (ConditionByNo) e.nextElement();
-				 if (k.check(num_task, curr_time))
-				 {
-					c[k.type] = 1;
+			boolean FbSV = false;
 
-//					 if (k.threshold < curr_time)
-//					 {
-//						c[k.type] = 1;
-//					 } 
-				 } //else {
-					//c[k.type] = 0;
-
-		             //}
-			}
-
-/*
-			if (c[1] > 0 && currentstate < 2)
+			if (FbSV == true) // check whether SV check falling behindness.
 			{
-				printout(source+","+num_task+","+curr_time+", S, by waiting time",FallingBehind, true);
-				currentstate = 2;
-			} else */
+/*				
+				if (askSVMaboutFallingbehindness(curr_time, num_task))
+				{
+					c[0] = 1;
+				}
+*/
+			} else {
+
+				// Lookup table
+				for (Enumeration e = lookup.elements() ; e.hasMoreElements() ;) {
+					 ConditionByNo k = (ConditionByNo) e.nextElement();
+					 if (k.check(num_task, curr_time))
+					 {
+						c[k.type] = 1;
+					 } 
+				}
+			}
 			
 			if (c[0] <= 0 && currentstate > 0) {
 				// PublishChange falling behindness
-				psu_fb[srcno].setValue(new Double(0));
-				sensorplugin.publishChange(psu_fb[srcno]);
+				psu_fb.setValue(new Double(0));
+				sensorplugin.publishChange(psu_fb);
 				printout(source+","+num_task+","+curr_time+", not Falling behind",FallingBehind, true);
 				currentstate = 0;
 			}
 
 			if (c[0] > 0  && c[1] < 0 && currentstate < 1) {
 				// PublishChange falling behindness
-				psu_fb[srcno].setValue(new Double(1));
-				sensorplugin.publishChange(psu_fb[srcno]);
+				psu_fb.setValue(new Double(1));
+				sensorplugin.publishChange(psu_fb);
 
 				printout(source+","+num_task+","+curr_time+", Falling behind",FallingBehind, true);
 				currentstate = 1;
 			} 
 
 		}
+
+/*
+	This part is for the SVM classifier. In the future, I will finish this part.
+*/
+/*		
+		private boolean askSVMaboutFallingbehindness(long curr_time, int num_task) {
+
+			double result = b;
+			double [] x = new double[2];
+			boolean fallingbehind = false;  // Normal + value
+
+			x[0] = curr_time;
+			x[1] = num_task;
+
+			for (int i=0;i<number;i++ )
+			{
+				result = result + lamda[i]*y[i]*calculateKernel(x,X[i]);
+			}
 		
+			if (result < 0) // Falling behind - value
+			{
+				fallingbehind = true;
+			}
+
+			return fallingbehind;
+		}
+
+		private double calculateKernel(double [] x, double [] y) {
+
+			double result = 0;
+
+			if (type.compareToIgnoreCase("radial")==0)	{ //  k(x,y) = exp(-r|x-y|^2)
+				
+				for (int i=0;i<dimension;i++)
+				{
+					result = result + math.pow((x[i] - y[i]),2);
+				}
+
+				result = math.exp(-1*gamma*result);
+
+			} else if (type.compareToIgnoreCase("polynomial")==0)	{
+
+				for (int i=0;i<dimension;i++)
+				{
+					result = result + x[i]*y[i];
+				}
+
+				result = math.pow(result+1,degree);;
+			}
+
+			return result;
+		}
+*/
 		public void getAverageWaitingTime(UIDStringPDU uid, long time1, String source) {
 
 			if (over) {	return;	}
@@ -753,7 +940,7 @@ public class TheSensor {
 			} 
 		}
 
-		public void checkfallingbehindness(long chktime, float awt) {
+		public void checkfallingbehindness(long chktime, float awt) {   // for the average waiting time
 
 			int []c = { -1, -1 };
 			
@@ -771,17 +958,15 @@ public class TheSensor {
 			if (c[1] > 0 && currentstate < 2)  // Severe falling behind
 			{
 				// PublishChange falling behindness
-				psu_fb[srcno].setValue(new Double(2));
-				sensorplugin.publishChange(psu_fb[srcno]);
-//				state[srcno] = 2;
+				psu_fb.setValue(new Double(2));
+				sensorplugin.publishChange(psu_fb);
 				printout(source+","+chktime+","+awt+", S, by waiting time",FallingBehind, true);
 				currentstate = 2;
 			} else 	if (c[0] > 0  && c[1] < 0 && currentstate < 1) {  // Mild falling behind
 
 				// PublishChange falling behindness
-				psu_fb[srcno].setValue(new Double(1));
-				sensorplugin.publishChange(psu_fb[srcno]);
-//				state[srcno] = 1;
+				psu_fb.setValue(new Double(1));
+				sensorplugin.publishChange(psu_fb);
 				printout(source+","+chktime+","+awt+", M, by waiting time",FallingBehind, true);
 				currentstate = 1;
 			} 
@@ -801,10 +986,10 @@ public class TheSensor {
 		private float obviousfb;
 		private int NoTasks;
 		private String source;
-		private int srcno;
 		private int currentstate;
 		private boolean over;
 		private int hari;
+		private InterAgentOperatingMode psu_fb;
 
 	};
 }
@@ -878,16 +1063,3 @@ class taskinfo
 	public long finishtime;
 
 };
-
-
-/*
-class threshold
-{
-	public threshold(float mildfb1, float obviousfb1) {
-		mildfb = mildfb1;
-		obviousfb = obviousfb1;
-	}
-	public float mildfb;
-	public float obviousfb;
-};
-*/

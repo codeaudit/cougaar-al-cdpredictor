@@ -132,6 +132,8 @@ public class SensorPlugin extends ComponentPlugin
         pduBufferSubscription = (IncrementalSubscription) bs.subscribe(pduBufferPredicate);
         Collection c = getParameters();
 
+		String fbtype = null; // this represents falling behind sensor type.
+
         Properties props = new Properties() ;
         // Iterate through the parameters
         int count = 0;
@@ -156,6 +158,9 @@ public class SensorPlugin extends ComponentPlugin
             }
             else if ( count == 4 ) {
                 props.put( "password", s ) ;
+            }            
+			else if ( count == 5 ) {  // Specify type of falling behind sensor, "LookupTable" or "SVs" 
+				fbtype = s;
             }
             count++;
         }
@@ -164,9 +169,9 @@ public class SensorPlugin extends ComponentPlugin
         System.out.println("LogServerPlugin:: Hostname=" + props.getProperty("dbpath") + ",username=" + props.getProperty("user") ) ;
         if (logToMemory)
         {
-//            memoryLog = new InMemoryEventLog();
-//            getBlackboardService().publishAdd(memoryLog);
-   		  sensor = new TheSensor(this);			// Hong
+		  // instantiate a falling behind sensor
+          System.out.println( "SensorPlugin instantiate sensor " + fbtype);
+   		  sensor = new TheSensor(this, fbtype);	
         }
 
         if (logToDatabase)
@@ -231,19 +236,8 @@ public class SensorPlugin extends ComponentPlugin
                     {
                         for (Iterator iter = buffer.getIncoming() ; iter.hasNext() ;)
                         {
-  				        sensor.add((PDU) iter.next());		// Hong
-//                                fbsensor.add(pdu);
-				}
-			  // Update sensor status after PDUs in buffer are all added.
-//                    fbsensor.update();
-//			  for (i=0; i<=fbsensor.clusters-1; i++) {
-//				if (status[i]!=fbsensor.state[i]) {
-//				    status[i]=fbsensor.state[i]; 
-//				    psu_fb[i].setValue(new Integer(status[i]));
-//				    bs.publishChange(psu_fb[i]);
-//				}
-//			  }
-
+  					        sensor.add((PDU) iter.next());		// Falling behind sensor 2 by Hong
+						}
                     }
                     if (logToDatabase)
                     {
@@ -277,6 +271,12 @@ public class SensorPlugin extends ComponentPlugin
 	 return (UIDService) getServiceBroker().getService(this, UIDService.class, null);
     }
 
+	public ConfigFinder obtainConfigFinder() {
+
+		return (ConfigFinder) getConfigFinder();
+
+	}
+
     String databaseName = null;
     boolean logToMemory = true, logToDatabase = false;
 
@@ -285,16 +285,11 @@ public class SensorPlugin extends ComponentPlugin
     LoggingService log ;
     IncrementalSubscription pduBufferSubscription;
 
-// Feedback
-// Yunho and Hari's Loadforecaster and Falling behind sensor
+	// Feedback
+	// Yunho and Hari's Loadforecaster and Falling behind sensor
    TheSensor sensor;		
-   InterAgentOperatingMode[] psu_fb;
-   InterAgentOperatingMode[] psu_lf3;
-   int[] prev_state;
+//  InterAgentOperatingMode[] psu_fb;
+//   InterAgentOperatingMode[] psu_lf3;
+//   int[] prev_state;
    BlackboardService bs;
-
-// Seokcheon's Loadforecaster and Falling behind sensor
-//    FallingBehindSensor fbsensor;
-//    InterAgentOperatingMode[] psu_fb;
-//    int[] status;
 }
