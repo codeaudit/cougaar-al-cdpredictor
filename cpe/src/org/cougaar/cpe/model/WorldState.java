@@ -72,13 +72,13 @@ public abstract class WorldState implements java.io.Serializable {
         return defaultMetric ;
     }
 
-    public void setDefaultMetric(WorldMetrics defaultMetric)
+    public void setDefaultMetric(WorldMetrics newDefaultMetric)
     {
         if ( defaultMetric != null ) {
             removeEventListener( defaultMetric );
         }
-        this.defaultMetric = defaultMetric;
-        addEventListener( defaultMetric );
+        this.defaultMetric = newDefaultMetric;
+        addEventListener( newDefaultMetric );
     }
 
     /**

@@ -43,6 +43,14 @@ public class WorldMetrics implements CPEEventListener
         this.zoneSchedule = zoneSchedule;
     }
 
+    public int getIntegrationPeriod() {
+        return integrationPeriod;
+    }
+
+    public void setIntegrationPeriod(int integrationPeriod) {
+        this.integrationPeriod = integrationPeriod;
+    }
+
     public void notify(CPEEvent e) {
         //System.out.println("WorldMetrics:: Processing " + e );
         if ( e instanceof TimeAdvanceEvent ) {

@@ -95,7 +95,7 @@ public class MeasuredWorldMetrics extends WorldMetrics
         return fuelConsumption;
     }
 
-    public Collection getFuelConsumptionByUnit()
+    public Collection getFuelConsumptionMeasurementPoints()
     {
         return fuelConsumptionByUnit.values() ;
     }
@@ -123,15 +123,17 @@ public class MeasuredWorldMetrics extends WorldMetrics
 
     public synchronized void processTimeAdvanceEvent(TimeAdvanceEvent ev)
     {
-        //System.out.println("MeasuredWorldMetrics:: Advancing time " + ev);
+//        System.out.println("Process time advance event for " + getName() + " time=" + ev.getNewTime() +
+//                ",integrationPeriod=" +integrationPeriod+
+//                ",lastIntegrationTime=" + lastIntegrationTime);
         if ( ev.getNewTime() - lastIntegrationTime >= integrationPeriod ) {
             lastIntegrationTime = ev.getNewTime() ;
-            attrition.addMeasurement( new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), new Double( accumAttrition )));
-            penalties.addMeasurement( new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), new Integer( accumPenalties )));
-            kills.addMeasurement( new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), new Integer( accumKills ) ) );
-            violations.addMeasurement( new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), new Integer( accumViolations ) ) );
-            entryRate.addMeasurement( new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), new Integer( accumEntries )));
-            fuelConsumption.addMeasurement( new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), new Double( accumFuelConsumption ) ) );
+            attrition.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Double( accumAttrition )));
+            penalties.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Integer( accumPenalties )));
+            kills.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Integer( accumKills ) ) );
+            violations.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Integer( accumViolations ) ) );
+            entryRate.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Integer( accumEntries )));
+            fuelConsumption.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Double( accumFuelConsumption ) ) );
             for (Iterator iterator = getParent().getUnits(); iterator.hasNext();)
             {
                 UnitEntity entry = (UnitEntity) iterator.next() ;
@@ -145,11 +147,11 @@ public class MeasuredWorldMetrics extends WorldMetrics
                 Double measurement = (Double) accumFuelConsumptionByUnit.get( unitId ) ;
                 if ( measurement != null ) {
                     timePeriodMeasurementPoint.addMeasurement(
-                    new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), measurement ) );
+                    new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), measurement ) );
                 }
                 else {
                     timePeriodMeasurementPoint.addMeasurement(
-                    new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), ZERO ) );
+                    new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), ZERO ) );
                 }
             }
 

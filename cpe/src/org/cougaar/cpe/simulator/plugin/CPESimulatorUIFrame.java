@@ -109,7 +109,7 @@ public class CPESimulatorUIFrame extends JFrame {
                 dumpTimePeriodMeasurements( f, (TimePeriodMeasurementPoint) mwm.getViolations() ) ;
                 dumpTimePeriodMeasurements( f, (TimePeriodMeasurementPoint) mwm.getAttrition() ) ;
                 dumpTimePeriodMeasurements( f, mwm.getFuelConsumption() );
-                Collection c = mwm.getFuelConsumptionByUnit() ;
+                Collection c = mwm.getFuelConsumptionMeasurementPoints() ;
                 for (Iterator iterator = c.iterator(); iterator.hasNext();)
                 {
                     TimePeriodMeasurementPoint measurementPoint = (TimePeriodMeasurementPoint) iterator.next();

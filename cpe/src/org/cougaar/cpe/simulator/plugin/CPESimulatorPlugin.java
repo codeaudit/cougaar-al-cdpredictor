@@ -60,6 +60,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     private String worldParamConfigFileName;
     private byte[] worldParamBytes;
     private boolean autoResupply;
+    private int metricsIntegrationPeriod = 5000 ;
 
     protected void execute() {
         // First, check to see if there are any new client relays.
@@ -468,7 +469,9 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             // Now, actually make the reference world state.
             referenceWorldState = new ReferenceWorldState( boardWidth, boardHeight, penaltyHeight, recoveryHeight, deltaT ) ;
             referenceWorldState.setLogEvents( true );
-            uiFrame.setWorldState( referenceWorldState );
+            MeasuredWorldMetrics metrics =
+                    new MeasuredWorldMetrics( "Metrics", referenceWorldState, metricsIntegrationPeriod ) ;
+            referenceWorldState.setDefaultMetric( metrics );
 
             System.out.println("\n---------------------------------\nWORLD CONFIGURATION:");
             System.out.println("BoardWidth=" + referenceWorldState.getBoardWidth() );
@@ -483,6 +486,9 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             System.out.println("Number of supply vehicles per agent=" + numberOfSupplyVehicles );
             System.out.println("Number of supply units=" + numberOfSupplyUnits );
             System.out.println("Simulation length=" + simulationLength );
+
+            System.out.println("AutoResupply=" + autoResupply );
+            System.out.println("MetricsIntegrationPeriod=" + metricsIntegrationPeriod );
             System.out.println("------------------------------------");
 
             // Make new UnitEntities locally and broadcast their values to the target.
@@ -585,13 +591,11 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             });
 
             // Now, add some measurements.
-            MeasuredWorldMetrics metrics =
-                    new MeasuredWorldMetrics( "Metrics", referenceWorldState, 40000 ) ;
-            referenceWorldState.setDefaultMetric( metrics );
 
             // Publish this to the BB.
             refToWorldState = new WorldStateReference( "WorldState", referenceWorldState ) ;
             getBlackboardService().publishAdd( refToWorldState );
+            uiFrame.setWorldState( referenceWorldState );
 
             // Add one to measure and track the data for display purposes.
 
@@ -922,6 +926,16 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                                         autoResupply = Boolean.valueOf( autoResupplyValue ).booleanValue()  ;
                                     }
                                     catch ( Exception e ) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                                String metricsIntegrationPeriodValue = getNodeValueForTag( doc, "MetricsIntegrationPeriod", "value" ) ;
+                                if ( metricsIntegrationPeriodValue != null ) {
+                                    try {
+                                        metricsIntegrationPeriod = Integer.parseInt( metricsIntegrationPeriodValue ) ;
+                                    }
+                                    catch (Exception e ) {
                                         e.printStackTrace();
                                     }
                                 }

@@ -13,5 +13,6 @@
       <DeltaT value="5"/>
       <SimulationDuration value="36000000"/>
       <AutoResupply value="true"/>
+      <MetricsIntegrationPeriod value="5000"/>
   </settings>
 </WorldStateConfig>

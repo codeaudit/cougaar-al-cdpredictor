@@ -23,4 +23,5 @@
     <UnitNormalMovementRate value="0.04" />
     <SupplyVehicleMovementRate value="0.08" />
     <MaxSupplyUnitLoad value="20" />
+
 </CPEWorld>
