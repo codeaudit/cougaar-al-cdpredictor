@@ -391,7 +391,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
                 String org_name = subOrg.getClusterPG().getMessageAddress().toString();
                 boolean flag = uniqueMatch(cluster, org_name, role);
                 if (flag == true) {
-                    myLoggingService.shout("Supplier : " + cluster + "| Customer: " + org_name + "| Role " + role);
+                    myLoggingService.debug("Supplier : " + cluster + "| Customer: " + org_name + "| Role " + role);
                     if (cluster != null && org_name != null) {
                         chashtable = new CreateHashtable(cluster, org_name, role);
                         chashtable.setHT();
