@@ -139,7 +139,7 @@ public class PredictorPlugin extends ComponentPlugin {
                 flagger = true;
             }
             if (myBS.didRehydrate() == false) {
-                getActualDemand();
+                //getActualDemand(task);
             }
         } else
         {
@@ -264,6 +264,28 @@ public class PredictorPlugin extends ComponentPlugin {
         }
     }
 
+     public void checkTaskSubscription() {
+        if (!taskSubscription.isEmpty())
+        {
+            //Task task;
+            Enumeration e1 = taskSubscription.getAddedList();
+            Enumeration e2 = taskSubscription.getChangedList();
+            if (e1.hasMoreElements() == true)
+            {
+              //task = (Task) e1.nextElement();
+              //getActualDemand(task);
+            } else if (e2.hasMoreElements() == true)
+            {
+                //task = (Task) e2.nextElement();
+                //getActualDemand(task);
+            }
+        }
+         else
+        {
+            return;
+        }
+    }
+
 
     public void getCommStatusObject(Enumeration e) {
         CommStatus cs = (CommStatus) e.nextElement();
@@ -275,6 +297,10 @@ public class PredictorPlugin extends ComponentPlugin {
             commLossTime = cs.getCommLossTime();
             System.out.println("Comm. Loss Time is: " + commLossTime);
             myLoggingService.shout("Communication Lost with Customer: " + customerAgentName);
+            PredictorSupplyArrayList total_qty_alist = sd.returnDemandQuantity1();
+            Collection c = new PredictorSupplyArrayList();
+            c = total_qty_alist;
+            local_alist = new PredictorSupplyArrayList(c);
             alarm = new TriggerFlushAlarm(currentTimeMillis());
             as.addAlarm(alarm);
             myLoggingService.shout("Comm. Loss Alarm Added");
@@ -284,8 +310,15 @@ public class PredictorPlugin extends ComponentPlugin {
             if (comm_count == 1)
             {
                 commRestoreTime = cs.getCommRestoreTime();
-                myLoggingService.shout("Communication Re-Established with Customer: " + customerAgentName);
-                comm_count = 0;
+                long time_gap = (commRestoreTime - commLossTime)/86400000;
+                if(alarm.hasExpired()== false) {
+                    alarm.cancel();
+                    alarm = new TriggerFlushAlarm(currentTimeMillis());
+                    as.addAlarm(alarm);
+                    comm_restore_flag = true;
+                    myLoggingService.shout("Communication Re-Established with Customer: " + customerAgentName);
+                    comm_count = 0;
+                }
             }
         }
     }
@@ -300,13 +333,15 @@ public class PredictorPlugin extends ComponentPlugin {
                     if (verb.equalsIgnoreCase("Supply") == true) {
                         String owner = (String) task.getPrepositionalPhrase("For").getIndirectObject();
                         if (owner != null) {
+                            if(!TaskUtils.isMyRefillTask(task, cluster)){
                             String pol = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
+                                String uid = task.getUID().toString();
                             if (owner.equalsIgnoreCase(cluster) == false) {
                                 String comp = stringManipulation(pol);
                                 if (comp != null) {
                                     Asset as = task.getDirectObject();
                                     if (as != null) {
-                                        Hashtable asset_hashtable = storeAsset(as);
+                                        storeAsset(as);
                                         String item_name = as.getTypeIdentificationPG().getNomenclature();
                                         long ti = currentTimeMillis() / 86400000;
                                         if (ti >= 0) {
@@ -320,22 +355,32 @@ public class PredictorPlugin extends ComponentPlugin {
                                             if (ti != -1 && qty != -1) {
                                                 if (status == true) {
                                                     if (ti == x) {
-                                                        sd.getSupplyQuantity(cluster, owner, comp, item_name, ti, commitment_date, sTime, qty);
+                                                        sd.getSupplyQuantity(cluster, owner, comp, item_name, ti, commitment_date, sTime, qty, uid);
                                                     } else if (ti > x) {
-                                                        PredictorSupplyArrayList total_qty_alist = sd.returnDemandQuantity1(cluster, owner, comp, item_name, ti, commitment_date, sTime, qty);
+                                                        sd.returnDemandQuantity(cluster, owner, comp, item_name, ti, commitment_date, sTime, qty, uid);
+                                                        PredictorSupplyArrayList total_qty_alist = sd.returnDemandQuantity1();
+                                                        sd.getSupplyQuantity(cluster, owner, comp, item_name, ti, commitment_date, sTime, qty, uid);
                                                         count_supplyarraylist++;
                                                         if (count_supplyarraylist == 1) {
                                                             Collection c = new PredictorSupplyArrayList();
                                                             c = total_qty_alist;
                                                             local_alist = new PredictorSupplyArrayList(c);
+                                                            for(int a =0; a < local_alist.size(); a++){
+                                                                Vector local_vector = (Vector) local_alist.get(a);
+                                                                String supply_class_name = local_vector.elementAt(2).toString();
+                                                                String item_class_name = local_vector.elementAt(3).toString();
+                                                                myLoggingService.shout("Task UID for Supply Class: "+supply_class_name+ " for item: "+ item_class_name+ "is: "+local_vector.elementAt(8).toString());
+                                                            }
                                                             myLoggingService.shout("local_alist size in get actualdemand method " + local_alist.size());
                                                             myBS.publishAdd(local_alist);
+
                                                         } else {
                                                             Collection c = new PredictorSupplyArrayList();
                                                             c = total_qty_alist;
                                                             local_alist = new PredictorSupplyArrayList(c);
                                                             myLoggingService.shout("local_alist size in get actualdemand method1 " + local_alist.size());
                                                             myBS.publishChange(local_alist);
+
                                                         }
                                                         if (total_qty_alist != null) {
                                                             counter++;
@@ -359,6 +404,7 @@ public class PredictorPlugin extends ComponentPlugin {
                                     }
                                 }
                             }
+                        }
                         }
                     }
                 }
@@ -400,22 +446,25 @@ public class PredictorPlugin extends ComponentPlugin {
     }
 
     public long getCustomerLeadTime(long lastSupplyDay, long commLossDay) {
-        clt = lastSupplyDay * 86400000 - commLossDay;
+        int intcommlossday = (int) commLossDay/86400000;
+        clt = lastSupplyDay*86400000 - intcommlossday*86400000;
         return clt;
     }
 
     public long getPredictorGap(long lastSupplyDay, long clt) {
-        gap = currentTimeMillis() + clt - lastSupplyDay * 86400000;
+        int currenttime = (int) currentTimeMillis()/86400000;
+        gap = currenttime*86400000 + clt - lastSupplyDay*86400000;
+        gap = gap * 4;
         return gap;
     }
 
     public long getOrderShipTime(long lastSupplyDay, long commitmentDay) {
-        ost = lastSupplyDay * 86400000 - commitmentDay * 86400000;
+        ost = lastSupplyDay*86400000 - commitmentDay*86400000;
         return ost;
     }
 
     public void setPredictionCommitmentDate(long lastSupplyDay, long ordershiptime) {
-        pcd = lastSupplyDay * 86400000 + gap - ordershiptime;
+        pcd = lastSupplyDay*86400000 + gap - ordershiptime;
     }
 
     public long getPredictionCommitmentDate() {
@@ -423,9 +472,12 @@ public class PredictorPlugin extends ComponentPlugin {
     }
 
     public void whilePredictorON1() {
-        if (status == false && relay_added == false) {                                                              //Checks the comm. status loss condition and if the predictor is ON
+        if(status == false || comm_restore_flag == true){
+        if (relay_added == false) {
+                    myLoggingService.shout("Comm_restore_flag status is: "+comm_restore_flag);                       //Checks the comm. status loss condition and if the predictor is ON
                     ArrayList final_al = new ArrayList();                                                           // New ArrayList for storing comm. loss time data
                     myLoggingService.shout("Predictor_Array_List Size: " + local_alist.size());
+
                     if (!local_alist.isEmpty()) {                                                                   //Iterate through the latest demand tasks
                         for (int al_iter = 0; al_iter < local_alist.size(); al_iter++) {
 
@@ -445,13 +497,13 @@ public class PredictorPlugin extends ComponentPlugin {
                             setPredictionCommitmentDate(last_day, order_ship_time);
 
                             double quantity = new Double(values_vector.elementAt(7).toString()).doubleValue();      //Demand Quantity
-
+                            String uid_name = values_vector.elementAt(8).toString();
                             Vector commloss_vec = createVector(customer_copy, supplyclass_copy, itemname_copy, last_day * 86400000, customer_lead_time, pred_gap, order_ship_time, getPredictionCommitmentDate(), quantity);
 
-                            myLoggingService.shout("Customer: " + customer_copy + " Supply Class: " + supplyclass_copy
+                            myLoggingService.shout("UID is: "+uid_name+ " Customer: " + customer_copy + " Supply Class: " + supplyclass_copy
                                     + " Item: " + itemname_copy + " Commitment Date: " + new Date(commit_day * 86400000) + " Last Supply Date: "
                                     + new Date(last_day * 86400000) + " Customer Lead Time: " + customer_lead_time / 86400000 + " No of Prediction" +
-                                    " Gap Days: " + pred_gap / 86400000 + " Order Ship Date: " + order_ship_time / 86400000);
+                                    " Gap Days: " + pred_gap / 86400000 + " Order Ship Date: " + order_ship_time / 86400000+ "Quantity: "+quantity);
 
                             final_al.add(al_iter, commloss_vec);
                         }
@@ -459,24 +511,32 @@ public class PredictorPlugin extends ComponentPlugin {
                         for (int al_iter1 = 0; al_iter1 < final_al.size(); al_iter1++) {
                             Vector arraylist_vector = (Vector) final_al.get(al_iter1);
                             long gap_value = new Long(arraylist_vector.elementAt(5).toString()).longValue();
-                            if(gap_value/86400000 > 0)  {
+                            myLoggingService.shout("GapValue is: "+gap_value/86400000);
+                            if((int) gap_value/86400000 >= 1)  {
                                  String customer = arraylist_vector.elementAt(0).toString();
                                  String supply_class = arraylist_vector.elementAt(1).toString();
                                  String item_class = arraylist_vector.elementAt(2).toString();
                                  long supply_date = new Long(arraylist_vector.elementAt(3).toString()).longValue();
                                  long commitmentday = new Long(arraylist_vector.elementAt(7).toString()).longValue();
                                  double quantity = new Double(arraylist_vector.elementAt(8).toString()).doubleValue();
-                                 Vector temp_vector = vectorForPredictorTask(customer, supply_class, item_class, commitmentday, supply_date + gap_value, quantity);
+
+                                 //myLoggingService.shout("Quantity before Adding Task: "+quantity);
+                                 Vector temp_vector = vectorForPredictorTask(customer, supply_class, item_class, commitmentday , supply_date/86400000 + (int)(gap_value/86400000), quantity);
+                                 //if(supply_class.equalsIgnoreCase("AmmunitionCustomer")== true){
                                  NewTask new_task = getNewTask(temp_vector);
                                  if (new_task!= null)
                                  {
                                       myBS.publishAdd(new_task);
-                                      myLoggingService.shout(cluster + ": NEW TASK ADDED " + new_task);
+                                      myLoggingService.shout(cluster + ": NEW TASK ADDED PPOUTPUT" + new_task);
                                  }
                                  else
                                  {
                                      myLoggingService.shout(cluster + ": NO TASK COULD BE PUBLISHED " + new_task);
                                  }
+                           // }
+                             //   else {
+                             //        continue;
+                             //    }
                             }
                             else
                             {
@@ -488,15 +548,20 @@ public class PredictorPlugin extends ComponentPlugin {
                     if (alarm!= null) {
                         alarm.cancel();
                     }
+                   if(comm_restore_flag == false){
+                    myLoggingService.shout("Comm_restore_flag status in Alarm is: "+comm_restore_flag);
                     alarm = new TriggerFlushAlarm(currentTimeMillis() + 86400000);
                     as.addAlarm(alarm);
                     myBS.publishChange(local_alist);
                     myLoggingService.shout("PREDICTOR_ALARM_FIRED");
                     myLoggingService.shout("Predictor_Array_List_1 Size: " + local_alist.size());
+                   }
+                    comm_restore_flag = false;
         }
         else
         {
            myLoggingService.shout("COMMUNICATION SERVICE IS ON OR THE PREDICTOR IS TURNED OFF");
+        }
         }
 
     }
@@ -522,7 +587,7 @@ public class PredictorPlugin extends ComponentPlugin {
         genVector.insertElementAt(new Long(f), 5);
         genVector.insertElementAt(new Long(g), 6);
         genVector.insertElementAt(new Long(h), 7);
-        genVector.insertElementAt(new Double(1), 8);
+        genVector.insertElementAt(new Double(i), 8);
         return genVector;
     }
 
@@ -546,7 +611,7 @@ public class PredictorPlugin extends ComponentPlugin {
 
         nt.setCommitmentDate(new Date(new Long(v.elementAt(3).toString()).longValue()));
 
-        AspectValue av = AspectValue.newAspectValue(AspectType.END_TIME, new Long(v.elementAt(4).toString()).longValue());
+        AspectValue av = AspectValue.newAspectValue(AspectType.END_TIME, new Long(v.elementAt(4).toString()).longValue()*86400000);
         Preference np = pf.newPreference(av.getAspectType(), ScoringFunction.createStrictlyAtValue(av));
         nt.addPreference(np);
 
@@ -649,7 +714,6 @@ public class PredictorPlugin extends ComponentPlugin {
         }
     }
 
-
     private String cluster;
     private LoggingService myLoggingService;
     private DomainService myDomainService;
@@ -692,6 +756,7 @@ public class PredictorPlugin extends ComponentPlugin {
     long ost = -1;
     int comm_count = 0;
     int count_supplyarraylist = 0;
+    boolean comm_restore_flag = false;
     ArrayList retain_alist = new ArrayList();
     PredictorSupplyArrayList local_alist = null;
 }

@@ -47,7 +47,7 @@ public class CreateHashtable {
         this.Item = item;
     }
 
-    public CreateHashtable(String supplier, String customer, String supply_class, String item, long exe_time, long comit_day, long time, double quantity) {
+    public CreateHashtable(String supplier, String customer, String supply_class, String item, long exe_time, long comit_day, long time, double quantity, String uid) {
 
         this.Supplier = supplier;
         this.Customer = customer;
@@ -57,6 +57,7 @@ public class CreateHashtable {
         this.Commit_day = comit_day;
         this.Time = time;
         this.Quantity = quantity;
+        this.uid = uid;
     }
 
 
@@ -94,6 +95,7 @@ public class CreateHashtable {
         vec.insertElementAt(new Long(Commit_day), 5);
         vec.insertElementAt(new Long(Time), 6);
         vec.insertElementAt(new Double(Quantity), 7);
+        vec.insertElementAt(uid, 8);
 
         hashtable.put(new Integer(1), vec);
 
@@ -146,6 +148,7 @@ public class CreateHashtable {
         vec1.insertElementAt(new Long(Commit_day), 5);
         vec1.insertElementAt(new Long(Time), 6);
         vec1.insertElementAt(new Double(Quantity), 7);
+        vec1.insertElementAt(uid, 8);
         return vec1;
     }
 
@@ -166,5 +169,6 @@ public class CreateHashtable {
     protected double Quantity;
     protected String Item;
     protected long Commit_day;
+    protected String uid;
 }
 
