@@ -315,6 +315,7 @@ public class ControlUnitAgentPlugin extends ComponentPlugin {
 						System.out.println("Operating mode changed in " + this.getAgentIdentifier() + " to " + Integer.parseInt(i.toString()));
 					}
 				}
+				cm=null;
 
 				if (getBlackboardService().isTransactionOpen() && !wasOpen) {
 					getBlackboardService().closeTransaction();
