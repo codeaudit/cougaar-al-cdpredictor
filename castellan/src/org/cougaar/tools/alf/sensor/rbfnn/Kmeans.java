@@ -73,7 +73,7 @@ public class Kmeans {
 		double [] means = new double[dimension];		
 		label = new int[num_training];
 
-		int i,j,k,l,a,b; 
+		int i,j,l,a; 
 
 		Random rn = new Random(System.currentTimeMillis());
 		
@@ -175,7 +175,7 @@ public class Kmeans {
 		
 		for (i=0;i<num_hidden;i++)
 		{
-			int q = rn.nextInt(num_training);
+//			int q = rn.nextInt(num_training);
 			for (j=0;j<dimension;j++)
 			{
 //				m[i][j] = means[j] + stds[j]*rn.nextGaussian();
@@ -338,12 +338,12 @@ public class Kmeans {
 
 	private void showMatrix(String title, double [][]X,int r, int c) {
 
-			int i, j;
+//			int i, j;
 
 			System.out.println(title);
-			for (i=0;i<r;i++ )
+			for (int i=0;i<r;i++ )
 			{
-				for (j=0;j<c;j++ )
+				for (int j=0;j<c;j++ )
 				{
 					System.out.print(X[i][j] + " ");
 				}
@@ -361,10 +361,10 @@ public class Kmeans {
 
 	private void showVector(String title, double []X,int r) {
 
-			int i, j;
+//			int i;
 
 			System.out.println(title);
-			for (i=0;i<r;i++ )
+			for (int i=0;i<r;i++ )
 			{
 				System.out.println(X[i]);
 			}
@@ -380,10 +380,10 @@ public class Kmeans {
 
 	private void showVector(String title, int []X,int r) {
 
-			int i, j;
+//			int i, j;
 
 			System.out.println(title);
-			for (i=0;i<r;i++ )
+			for (int i=0;i<r;i++ )
 			{
 				System.out.println(X[i]);
 			}

@@ -36,10 +36,10 @@ import java.io.*;
 public class SupplierSideARPlugin extends ComponentPlugin
 {
 
-	IncrementalSubscription taskSubscription;
-	IncrementalSubscription planelementSubscription;
-	IncrementalSubscription inventorySubscription, relationSubscription;
-	IncrementalSubscription inventoryPolicySubscription;
+//	IncrementalSubscription taskSubscription;
+//	IncrementalSubscription planelementSubscription;
+	IncrementalSubscription inventorySubscription;
+//	IncrementalSubscription inventoryPolicySubscription;
 
 	private HashMap itemIndex = null;
 
@@ -163,8 +163,8 @@ public class SupplierSideARPlugin extends ComponentPlugin
         uidservice = (UIDService) getBindingSite().getServiceBroker().getService(this,UIDService.class, null);
         as = (AlarmService) getBindingSite().getServiceBroker().getService(this, AlarmService.class, null);
 
-	    inventoryPolicySubscription = (IncrementalSubscription) bs.subscribe(new InventoryPolicyPredicate("Ammunition"));
-		relationSubscription		= (IncrementalSubscription) bs.subscribe(relationPredicate);
+//	    inventoryPolicySubscription = (IncrementalSubscription) bs.subscribe(new InventoryPolicyPredicate("Ammunition"));
+//		relationSubscription		= (IncrementalSubscription) bs.subscribe(relationPredicate);
 
 		createIndex();
 
@@ -199,7 +199,7 @@ public class SupplierSideARPlugin extends ComponentPlugin
 		Collection c = bs.query(new InventoryPredicate("All"));
 
 		if (c!=null)	{	
-			printInventory(c.size(), c.iterator(), "added",nowTime);		
+			printInventory(c.size(), c.iterator(),nowTime);		
 		}
 
 	}
@@ -208,17 +208,17 @@ public class SupplierSideARPlugin extends ComponentPlugin
 	{
 		if (!inventorySubscription.isEmpty()) {
 			Collection c1 = inventorySubscription.getAddedCollection();
-			if (c1!=null)	{	printInventory(c1.size(), c1.iterator(), "added",nowTime);		}
+			if (c1!=null)	{	printInventory(c1.size(), c1.iterator(),nowTime);		}
 
 			Collection c2 = inventorySubscription.getRemovedCollection();
-			if (c2!=null)	{	printInventory(c2.size(), c2.iterator(), "removed",nowTime);	} 
+			if (c2!=null)	{	printInventory(c2.size(), c2.iterator(),nowTime);	} 
 
 			Collection c3 = inventorySubscription.getChangedCollection();
-			if (c3!=null)	{	printInventory(c3.size(), c3.iterator(), "changed",nowTime);	} 
+			if (c3!=null)	{	printInventory(c3.size(), c3.iterator(),nowTime);	} 
 		}
 	}
 
-	private void printInventory(int nInventories, Iterator inventortyIter, String modifier, long nowTime)
+	private void printInventory(int nInventories, Iterator inventortyIter, long nowTime)
 	{
 			boolean isChanged = false;
 			InventoryInfo invInfo = new InventoryInfo(30,cluster,nowTime);

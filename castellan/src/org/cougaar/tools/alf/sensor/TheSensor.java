@@ -136,7 +136,7 @@ public class TheSensor implements java.io.Serializable {
 		Long From; 
 		int FbLevel = 0;
 		float LLThreshold = 0, ULThreshold = 0;
-		int lt = 0; 
+//		int lt = 0; 
 		int st = 0;
 
 		try
@@ -253,7 +253,7 @@ public class TheSensor implements java.io.Serializable {
 
 		String s = null;
 		String type = null;
-		float gamma, degree, a, b, v, C, epsilon;
+		float gamma, degree, a, b, C, epsilon;
 		int lt = 0, st = 0;
 
 		try
@@ -321,7 +321,7 @@ public class TheSensor implements java.io.Serializable {
 	private void read_input(java.io.BufferedReader input_stream, String agent){ 
 
 		String s = null;
-		int is_linear=1; // linear kernel?
+//		int is_linear=1; // linear kernel?
 		int i=0;
 		int dimension = 0;
 		int number = 0;
@@ -605,11 +605,11 @@ public class TheSensor implements java.io.Serializable {
 			boolean FbSV = false;
 			int newlydetectedstate = currentstate;
 
-			if (FbSV == true) // check whether SV check falling behindness.
-			{
+//			if (FbSV == true) // check whether SV check falling behindness.
+//			{
 
 			
-			} else {
+//			} else {
 
 				// Consult Lookup table
 
@@ -638,7 +638,7 @@ public class TheSensor implements java.io.Serializable {
 						printout(source+","+num_task+","+curr_time+", Falling behind: level "+ currentstate ,FallingBehind, true);
 					}
 				}
-			}
+//			}
 		}
 
 		public void getAverageWaitingTime(UIDStringPDU uid, long time1) {
@@ -660,7 +660,7 @@ public class TheSensor implements java.io.Serializable {
 			long wt = 0; 
 			float awt = 0;
 			long chktime = CurrentTime + unittime;
-			String ss="N";
+//			String ss="N";
 
 			if (chktime > time)
 			{
@@ -742,8 +742,8 @@ public class TheSensor implements java.io.Serializable {
 		private Hashtable lookup;	
 		private int NoFinish;
 		private long CTFinish;  // Cumulative waiting time;
-		private float mildfb;
-		private float obviousfb;
+//		private float mildfb;
+//		private float obviousfb;
 		private int NoTasks;
 		private String source;
 		private int currentstate;

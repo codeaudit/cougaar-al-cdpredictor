@@ -43,7 +43,7 @@ public class LFMessage extends RelayAdapter {
 
   private String myAgentName = null;
   private String myReportingSensorClassName = null;
-  private String myLoadStatus = null;
+//  private String myLoadStatus = null;
   private transient String myToString = null;
 
   public LFMessage(Object reportingSensor, String agentName, UID uid, 

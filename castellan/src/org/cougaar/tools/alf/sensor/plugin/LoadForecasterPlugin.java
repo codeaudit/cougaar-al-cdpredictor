@@ -108,6 +108,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 
 	String cluster = null;
 	int canForecast =0;
+    private LoggingService myLoggingService;
 
     public void setupSubscriptions()   {
 		
@@ -115,10 +116,11 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 
 		for (int i=0;i<14 ; i++)	{		a_row[i] = 0; 		} 
 
-		UIDService us=(UIDService) getServiceBroker().getService(this, UIDService.class, null);
+//		UIDService us=(UIDService) getServiceBroker().getService(this, UIDService.class, null);
 
-		ServiceBroker broker = getServiceBroker();
+//		ServiceBroker broker = getServiceBroker();
         bs = getBlackboardService();
+        myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null);
 
 		internalStateSubscription	= (IncrementalSubscription) bs.subscribe(internalStatePredicate);
         lfMessageSubscription		= (IncrementalSubscription) bs.subscribe(lfMessagePredicate);
@@ -145,7 +147,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 					rbfnn.readParam(paramFile);
 
 			    } else {
-					System.out.println("Param model error.");
+					myLoggingService.shout("Param model error.");
 				}
 
 				if ( inputName != null && finder != null ) {
@@ -154,7 +156,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 					if ( inputFile != null && inputFile.exists() ) {
 						rbfnn.readModel(inputFile);
 			        } else {
-						System.out.println("Input model error.");
+						myLoggingService.shout("Input model error.");
 					}
 				}
 
@@ -170,13 +172,13 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 
 			loadIndicator = new LoadIndicator(this.getClass(), cluster, uidservice.nextUID(), LoadIndicator.NORMAL_LOAD);
 			bs.publishAdd(loadIndicator);
-			System.out.println("NORMAL_LOAD");
+			myLoggingService.shout("NORMAL_LOAD");
 		}
 
 		bs.setShouldBePersisted(false);
 
 		String cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
-		System.out.println("LoadForecasterPlugin start at " + cluster);
+//		myLoggingService.shout("LoadForecasterPlugin start at " + cluster);
     }
 
 	public void execute()
@@ -222,7 +224,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 					if (v.equals("GetLogSupport"))
 					{
 						offsetTime = System.currentTimeMillis();
-						System.out.println("PSULF_STARTTIME="+offsetTime);
+						myLoggingService.shout("PSULF_STARTTIME="+offsetTime);
 						a_row[12] = 0;
 						a_row[13] = (float) taskSubscription.size();  
 
@@ -280,7 +282,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 		{
 			if (curr_state == -1)
 			{
-				System.out.println("SEVERE_LOAD");
+				myLoggingService.shout("SEVERE_LOAD");
 //				loadIndicator.setLoadStatus(LoadIndicator.SEVERE_LOAD);
 //				bs.publishChange(loadIndicator);
 				curr_state = 1;
@@ -289,7 +291,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 		} else {
 			if (curr_state == 1)
 			{
-				System.out.println("NORMAL_LOAD");
+				myLoggingService.shout("NORMAL_LOAD");
 //				loadIndicator.setLoadStatus(LoadIndicator.NORMAL_LOAD);
 //				bs.publishChange(loadIndicator);
 				curr_state = -1;
@@ -310,7 +312,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 		for (int i=1;i<14;i++)	{	s = s + ","+ a_row[i];	}
 						
 		s = s + " ["+ y +","+avg+"]";
-		System.out.println(s);
+		myLoggingService.shout(s);
 	}
 
 	private void printA_row() 
@@ -321,6 +323,6 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 
 		for (int i=1;i<14;i++)	{	s = s + ","+ a_row[i];	}
 
-		System.out.println(s);
+		myLoggingService.shout(s);
 	}
 }
