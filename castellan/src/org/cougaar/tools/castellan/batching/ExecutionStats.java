@@ -34,7 +34,14 @@ public class ExecutionStats {
       myExecution = theExecution;
       myAgent = theAgent;
       processCompletedTasks( theCompletedTasks );
+      System.out.println( "ExecutionStats.constructor()" );
+      System.out.println( "# OF CompletedTasks ASSOCIATED WITH THIS ExecutionStat: " 
+            + myCompletedTasks.size() );
       buildContainers();
+      System.out.println( "ExecutionStats.constructor()" );
+      System.out.println( "# OF Batches OF TASKS ASSOCIATED WITH THIS ExecutionStats: " 
+            + myBatches.size() );
+      
       collectStats();
    }
  
@@ -71,9 +78,14 @@ public class ExecutionStats {
       ArrayList aBatch;
       Iterator it = myBatches.iterator();
       CompletedTask aTaskInBatch;
+      // Go through the current list of myBatches to see where this CompletedTask belongs.
       while( it.hasNext() ){
+         // Get a Batch out of the collection.
          aBatch = (ArrayList)it.next();
+         // Pull out a Task in the batch to compare the new CompletedTask with
          aTaskInBatch = (CompletedTask)aBatch.get(0);
+         // Compare the two CompleteTask s to see if the new one should be 
+         // added to this Batch.
          if( shouldBeInThisBatch( theCompletedTask, aTaskInBatch) ){
             aBatch.add( theCompletedTask );
             return;
@@ -83,6 +95,8 @@ public class ExecutionStats {
       // belong to, create a new batch and add the task to it.
       ArrayList aNewBatch = new ArrayList(1);
       aNewBatch.add( theCompletedTask );
+      // Add the new Batch to the collection of myBatches
+      myBatches.add( aNewBatch );
    }
    /**
     * This condition is set by the tasks having the same verb.  Other
@@ -149,7 +163,7 @@ public class ExecutionStats {
    }
    
    /**
-    * Currently we are collecting stats on batches that completed int this agent
+    * Currently we are collecting stats on batches that completed in this agent
     * during this execution cycle.  Batches differ by Task verb.
     */
    public void collectStats(){
@@ -163,9 +177,18 @@ public class ExecutionStats {
    }
       
    /**
-    * Prints out the statistics associated with this execution.
+    * Prints out the statistics associated with this execution. Only add this
+    * ExecutionStat if something non trivial happens, i.e.
+    *  - Task Batching occurred.
+    *  - Leave it at that for now.
     **/
    public String toString(){
+       if( myBatchStats.size() == 0 ){
+           return "N/A";
+       }
+       //if( getExecutionElapsedTime() == 0 ){
+       //    return "N/A";
+       //}
        return "\n" + "\t" + "\t" + "EXECUTION STATS" + 
        "\n" + "\t" + "\t" + "\t" +
        " Time: " + getExecutionStartTime() + 
@@ -173,7 +196,7 @@ public class ExecutionStats {
        "\n" + "\t" + "\t" + "\t" +
        " Elapsed time: " + getExecutionElapsedTime() + 
        "\n" + "\t" + "\t" + "\t" +
-       myBatchStats.toString();
+       myBatchStats.toString() + "\n";
    }
    
    /**

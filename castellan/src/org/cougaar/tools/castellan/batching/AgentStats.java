@@ -35,17 +35,28 @@ public class AgentStats {
       myAgentName = theAgentName;
       myPlanLog = thePlanLog;
       processIncomingTaskLogs( theIncomingTaskLogs );
+      System.out.println( "AgentStats.constructor()" );
+      System.out.println( "# OF COMPLETED TASKS ASSOCIATED WITH THIS AgentStats: " + myCompletedTasks.size() );      
       buildContainer();
+      System.out.println( "AgentStats.constructor()" );
+      System.out.println( "# OF ExecutionStats CREATED FOR THIS AgentStats: " + myExecutionStats.size() );      
       collectStats();
    }
    
    // METHODS
+   /**
+    * Take the incoming tasks and determine which ones are associated with this
+    * particular agent.  If the incoming task is associated with this agent,
+    * determine when this task was completed.  Put the results in a collection
+    * of CompletedTask for this AgentStat.
+    **/
    private void processIncomingTaskLogs( ArrayList theIncomingTaskLogs ){
       TaskLog aTaskLog;
       BoundaryLog aBoundaryLog;
       Iterator it = theIncomingTaskLogs.iterator();
       CompletedTask aCompletedTask;
       StatSet aCompletionTimeStat;
+      // Look at each incoming task
       while( it.hasNext() ){
          aTaskLog = (TaskLog)it.next();
          if( belongsToAgent( aTaskLog ) ){
@@ -113,6 +124,8 @@ public class AgentStats {
          // Create ExecutionStats
          ExecutionStats es = new ExecutionStats( myEventLog, execution, 
                              myAgentName, myCompletedTasks );
+         // Add ExecutionStats to the collection
+         myExecutionStats.add( es );
       }
    }
    /**
@@ -131,7 +144,10 @@ public class AgentStats {
    }
       
    /**
-    * Collect cumulative statistics on the executions associated with this Agent.
+    * Collect cumulative statistics on the executions times associated with this Agent.
+    * Typically, there are many executions where nothing actually happens, i.e.
+    * execution elapsed time = 0.  These executions are not included in determining
+    * execution time statistics.
     **/
    private void cummulateExecutionStats(){
       if( myExecutionStats == null ){
@@ -148,7 +164,9 @@ public class AgentStats {
          for( int cnt = 0; cnt < myExecutionStats.size(); cnt++ ){
             es = (ExecutionStats)myExecutionStats.get( cnt );
             anExecutionTime = es.getExecutionElapsedTime();
-            myExTimes.addDatum( anExecutionTime );
+            if( anExecutionTime != 0 ){
+                myExTimes.addDatum( anExecutionTime );
+            }
          }
       }
    }
@@ -158,11 +176,11 @@ public class AgentStats {
     * provided for each execution.
     **/
    public String toString(){
-      return "AGENT STATS for: " + getAgentName() +
+      return "\n" + "AGENT STATS for: " + getAgentName() +
       "\n" + "\t" +
-      " Total # of executions: "  + myExTimes.getTotal() + 
-      "\n" + "\t" + 
       " EXECUTION TIME STATS " +  
+      "\n" + "\t" + "\t" +
+      " Total # of executions: "  + myExecutionStats.size() + 
       "\n" + "\t" + "\t" +
       " Total execution time: " + myExTimes.getTotal() + 
       "\n" + "\t" + "\t" +
@@ -172,7 +190,7 @@ public class AgentStats {
       "\n" + "\t" + "\t" +
       " Average execution time: " + myExTimes.getAverage() +
       "\n" + "\t" +
-      myExecutionStats.toString();
+      myExecutionStats.toString() + "\n";
    }
    /**
     * Print out the ExecutionPDUs associated with this agent
