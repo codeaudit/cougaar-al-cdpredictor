@@ -51,6 +51,12 @@ public class ControlMessage extends MessageEvent {
 		this.controlSet = h;
 	}
 
+	public HashMap getAgentControlParams(MessageAddress agentName) {
+		if (controlSet.containsKey((Object) agentName))
+			return ((HashMap) controlSet.get((Object) agentName));
+		return null;
+	}
+
 	protected String entityName;
 	protected HashMap controlSet = new HashMap();
 
