@@ -47,10 +47,16 @@ public class Test_GetTaskBatchingStats {
       catch ( Exception e ) {
          e.printStackTrace();
       }
+      System.out.println( " ANSWER WAS: " + answer );
       return answer;
    }
    public Collection getTaskLogs( PlanLogDatabase thePlanLog ){
-      return thePlanLog.getTasks();
+      Collection taskLogs =  thePlanLog.getTasks();
+      if( ( taskLogs == null ) || ( taskLogs.size() == 0 ) ){
+         System.out.println( "main: No taskLogs were collected." );
+         return null;
+      }
+      return taskLogs;
    }
    private PlanLogDatabase buildPlanLogDb( EventLog theEventLog ){
         PlanLogDatabase pld = new PlanLogDatabase() ;
@@ -158,37 +164,58 @@ public class Test_GetTaskBatchingStats {
          test.printHeader( "Get properties for accessing the database" );
          // Get database user properties
          Properties props = new Properties() ;
-         String userName = test.getKeyboardInput("Enter user name (or use default):");
-         if ( userName.length() == 0 ){
-           userName = "cougaaruser";
-         }
-         String userPassword = test.getKeyboardInput("Enter user password (or use default):");
-         if ( userPassword.length() == 0 ){
-           userPassword = "cougaarpass";
-         }
-         String dbPath = test.getKeyboardInput("Enter database path (or use jdbc:mysql://localhost/)");
-         if ( dbPath.length() == 0 ){
-            dbPath = "jdbc:mysql://localhost/";
-         }
-         // Get access to the database server.
-        test.printHeader( "Accessing the database" );
-        ArrayList result = PersistentEventLog.getValidDatabases( dbPath, userName,  userPassword );
-
-        // Get and display a list of databases to choose from.
-        System.out.println( "DATABASES TO CHOOSE FROM:" );
-        for (int i=0; i<result.size(); i++) {
-            System.out.println( result.get(i) ) ;
-        }
-        String databaseName = test.getKeyboardInput( "Choose which database to get results from:" );
-        if ( databaseName.length() == 0 ){
-           throw new IllegalArgumentException( "Database name must be entered!" );
-        }
+           String userName = "cougaaruser";
+           System.out.println( " USING: " + userName );
+           String userPassword = "cougaarpass";
+           System.out.println( " USING: " + userPassword );
+           String dbPath = "jdbc:mysql://localhost/";
+           System.out.println( " USING: " + dbPath );
+           String databaseName = "PlanLogAgent";
+           System.out.println( " USING: " + dbPath );
         // Access the database
         props.put( "user", userName ) ;
         props.put( "password", userPassword ) ;
         props.put( "dbpath", dbPath ) ;
 
         return new PersistentEventLog( databaseName, props, true );
+         
+        /** 
+        //String userName = test.getKeyboardInput("Enter user name (or use default):");
+        // if ( userName.length() == 0 ){
+           String userName = "cougaaruser";
+           System.out.println( " USING: " + userName );
+
+         //}
+         //String userPassword = test.getKeyboardInput("Enter user password (or use default):");
+         //if ( userPassword.length() == 0 ){
+           String userPassword = "cougaarpass";
+           System.out.println( " USING: " + userPassword );
+         //}
+         //String dbPath = test.getKeyboardInput("Enter database path (or use jdbc:mysql://localhost/)");
+ //        if ( dbPath.length() == 0 ){
+           String dbPath = "jdbc:mysql://localhost/PlanLogAgent";
+           System.out.println( " USING: " + dbPath );
+         //}
+         // Get access to the database server.
+      //  test.printHeader( "Accessing the database" );
+        //ArrayList result = PersistentEventLog.getValidDatabases( dbPath, userName,  userPassword );
+
+        // Get and display a list of databases to choose from.
+      //  System.out.println( "DATABASES TO CHOOSE FROM:" );
+      //  for (int i=0; i<result.size(); i++) {
+       //     System.out.println( result.get(i) ) ;
+      //  }
+      //  String databaseName = test.getKeyboardInput( "Choose which database to get results from:" );
+     //   if ( databaseName.length() == 0 ){
+      //     throw new IllegalArgumentException( "Database name must be entered!" );
+     //   }
+        // Access the database
+        props.put( "user", userName ) ;
+        props.put( "password", userPassword ) ;
+        props.put( "dbpath", dbPath ) ;
+
+        return new PersistentEventLog( databaseName, props, true );
+         */
    }
          
    /**
@@ -207,7 +234,13 @@ public class Test_GetTaskBatchingStats {
          eventLog = test.logOnDatabase( test );
          // Assemble TaskLogs needed for the following processing.
          planLog = test.buildPlanLogDb( eventLog );
-         taskLogs = test.getTaskLogs( planLog ); 
+         taskLogs = test.getTaskLogs( planLog );
+         if( taskLogs == null ){
+             System.out.println( "main: No tasklogs, no analysis - shut down." );
+             eventLog.close();
+             return;
+         }
+        
          String answer = "y";
          answer = test.getKeyboardInput( 
             "Do you want to do analysis on entire society? (y/n)" );
