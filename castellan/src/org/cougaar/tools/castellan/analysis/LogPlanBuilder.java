@@ -565,13 +565,13 @@ public class LogPlanBuilder implements PDUSink {
         }
 
         if ( messages.length > 0 ) {
-            if ( ServerApp.instance().isVerbose() ) {
+            if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
                 System.out.println( "\tRemoving " + messages.length + " objects from the delayed processing queue for " + uid ) ;
             }
         }
 
         for (int i=0;i<messages.length;i++) {
-            if ( ServerApp.instance().isVerbose() ) {
+            if ( ServerApp.instance() != null && ServerApp.instance().isVerbose() ) {
                 System.out.println( "Processing " + messages[i] ) ;
             }
             System.out.print( '-' ) ;
