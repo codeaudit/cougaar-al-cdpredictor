@@ -34,6 +34,7 @@ import org.cougaar.core.util.UID;
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.blackboard.IncrementalSubscription;
+import org.cougaar.core.agent.ClusterIdentifier;
 import org.cougaar.util.UnaryPredicate;
 
 import java.util.Set;
@@ -46,13 +47,15 @@ public class RelayTestPlugin extends ComponentPlugin {
         public MyTestRelay(UID uid, MessageAddress target, MessageAddress source, Object content, Object response ) {
             this.uid = uid;
             this.source= source ;
-            this.value = value ;
+            this.value = content ;
             this.response = response ;
-            targets = Collections.singleton( target ) ;
+            targets = ((target != null) ?
+             Collections.singleton(target) :
+             Collections.EMPTY_SET);
         }
 
         public String toString() {
-            return "MyTestRelay: " + getValue() + ",source=" + getSource() ;
+            return "<MyTestRelay: Uid= " + uid + ", value=" + getValue() + ",source=" + getSource() + ",target=" + targets + ">" ;
         }
 
         public Set getTargets() {
@@ -137,7 +140,7 @@ public class RelayTestPlugin extends ComponentPlugin {
 
 
         Vector v = new Vector( getParameters() )  ;
-        MyTestRelay mt = new MyTestRelay(us.nextUID(), new MessageAddress( ( String ) v.get(0) ), null,
+        mt = new MyTestRelay(us.nextUID(), new ClusterIdentifier( ( String ) v.get(0) ), getClusterIdentifier(),
                 getClusterIdentifier().cleanToString(), null ) ;
         bs.publishAdd( mt ) ;
 
@@ -155,9 +158,13 @@ public class RelayTestPlugin extends ComponentPlugin {
     protected void execute() {
 
         for ( Iterator iter = relays.getAddedCollection().iterator() ;  iter.hasNext() ; ) {
-            System.out.println("Found relay " + iter.next() );
+            System.out.println("Found relay in " + getClusterIdentifier() + "= "  + iter.next() );
         }
+
+        mt.setValue( "Moose" );
+        getBlackboardService().publishChange( mt ) ;
     }
 
+    MyTestRelay mt ;
     IncrementalSubscription relays ;
 }
