@@ -13,9 +13,9 @@ import java.util.Comparator;
  * talks to Matlab and Arena to help the QueueingModel plugin 
  */
 public class SearchAndRank {
-	public SearchAndRank(ControlMeasurement c, HashMap scores) {
+	public SearchAndRank(ControlMeasurement c, HashMap s) {
 		this.cm = c;
-		this.scores = scores;
+		//this.scores = new HashMap(s);
 		//this.cm = new ControlMeasurement("System", "Permutations", MessageAddress.getMessageAddress("search"), System.currentTimeMillis(), c.getOpmodes(), c.getTaskTimes());
 	}
 
@@ -75,9 +75,11 @@ public class SearchAndRank {
 	/*
 	 * generates the search space
 	 */
-	public void generateQueueingParameters(ControlMeasurement c, HashMap scores) {
+	public ArrayList generateQueueingParameters(ControlMeasurement c, HashMap scores) {
 		//contains search space, get from techspecs ultimately
+		//System.out.println(scores);
 		this.cm = c;
+		this.avg_scores=scores;
 		int[] rt = { 20000, 40000, 60000 };
 		int[] ut = { 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000 };
 		HashMap depthbreadth = new HashMap();
@@ -138,7 +140,9 @@ public class SearchAndRank {
 				}
 
 		rankQueueingParameters();
-		System.out.println("QUEUEING PARAMETERS\n" + toString());
+		//System.out.println("AVERAGED SCORES\n" + scores);
+		//System.out.println("QUEUEING PARAMETERS\n" + toString());
+		return rankedQueueingParameters;
 	}
 
 	private void rankQueueingParameters() {
@@ -299,7 +303,7 @@ public class SearchAndRank {
 	}
 
 	private ControlMeasurement cm;
-	private HashMap scores;
+	private HashMap avg_scores;
 	private ArrayList queueingParameters = new ArrayList();
 	private ArrayList rankedQueueingParameters = new ArrayList();
 

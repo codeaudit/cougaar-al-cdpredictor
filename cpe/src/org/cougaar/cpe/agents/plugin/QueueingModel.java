@@ -24,10 +24,13 @@ import org.cougaar.cpe.agents.messages.ControlMessage;
 import org.cougaar.cpe.agents.messages.OpmodeNotificationMessage;
 import org.cougaar.core.adaptivity.OperatingModeCondition;
 import org.cougaar.cpe.agents.plugin.control.*;
+import org.cougaar.cpe.ui.ControlDisplayPanel;
+import org.cougaar.tools.database.test;
 
 import java.io.File;
 //import java.io.FileInputStream;
 import java.util.*;
+import java.util.Comparator;
 
 public class QueueingModel extends ComponentPlugin {
 	private LoggingService log;
@@ -48,6 +51,10 @@ public class QueueingModel extends ComponentPlugin {
 
 	//get subscriptions of the measurements points - from BDEAgentPlugin, C2AgentPlugin, UnitAgentPlugin
 	protected void setupSubscriptions() {
+		cdp = new ControlDisplayPanel(getAgentIdentifier().getAddress(), this);
+		cdp.setSize(800, 600);
+		cdp.setVisible(true);
+
 		logger = (LoggingService) getServiceBroker().getService(this, LoggingService.class, null);
 
 		baseTime = System.currentTimeMillis();
@@ -84,6 +91,12 @@ public class QueueingModel extends ComponentPlugin {
 		}
 	}
 
+	/**
+	 * averaging every score attribute for the last five minutes
+	 * @param currentTime
+	 * @param period
+	 * @return
+	 */
 	public HashMap getMeanScore(long currentTime, int period) {
 		HashMap scores = new HashMap();
 		Iterator iter = null;
@@ -92,6 +105,7 @@ public class QueueingModel extends ComponentPlugin {
 		try {
 			for (int i = 0; i < measurementPoints.size(); i++) {
 				MeasurementPoint measurementPoint = (MeasurementPoint) measurementPoints.get(i);
+				//System.out.println("Measurement points name " + measurementPoint.getName()+","+measurementPoint.getHistorySize());
 				if (measurementPoint instanceof TimePeriodMeasurementPoint) {
 					TimePeriodMeasurementPoint dmp = (TimePeriodMeasurementPoint) measurementPoint;
 					//System.out.println("Measurement points name " + dmp.getName()+","+dmp.getHistorySize());
@@ -99,7 +113,7 @@ public class QueueingModel extends ComponentPlugin {
 					double total = 0;
 					double count = 0;
 					while ((iter != null) && (iter.hasNext())) {
-						TimePeriodMeasurement t= (TimePeriodMeasurement) iter.next();
+						TimePeriodMeasurement t = (TimePeriodMeasurement) iter.next();
 						Object o = t.getValue();
 						if (o instanceof Double)
 							total += ((Double) (o)).doubleValue();
@@ -109,17 +123,17 @@ public class QueueingModel extends ComponentPlugin {
 					}
 					if (count != 0) {
 						//System.out.println(dmp.getName()+":  " +total+"/"+(count*5/60));
-						scores.put(dmp.getName(), new Double(total / (count*5/60)));
+						scores.put(dmp.getName(), new Double(total / (count * 5 / 60)));
 					}
 				}
 			}
-			System.out.println("AVG SCORES " + scores);
+			//System.out.println("AVG SCORES " + scores);
 		} catch (Exception e) {
 			//throw new RuntimeException("Unexpected condition reached");
 			e.printStackTrace();
 			return null;
 		}
-		return null;
+		return scores;
 	}
 
 	/**
@@ -218,15 +232,34 @@ public class QueueingModel extends ComponentPlugin {
 	public void execute() {
 		//logger.shout("\n *------------------Execute Called---------------* ");
 		if (!started) {
+			//setting the base times
+			lastTime = System.currentTimeMillis();
+			startTime = lastTime;
+
 			started = true;
 			measurement();
+		}
+
+		if (!measurementPointSubscription.getAddedCollection().isEmpty() || !measurementPointSubscription.getRemovedCollection().isEmpty()) {
+			measurementPoints.clear();
+			measurementPoints.addAll(measurementPointSubscription.getCollection());
+			Collections.sort(measurementPoints, new Comparator() {
+				public int compare(Object o1, Object o2) {
+					MeasurementPoint w1 = (MeasurementPoint) o1, w2 = (MeasurementPoint) o2;
+					return w1.getName().compareTo(w2.getName());
+				}
+			});
+			cdp.updateMeasurements(measurementPoints);
 		}
 
 	}
 
 	public void measurement() {
-		HashMap scores = getMeanScore(System.currentTimeMillis(), 60); //last 5 minutes of history (1 sample every 5 seconds = 12 * 5 = 60 samples /min)) 
+
 		try {
+			//last 5 minutes of history (1 sample every 5 seconds = 12 * 5 = 60 samples /min))
+			HashMap scores = getMeanScore(System.currentTimeMillis(), 60);
+			//test t = new test();
 
 			measurementPoints.clear();
 			measurementPoints.addAll(measurementPointSubscription.getCollection());
@@ -244,7 +277,7 @@ public class QueueingModel extends ComponentPlugin {
 				getBlackboardService().openTransaction();
 			}
 			controlMP.addMeasurement(c);
-			System.out.println(controlMP.toString());
+			//System.out.println(controlMP.toString());
 			if (getBlackboardService().isTransactionOpen() && !wasOpen) {
 				getBlackboardService().closeTransaction();
 			}
@@ -271,14 +304,38 @@ public class QueueingModel extends ComponentPlugin {
 			//set timerCount as a multiple of nextTime for Control Measurement
 			if ((timerCount++ == 6) && (hasSystemBeenPurturbed())) {
 				timerCount = 0;
-				SearchAndRank s = new SearchAndRank(c,scores);
-				s.generateQueueingParameters(c,scores);
+				SearchAndRank s = new SearchAndRank(c, scores);
+				ArrayList estimated_qp = s.generateQueueingParameters(c, scores);
 				//ships the ith ranking control set from the class s
 				// this control set is a hashmap of hashmaps
 				ControlMessage cm = s.getTop(1);
 				//System.out.println("Control String "+cm.toString());
+
 				if (cm != null)
 					shipControlSet(cm);
+
+				//GUI stuff	---------------------------
+				if (estimated_qp.size() > 0)
+					cdp.updateQueueingParameters(estimated_qp.subList(0, 10));
+
+				if (scores.size() > 0)
+					cdp.updateControls(scores);
+
+				wasOpen = true;
+				if (!getBlackboardService().isTransactionOpen()) {
+					wasOpen = false;
+					getBlackboardService().openTransaction();
+				}
+				if (scores != null) {
+					long currTime = System.currentTimeMillis();
+					avgScoresMP.addMeasurement(new TimePeriodMeasurement((lastTime - startTime) / 1000, (currTime - startTime) / 1000, new Double(getScore(scores))));
+					lastTime = currTime;
+				}
+				if (getBlackboardService().isTransactionOpen() && !wasOpen) {
+					getBlackboardService().closeTransaction();
+				}
+
+				//---------------------------------------
 			}
 
 		} catch (Exception e) {
@@ -291,6 +348,56 @@ public class QueueingModel extends ComponentPlugin {
 			}
 
 		}
+	}
+
+	private double getScore(HashMap scores) {
+		double score_avg = 0;
+		double[] mau = { 15, 1, -50, -5, -0.2 }; //KAVPF
+
+		String[] Kills = { "BN3.Kills", "BN1.Kills", "BN2.Kills" };
+		String[] Attritions = { "BN1.Attrition", "BN2.Attrition", "BN3.Attrition" };
+		String[] Violations = { "BN1.Violations", "BN3.Violations", "BN2.Violations" };
+		String[] Penalities = { "BN1.Penalties", "BN3.Penalties", "BN2.Penalties" };
+		String[] FuelConsumption =
+			{
+				"BN1.FuelConsumption.CPY1",
+				"BN1.FuelConsumption.CPY2",
+				"BN1.FuelConsumption.CPY3",
+				"BN2.FuelConsumption.CPY4",
+				"BN2.FuelConsumption.CPY5",
+				"BN2.FuelConsumption.CPY6",
+				"BN3.FuelConsumption.CPY7",
+				"BN3.FuelConsumption.CPY8",
+				"BN3.FuelConsumption.CPY9" };
+
+		for (int i = 0; i < Kills.length; i++) {
+			Object o = scores.get(Kills[i]);
+			if (o != null)
+				score_avg += (((Double) o).doubleValue()) * mau[1];
+		}
+		for (int i = 0; i < Attritions.length; i++) {
+			Object o = scores.get(Attritions[i]);
+			if (o != null)
+				score_avg += (((Double) o).doubleValue()) * mau[0];
+		}
+
+		for (int i = 0; i < Violations.length; i++) {
+			Object o = scores.get(Violations[i]);
+			if (o != null)
+				score_avg += (((Double) o).doubleValue()) * mau[2];
+		}
+		for (int i = 0; i < Penalities.length; i++) {
+			Object o = scores.get(Penalities[i]);
+			if (o != null)
+				score_avg += (((Double) o).doubleValue()) * mau[3];
+		}
+		for (int i = 0; i < FuelConsumption.length; i++) {
+			Object o = scores.get(FuelConsumption[i]);
+			if (o != null)
+				score_avg += (((Double) o).doubleValue()) * mau[4];
+		}
+
+		return score_avg;
 	}
 
 	private boolean hasSystemBeenPurturbed() {
@@ -434,9 +541,11 @@ public class QueueingModel extends ComponentPlugin {
 
 	private void makeMeasurementPoints() {
 		// Make some measurement points.
-
 		controlMP = new ControlMeasurementPoint("ControlMeasurementBDE");
 		getBlackboardService().publishAdd(controlMP);
+
+		avgScoresMP = new TimePeriodMeasurementPoint("ScoreAverages", Double.class);
+		getBlackboardService().publishAdd(avgScoresMP);
 
 	}
 
@@ -508,6 +617,7 @@ public class QueueingModel extends ComponentPlugin {
 	private int timerCount = 0;
 	private OpmodeNotificationMessage onm;
 	private ControlMeasurementPoint controlMP;
+	private TimePeriodMeasurementPoint avgScoresMP;
 	LoggingService logger;
 	//QMHelper qmh = new QMHelper();
 	private ArrayList measurementPoints = new ArrayList();
@@ -516,5 +626,8 @@ public class QueueingModel extends ComponentPlugin {
 	private boolean started = false;
 	private ControlSourceBufferRelay[] csbr;
 	private String[] SubordinateList = { "BN1", "BN2", "BN3", "CPY1", "CPY2", "CPY3", "CPY4", "CPY5", "CPY6", "CPY7", "CPY8", "CPY9" };
+	private ControlDisplayPanel cdp;
+	private long lastTime = 0;
+	private long startTime = 0;
 
 }

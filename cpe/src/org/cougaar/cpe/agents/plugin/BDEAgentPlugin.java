@@ -568,9 +568,11 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
             getBlackboardService().publishAdd( mwm.getPenalties() ) ;
             getBlackboardService().publishAdd( mwm.getViolations() ) ;
             getBlackboardService().publishAdd( mwm.getPredictedEntryRate() );
+            
             Collection c = mwm.getFuelConsumptionMeasurementPoints() ;
+            //System.out.println("fuel consuption "+c.size());
             for (Iterator iterator = c.iterator(); iterator.hasNext();) {
-                MeasurementPoint measurementPoint = (MeasurementPoint) iterator.next();
+                TimePeriodMeasurementPoint measurementPoint = (TimePeriodMeasurementPoint) iterator.next();
                 getBlackboardService().publishAdd( measurementPoint );
             }
 

@@ -12,7 +12,7 @@ import org.cougaar.cpe.agents.messages.ControlMessage;
  * talks to Matlab and Arena to help the QueueingModel plugin 
  */
 public class QueueingParameters extends ControlMeasurement {
-	public QueueingParameters(long ts, HashMap candidateOpmodes, double[][] estimatedtt,HashMap scores) {
+	public QueueingParameters(long ts, HashMap candidateOpmodes, double[][] estimatedtt, HashMap scores) {
 		super("SystemPurturbed", "Control", MessageAddress.getMessageAddress("BDE1"), ts, candidateOpmodes, estimatedtt);
 		this.cm = new ControlMessage("SystemPurturbed", "Control");
 		cm.putControlSet(candidateOpmodes);
@@ -21,7 +21,7 @@ public class QueueingParameters extends ControlMeasurement {
 		computeScore(scores);
 	}
 
-	public QueueingParameters(long ts, HashMap candidateOpmodes, HashMap estimatedtt,HashMap scores) {
+	public QueueingParameters(long ts, HashMap candidateOpmodes, HashMap estimatedtt, HashMap scores) {
 		super("SystemPurturbed", "Control", MessageAddress.getMessageAddress("BDE1"), ts, candidateOpmodes, estimatedtt);
 		this.cm = new ControlMessage("SystemPurturbed", "Control");
 		cm.putControlSet(candidateOpmodes);
@@ -73,14 +73,27 @@ public class QueueingParameters extends ControlMeasurement {
 			return (score[0] + score[1] + score[2]);
 		return -1;
 	}
-	
-	public ControlMessage getControlMsg(){
+
+	public ControlMessage getControlMsg() {
 		return cm;
 	}
 
+	public Object getValue(String descriptor, int index) {
+		if (descriptor.equalsIgnoreCase("MG1"))
+			return new Double(modelMG1AverageMPF[index]);
+		else if (descriptor.equalsIgnoreCase("WHITT"))
+			return new Double(modelWhittAverageMPF[index]);
+		else if (descriptor.equalsIgnoreCase("ACTUAL"))
+			return new Double(actualAverageMPF[index]);
+		else if (descriptor.equalsIgnoreCase("SCORE"))
+					return new Double(score[index]);
+		else
+			return null;
+	}
+
 	private ControlMessage cm;
-	private double[] actualAverageMPF = null;
-	private double[] modelMG1AverageMPF = null;
-	private double[] modelWhittAverageMPF = null;
-	private double[] score = null;
+	private double[] actualAverageMPF = {-1,-1,-1};
+	private double[] modelMG1AverageMPF = {-1,-1,-1};
+	private double[] modelWhittAverageMPF = {-1,-1,-1};
+	private double[] score = {-1,-1,-1}; //estimated
 }
