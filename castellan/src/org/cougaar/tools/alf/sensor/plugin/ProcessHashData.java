@@ -71,12 +71,20 @@ public class ProcessHashData {
                         ArrayList al = demandPerDay(ob);
                         for(int a=0; a<al.size();a++){
                             Hashtable ht = (Hashtable) al.get(a);
-                        String name = null;
+                       /* String name = null;
                         for (int m = 1; m < 2; m++) {
                             Vector pr = (Vector) ht.get(new Integer(m));
+                            String item_pr = pr.elementAt(5).toString();
+                            StringTokenizer st = new StringTokenizer(item_pr);
+                            StringBuffer new_token = new StringBuffer();
+                            String a_new_token = null;
+                            while (st.hasMoreTokens()) {
+                                String token = st.nextToken();
+                                a_new_token = new_token.append(token).toString();
+                            }
                             StringBuffer sb = new StringBuffer().append(pr.elementAt(0).toString()).
                                     append(pr.elementAt(1).toString()).append(pr.elementAt(2).toString()).
-                                    append(pr.elementAt(5).toString());
+                                    append(a_new_token);
                             name = sb.toString();
                         }
                         try {
@@ -99,7 +107,7 @@ public class ProcessHashData {
                             pwr.close();
                         } catch (Exception e) {
                             System.out.println(e);
-                        }
+                        }*/
                         if (!ht.isEmpty()) {
                             z = z + 1;
                             hashTableList.add(z, ht);

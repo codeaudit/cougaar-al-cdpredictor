@@ -292,7 +292,7 @@ public class PredictorPlugin extends ComponentPlugin {
 			if (h==null)
 			{
 				h = new History(futureDate);  // history for this futureDate.
-				myLoggingService.shout("add new History object for " + futureDate +","+demand); 
+				//myLoggingService.shout("add new History object for " + futureDate +","+demand);
 			}	
 
 			h.add(currentDate,demand);			
@@ -310,7 +310,7 @@ public class PredictorPlugin extends ComponentPlugin {
 
 			if (h==null)
 			{
-				myLoggingService.shout("This task can not be removedadd " +uid + "," + futureDate +","+demand); 
+				//myLoggingService.shout("This task can not be removedadd " +uid + "," + futureDate +","+demand);
 				return false;
 			} else {
 				h.minus(currentDate,demand);			
@@ -399,7 +399,7 @@ public class PredictorPlugin extends ComponentPlugin {
 	        }
         }
 
-        myLoggingService.shout("PredictorPlugin start at " + cluster);
+        //myLoggingService.shout("PredictorPlugin start at " + cluster);
         myBS.setShouldBePersisted(false);
     }
 
@@ -507,7 +507,7 @@ public class PredictorPlugin extends ComponentPlugin {
                     String role = schedule.getOtherRole(orgname).getName();
                     String org_name = subOrg.getClusterPG().getMessageAddress().toString();
                     if (ammoHistory.get(org_name) == null) {
-                        myLoggingService.shout("@@@@@@@ predictorPlugin Supplier : " + cluster + ", Customer: " + org_name + ", Role " + role);
+                        //myLoggingService.shout("@@@@@@@ predictorPlugin Supplier : " + cluster + ", Customer: " + org_name + ", Role " + role);
                         ammoHistory.put(org_name, new HistoryList(myLoggingService));
 						if (!ammoCustomers.contains(org_name)) {	ammoCustomers.add(org_name); 	}
                     }
@@ -519,7 +519,7 @@ public class PredictorPlugin extends ComponentPlugin {
                     String role = schedule.getOtherRole(orgname).getName();
                     String org_name = subOrg.getClusterPG().getMessageAddress().toString();
                     if (bulkPOLHistory.get(org_name) == null) {
-                        myLoggingService.shout("@@@@@@@ predictorPlugin Supplier : " + cluster + ", Customer: " + org_name + ", Role " + role);
+                        //myLoggingService.shout("@@@@@@@ predictorPlugin Supplier : " + cluster + ", Customer: " + org_name + ", Role " + role);
                         bulkPOLHistory.put(org_name, new HistoryList(myLoggingService));
 						if (!bulkPolCustomers.contains(org_name)) {	bulkPolCustomers.add(org_name); 	}
                     }
@@ -555,6 +555,7 @@ public class PredictorPlugin extends ComponentPlugin {
                                 if (comp != null) {
                                     Asset as = task.getDirectObject();
                                     if(as!= null) {
+                                    	Hashtable asset_hashtable = storeAsset(as);
                                         String item_name = as.getTypeIdentificationPG().getNomenclature();
                                     //myLoggingService.shout("D");
                                     //long ti = (currentTimeMillis() / 86400000) - 13005;
@@ -585,11 +586,11 @@ public class PredictorPlugin extends ComponentPlugin {
                                                                 NewTask nt1 = getNewTask1(v);
 																
                                                                 myBS.publishAdd(nt1);
-																//System.out.println("b"+flag);
-																myLoggingService.shout("Task added "+cluster);
-																disposition(nt1);
-																//System.out.println("a"+flag1);
-																myLoggingService.shout("Task disposed "+cluster);
+                                                                //System.out.println("b"+flag);
+                                                                myLoggingService.shout(cluster + ": Task added " + nt1);
+// 																disposition(nt1);
+// 																//System.out.println("a"+flag1);
+// 																myLoggingService.shout("Task disposed "+cluster);
                                                             }
                                                         }
                                                         x = ti;
@@ -602,10 +603,10 @@ public class PredictorPlugin extends ComponentPlugin {
                                                             if (v != null) {
                                                                 NewTask nt1 = getNewTask1(v);
                                                                 myBS.publishAdd(nt1);
-																myLoggingService.shout("Task1 added "+cluster);
-																disposition(nt1);
+                                                                myLoggingService.shout(cluster + ": Task1 added " + nt1);
+// 																disposition(nt1);
 															
-																myLoggingService.shout("Task1 disposed "+cluster);
+// 																myLoggingService.shout("Task1 disposed "+cluster);
                                                             }
                                                         }
                                                         x = ti;
@@ -640,6 +641,57 @@ public class PredictorPlugin extends ComponentPlugin {
         }
         return updated;
     }
+    
+       public Hashtable storeAsset(Asset as){
+       Asset as1 =as;
+       String itemname = as1.getTypeIdentificationPG().getNomenclature();
+       if(asset_list.isEmpty()){
+           asset_list.put(new Integer(1),as1);
+           return asset_list;
+       } else {
+       for(int i = 1; i<=asset_list.size(); i++){
+           String test = ((Asset)asset_list.get(new Integer(i))).getTypeIdentificationPG().getNomenclature();
+       if(test.equalsIgnoreCase(itemname)==false){
+           asset_list.put(new Integer(asset_list.size()+1),as1);
+           break;
+       } else
+           continue;
+       }
+           return asset_list;
+       }
+    }
+
+    public Asset getAsset(Vector v){
+
+       for(int i = 1; i<=asset_list.size();i++){
+           Asset as2 = (Asset)asset_list.get(new Integer(i));
+           String item = as2.getTypeIdentificationPG().getNomenclature();
+           String sclas1 = stringReverseManipulation(v.elementAt(2).toString());
+           String sclas = stringPlay(sclas1);
+           //StringBuffer sbf = new StringBuffer().append("org.cougaar.glm.ldm.asset.").append(sclas);
+           if(item.equalsIgnoreCase(v.elementAt(5).toString())==true) {
+               return as2;
+           } else
+               continue;
+       }
+        return null;
+    }
+
+    public Asset getAsset1(Vector v){
+
+       for(int i = 1; i<=asset_list.size();i++){
+           Asset as2 = (Asset)asset_list.get(new Integer(i));
+           String item = as2.getTypeIdentificationPG().getNomenclature();
+           String sclas1 = stringReverseManipulation(v.elementAt(2).toString());
+           String sclas = stringPlay(sclas1);
+           //StringBuffer sbf = new StringBuffer().append("org.cougaar.glm.ldm.asset.").append(sclas);
+           if(item.equalsIgnoreCase(v.elementAt(6).toString())==true) {
+               return as2;
+           } else
+               continue;
+       }
+        return null;
+    }
 
 	private void getActualDemand(int day) {
 
@@ -663,7 +715,7 @@ public class PredictorPlugin extends ComponentPlugin {
         double[] aRow;
         int pF = 1; // period of future days to be forecasted.
 
-		myLoggingService.shout("today = " + today + ", starting day = " + startingday);
+		//myLoggingService.shout("today = " + today + ", starting day = " + startingday);
 		// set fore
 //        if (cluster.equalsIgnoreCase("47-FSB"))			{           pF = 10;        } 
 //		else if (cluster.equalsIgnoreCase("123-MSB"))	{           pF = 20;        }
@@ -673,7 +725,7 @@ public class PredictorPlugin extends ComponentPlugin {
 				String AnAmmoCustomer = (String) e.nextElement();
 //				rst.write("ammo " + AnAmmoCustomer + "\n");
 //				rst.flush();
-                myLoggingService.shout("predict ammo " + AnAmmoCustomer + " @ " + today + " ");
+                //myLoggingService.shout("predict ammo " + AnAmmoCustomer + " @ " + today + " ");
                 HistoryList historyList = (HistoryList) ammoHistory.get(AnAmmoCustomer);
                 forecastDemand(pF, historyList, AnAmmoCustomer, "Ammunition");
 //				dumpHistoryList(historyList, AnAmmoCustomer,"Ammo");
@@ -684,7 +736,7 @@ public class PredictorPlugin extends ComponentPlugin {
 				String ABulkPolCustomer = (String) e.nextElement();
 //                rst.write("bulk " + ABulkPolCustomer + "\n");
 //				rst.flush();
-                myLoggingService.shout("predict bulk " + ABulkPolCustomer + " @ " + today + " ");
+                //myLoggingService.shout("predict bulk " + ABulkPolCustomer + " @ " + today + " ");
                 HistoryList historyList = (HistoryList) bulkPOLHistory.get(ABulkPolCustomer);
                 forecastDemand(pF, historyList, ABulkPolCustomer, "BulkPOL");
 //				dumpHistoryList(historyList, ABulkPolCustomer,"Bulk");
@@ -697,7 +749,7 @@ public class PredictorPlugin extends ComponentPlugin {
 
 	private void dumpHistoryList(HistoryList historyList, String customer, String ofType) {
 
-		myLoggingService.shout("History of " + customer);
+		//myLoggingService.shout("History of " + customer);
 
 		for (int day = startingday; day <= today; day++)
 		{
@@ -711,7 +763,7 @@ public class PredictorPlugin extends ComponentPlugin {
 					double d =historyOfOnDemandDay.getDemandOnDay(j);
 					if (d !=-1)
 					{
-						myLoggingService.shout("History : at day "+ j+" with "+ofType+ " demand = "+d+" for "+day +", today is "+ today);
+						//myLoggingService.shout("History : at day "+ j+" with "+ofType+ " demand = "+d+" for "+day +", today is "+ today);
 					}
 				}
             }
@@ -768,8 +820,8 @@ public class PredictorPlugin extends ComponentPlugin {
 					rst.write("ActualDemand\t" + customer +"\t" + ofType +"\t"+d+"\t"+(today+4) + "\t" + today + 
 							"\t" + ForecastedValue +"\t" + ForecastedDay +"\t"+ForecastedAtDay+"\t"+(ForecastedValue-d) + "\n");
 					rst.flush();
-					myLoggingService.shout("ActualDemand\t" + customer +"\t" + ofType +"\t"+d+"\t"+(today+4) + "\t" + today + 
-							"\t" + ForecastedValue +"\t" + ForecastedDay +"\t"+ForecastedAtDay+"\t"+(ForecastedValue-d) + "\n");
+					//myLoggingService.shout("ActualDemand\t" + customer +"\t" + ofType +"\t"+d+"\t"+(today+4) + "\t" + today +
+					//		"\t" + ForecastedValue +"\t" + ForecastedDay +"\t"+ForecastedAtDay+"\t"+(ForecastedValue-d) + "\n");
 				}
             }
 		} catch (java.io.IOException ioexc) {
@@ -804,14 +856,14 @@ public class PredictorPlugin extends ComponentPlugin {
                         }
 					}
 					
-                    myLoggingService.shout("forecast\t"+ofType+"\t" + day + "\t" + avg + "\t" + customer + "\t"+cluster+ "\t"+today +"\n");
+                    //myLoggingService.shout("forecast\t"+ofType+"\t" + day + "\t" + avg + "\t" + customer + "\t"+cluster+ "\t"+today +"\n");
                     rst.write("forecast\t"+ofType+"\t" + day + "\t" + avg + "\t" + customer + "\t"+cluster+ "\t"+today +"\n");
 					rst.flush();
                     qty = avg;
 
                 } else {
                     qty = historyOfOnDemandDay.averagePast(3, day);
-                    myLoggingService.shout("forecast\t"+ofType+"\t" + day + "\t" + qty + "\t" + customer + "\t"+cluster+ "\t"+today +"\n");
+                    //myLoggingService.shout("forecast\t"+ofType+"\t" + day + "\t" + qty + "\t" + customer + "\t"+cluster+ "\t"+today +"\n");
                     rst.write("forecast\t"+ofType+"\t" + day + "\t" + qty + "\t" + customer + "\t"+cluster+ "\t"+today +"\n");
 					rst.flush();
                 }
@@ -837,7 +889,7 @@ public class PredictorPlugin extends ComponentPlugin {
                 NewTask new_task = getNewTask(ofType, customer, (long) day, qty, today);
                 if (new_task != null) {
 					
-					myLoggingService.shout("publish + "+ ofType +" [" + day + "," + qty + "] in "+cluster);
+					//myLoggingService.shout(cluster + ": publish + "+ ofType +" [" + day + "," + qty + "] as " + new_task);
                     
 
 					if (ofType.equalsIgnoreCase("Ammunition"))		{		
@@ -867,8 +919,9 @@ public class PredictorPlugin extends ComponentPlugin {
         NewTask nt = pf.newTask();
 
         // Set verb
-        Verb new_verb = new Verb("ForecastDemand");
-        nt.setVerb(new_verb);
+        //nt.setVerb(forecastVerb);
+        Verb verb = new Verb("Supply");
+        nt.setVerb(verb);
 
         NewPrepositionalPhrase npp = pf.newPrepositionalPhrase();
         npp.setPreposition(Constants.Preposition.FOR);
@@ -943,7 +996,7 @@ public class PredictorPlugin extends ComponentPlugin {
 					{
 						historyList = (HistoryList) ammoHistory.get(uid.getOwner());
 						if (historyList == null) { 
-							myLoggingService.shout("@@@@@@@ "+ uid.getOwner()+"is not an Ammunition customer");
+							//myLoggingService.shout("@@@@@@@ "+ uid.getOwner()+"is not an Ammunition customer");
 							continue;
 						} 
 						adj = "ammo";
@@ -952,7 +1005,7 @@ public class PredictorPlugin extends ComponentPlugin {
 					{
 						historyList = (HistoryList) bulkPOLHistory.get(uid.getOwner());
 						if (historyList == null) { 
-							myLoggingService.shout("@@@@@@@ "+ uid.getOwner()+"is not an BulkPOL customer");
+							//myLoggingService.shout("@@@@@@@ "+ uid.getOwner()+"is not an BulkPOL customer");
 							continue;
 						} 
 						adj = "bulk";
@@ -962,7 +1015,7 @@ public class PredictorPlugin extends ComponentPlugin {
 					
 					if (startingday > end_time ) 	{	
 						startingday = end_time;	
-						myLoggingService.shout("@@@@@@@@@ the first day of supply task is "+startingday);
+						//myLoggingService.shout("@@@@@@@@@ the first day of supply task is "+startingday);
 					}
 		    
 					double qty = ti.getPreferredValue(AspectType.QUANTITY);
@@ -1016,7 +1069,7 @@ public class PredictorPlugin extends ComponentPlugin {
 					{
 						historyList = (HistoryList) ammoHistory.get(uid.getOwner());
 						if (historyList == null) { 
-							myLoggingService.shout("@@@@@@@ "+ uid.getOwner()+"is not an Ammunition customer");
+							//myLoggingService.shout("@@@@@@@ "+ uid.getOwner()+"is not an Ammunition customer");
 							continue;
 						} 
 						adj = "ammo";
@@ -1025,7 +1078,7 @@ public class PredictorPlugin extends ComponentPlugin {
 					{
 						historyList = (HistoryList) bulkPOLHistory.get(uid.getOwner());
 						if (historyList == null) { 
-							myLoggingService.shout("@@@@@@@ "+ uid.getOwner()+"is not an BulkPOL customer");
+							//myLoggingService.shout("@@@@@@@ "+ uid.getOwner()+"is not an BulkPOL customer");
 							continue;
 						} 
 						adj = "bulk";
@@ -1175,14 +1228,14 @@ public class PredictorPlugin extends ComponentPlugin {
                             System.err.println(e);
                             //myLoggingService.error(e);
                         }
-                        vt1.removeElementAt(4);
-                        vt1.insertElementAt(new Double(avg_qty), 4);
                         if (vt1 != null) {
+                        vt1.removeElementAt(4);
+                        vt1.insertElementAt(new Double(avg_qty), 4);                    
                             NewTask new_task = getNewTask(vt1);
                             if (new_task != null) {
                                 myBS.publishAdd(new_task);
-                                disposition(new_task);
-                                //myLoggingService.shout("New Task ADDED");
+//                                 disposition(new_task);
+                                myLoggingService.shout(cluster + ": New Task ADDED "+ new_task);
                             }
                         }
                         break;
@@ -1204,9 +1257,9 @@ public class PredictorPlugin extends ComponentPlugin {
         PlanningFactory pf = (PlanningFactory) myDomainService.getFactory("planning");
         NewTask nt = pf.newTask();
 
-        //Verb new_verb = new Verb("ForecastDemand");
-        Verb new_verb = new Verb("ForecastDemand");
-        nt.setVerb(new_verb);
+        //nt.setVerb(forecastVerb);
+        Verb verb = new Verb("Supply");
+        nt.setVerb(verb);
 
         NewPrepositionalPhrase npp = pf.newPrepositionalPhrase();
         npp.setPreposition(Constants.Preposition.FOR);
@@ -1227,13 +1280,15 @@ public class PredictorPlugin extends ComponentPlugin {
         Preference np1 = pf.newPreference(av1.getAspectType(), ScoringFunction.createStrictlyAtValue(av1));
         nt.addPreference(np1);
         
-        Asset as = new Asset();
+        String sclass = stringPlay(supplyclass);
+         Asset asset = getAsset(v);
+        /*Asset as = pf.createAsset(sclass);
         NewSupplyClassPG pg = (NewSupplyClassPG) pf.createPropertyGroup(SupplyClassPG.class);
-        pg.setSupplyClass(supplyclass);
+        pg.setSupplyClass(sclass);
         pg.setSupplyType(supplyclass);
-        as.setPropertyGroup(pg);
+        as.setPropertyGroup(pg); */
 
-        ldms = (LDMService) getBindingSite().getServiceBroker().getService(this, LDMService.class,
+        /*ldms = (LDMService) getBindingSite().getServiceBroker().getService(this, LDMService.class,
                 new ServiceRevokedListener() {
                     public void serviceRevoked(ServiceRevokedEvent re) {
                         if(LDMService.class.equals(re.getService()))
@@ -1242,17 +1297,20 @@ public class PredictorPlugin extends ComponentPlugin {
                     });
 
         as.registerWithLDM(ldms.getLDM());
-        getBindingSite().getServiceBroker().releaseService(this, LDMService.class, ldms);
-
-        UID uid = as.getUID();
+        getBindingSite().getServiceBroker().releaseService(this, LDMService.class, ldms); */
+        if(asset!= null){
+        UID uid = asset.getUID();
+            //System.out.println("uid is "+uid.toString()+ " cluster "+cluster);
         long id = uid.getId();
         UID newuid = new UID(v.elementAt(1).toString(),id);
-        as.setUID(newuid);
+            //System.out.println("Newuid is "+newuid.toString()+ " cluster "+cluster);
+        asset.setUID(newuid);
+             //System.out.println("Setuid is "+asset.getUID().toString()+ " cluster "+cluster);
+  		//NewTypeIdentificationPG ntipg = (NewTypeIdentificationPG) as.getTypeIdentificationPG();
+        //ntipg.setNomenclature(v.elementAt(6).toString());
 
-  		NewTypeIdentificationPG ntipg = (NewTypeIdentificationPG) as.getTypeIdentificationPG();
-        ntipg.setNomenclature(v.elementAt(5).toString());
-
-        nt.setDirectObject(as);
+        nt.setDirectObject(asset);
+        }
 
 		return nt;
 
@@ -1264,8 +1322,9 @@ public class PredictorPlugin extends ComponentPlugin {
         PlanningFactory pf = (PlanningFactory) myDomainService.getFactory("planning");
         NewTask nt = pf.newTask();
 
-        Verb new_verb = new Verb("ForecastDemand");
-        nt.setVerb(new_verb);
+        //nt.setVerb(forecastVerb);
+        Verb verb = new Verb("Supply");
+        nt.setVerb(verb);
 
         NewPrepositionalPhrase npp = pf.newPrepositionalPhrase();
         npp.setPreposition(Constants.Preposition.FOR);
@@ -1285,50 +1344,55 @@ public class PredictorPlugin extends ComponentPlugin {
         AspectValue av1 = AspectValue.newAspectValue(AspectType.QUANTITY, new Double(v.elementAt(5).toString()).doubleValue());
         Preference np1 = pf.newPreference(av1.getAspectType(), ScoringFunction.createStrictlyAtValue(av1));
         nt.addPreference(np1);
-
-        Asset as = new Asset();
+        
+        String sclass = stringPlay(supplyclass);
+        Asset asset = getAsset1(v);
+        /*Asset as = pf.createAsset(sclass);
         NewSupplyClassPG pg = (NewSupplyClassPG) pf.createPropertyGroup(SupplyClassPG.class);
-        pg.setSupplyClass(supplyclass);
+        pg.setSupplyClass(sclass);
         pg.setSupplyType(supplyclass);
-        as.setPropertyGroup(pg);
+        as.setPropertyGroup(pg); */
 
-        ldms = (LDMService) getBindingSite().getServiceBroker().getService(this, LDMService.class,
+        /*ldms = (LDMService) getBindingSite().getServiceBroker().getService(this, LDMService.class,
                 new ServiceRevokedListener() {
                     public void serviceRevoked(ServiceRevokedEvent re) {
                         if(LDMService.class.equals(re.getService()))
                             ldms = null;
                     }
                     });
-                    
-        as.registerWithLDM(ldms.getLDM());
-        getBindingSite().getServiceBroker().releaseService(this, LDMService.class, ldms);
 
-        UID uid = as.getUID();
+        as.registerWithLDM(ldms.getLDM());
+        getBindingSite().getServiceBroker().releaseService(this, LDMService.class, ldms); */
+        if(asset!= null){
+        UID uid = asset.getUID();
+            //System.out.println("uid is "+uid.toString()+ " cluster "+cluster);
         long id = uid.getId();
         UID newuid = new UID(v.elementAt(1).toString(),id);
-        as.setUID(newuid);
+            //System.out.println("Newuid is "+newuid.toString()+ " cluster "+cluster);
+        asset.setUID(newuid);
+             //System.out.println("Setuid is "+asset.getUID().toString()+ " cluster "+cluster);
+  		//NewTypeIdentificationPG ntipg = (NewTypeIdentificationPG) as.getTypeIdentificationPG();
+        //ntipg.setNomenclature(v.elementAt(6).toString());
 
-  		NewTypeIdentificationPG ntipg = (NewTypeIdentificationPG) as.getTypeIdentificationPG();
-        ntipg.setNomenclature(v.elementAt(6).toString());
-
-        nt.setDirectObject(as);
+        nt.setDirectObject(asset);
+        }
 
 		return nt;
     }
 
-    public void disposition(NewTask newtask) {
-    	PlanningFactory pf = (PlanningFactory) myDomainService.getFactory("planning");
-    	AspectValue av_array[] = new AspectValue[2];
-    	av_array[0] = AspectValue.newAspectValue(AspectType.END_TIME,
-                                        TaskUtils.getPreference(newtask, AspectType.END_TIME));
-    	av_array[1] = AspectValue.newAspectValue(AspectType.QUANTITY,
-                                        TaskUtils.getPreference(newtask, AspectType.QUANTITY));
-    	AllocationResult dispAR =
-        pf.newAllocationResult(1.0, false, av_array);
-    	Disposition disp = pf.createDisposition(newtask.getPlan(), newtask, dispAR);
-    	myBS.publishAdd(disp);
+//     public void disposition(NewTask newtask) {
+//     	PlanningFactory pf = (PlanningFactory) myDomainService.getFactory("planning");
+//     	AspectValue av_array[] = new AspectValue[2];
+//     	av_array[0] = AspectValue.newAspectValue(AspectType.END_TIME,
+//                                         TaskUtils.getPreference(newtask, AspectType.END_TIME));
+//     	av_array[1] = AspectValue.newAspectValue(AspectType.QUANTITY,
+//                                         TaskUtils.getPreference(newtask, AspectType.QUANTITY));
+//     	AllocationResult dispAR =
+//         pf.newAllocationResult(1.0, false, av_array);
+//     	Disposition disp = pf.createDisposition(newtask.getPlan(), newtask, dispAR);
+//     	myBS.publishAdd(disp);
 	
-	}
+// 	}
 
     public void setAlgorithmSelection(String radio_selection) {
     String content1 = radio_selection;
@@ -1344,6 +1408,19 @@ public class PredictorPlugin extends ComponentPlugin {
            selectedPredictor = KalmanFilter;
            myLoggingService.shout("Predictor with Kalman Filter");
       }
+    }
+    
+    public String stringPlay(String a){
+        if(a.equalsIgnoreCase("PackagedPol")==true){
+            a = "PackagedPOL";
+            return a;
+        }
+        if(a.equalsIgnoreCase("Subsistence")==true){
+            a = "ClassISubsistence";
+            return a;
+        }
+        else
+            return a;
     }
 
     private String cluster;
@@ -1373,6 +1450,9 @@ public class PredictorPlugin extends ComponentPlugin {
     double count = 0;
     private PrintWriter pr;
 
+//     private final Verb forecastVerb = Verb.getVerb("ForecastDemand");
+    //private final Verb forecastVerb = org.cougaar.logistics.ldm.Constants.Verb.Supply;
+
     private final int MovingAverage = 1;
     private final int SupportVectorMachine = 2;
     private final int KalmanFilter = 3;
@@ -1389,6 +1469,7 @@ public class PredictorPlugin extends ComponentPlugin {
 
 	private NewTask publishedTasksOfAmmo = null;
 	private NewTask publishedTasksOfBulk = null;
+	private Hashtable asset_list = new Hashtable();
 
     boolean changed = false;
     int today = -1, startingday = 100000;
