@@ -1,0 +1,550 @@
+<?xml version="1.0"?>
+<!DOCTYPE techspec PUBLIC "" "./techspec.dtd">
+<techspec>
+    <!--  Relationships and roles. Role id values must be unique.   -->
+
+    <relationship relationship_id="CPY_C2_Relationship" name="CPE CPY C2 Relationship">
+        <roleinfo role_id="CPYSuperior" cardinality="1"></roleinfo>
+        <roleinfo role_id="CPYEntity" cardinality="N"></roleinfo>
+    </relationship>
+
+    <relationship relationship_id="BN_C2_Relationship" name="CPE CPY C2 Relationship">
+        <roleinfo role_id="BNSuperior" cardinality="1"></roleinfo>
+        <roleinfo role_id="BNEntity" cardinality="N"></roleinfo>
+    </relationship>
+
+    <relationship relationship_id="CPESupplyRelationship" name="CPE Supply Relationship">
+        <roleinfo role_id="CPESupplier" cardinality="N"></roleinfo>
+        <roleinfo role_id="CPECustomer" cardinality="N"></roleinfo>
+    </relationship>
+
+    <relationship relationship_id="BDEEntity" name="BDE Self">
+        <roleinfo role_id="BDEEntity" cardinality="1"></roleinfo>
+    </relationship>
+
+
+    <!--    <relationship relationship_id="BN_C2_Relationship" name="CPE BN C2 Relationship">-->
+    <!--        <roleinfo role_id="CPYSuperior" cardinality="1"></roleinfo>-->
+    <!--        <roleinfo role_id="CPYSubordinate" cardinality="N"></roleinfo>-->
+    <!--    </relationship>-->
+
+    <!-- Notes: Although the state machines presented have multiple states (Start/Configured/Running), from a modelling-->
+    <!-- perspective, we need to only consider the simple case, the running state.  This allows one plugin to play multiple   -->
+    <!-- roles by making all the running states equivalent.-->
+
+    <!--    Company Entity Role-->
+    <rolespec role_id="CPYEntity">
+        <states>
+            <state state_id="Start"></state>
+            <state state_id="Configured"></state>
+            <state state_id="Running"></state>
+            <state state_id="Stopped"></state>
+        </states>
+        <actions>
+            <action action_name="ConfigureAction" method_name="DoConfigureAction" from_state="Start" to_state="Configured">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.ConfigureMessage"></message_spec>
+                </action_input>
+            </action>
+            <action action_name="StartAction" method_name="DoStartAction" from_state="Start" to_state="Running">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.StartMessage"></message_spec>
+                </action_input>
+                <action_outputs>
+                    <timer_action type="Start" timer_id="UpdateWorldStatusTimer"></timer_action>
+                </action_outputs>
+            </action>
+            <action action_name="UpdateWorldStatusAction" method_name="DoUpdateWorldStatusAction" from_state="Running" to_state="Running">
+                <action_input>
+                    <timer_event_spec timer_id="UpdateWorldStatusTimer"></timer_event_spec>
+                </action_input>
+                <action_outputs>
+                    <message_action dest_role_id="CPYSuperior" type="exactly_one">
+                        <message_spec classname="org.cougaar.cpe.agents.messages.WorldStateUpdateMessage"></message_spec>
+                    </message_action>
+                </action_outputs>
+            </action>
+        </actions>
+        <timers>
+            <timer_spec timer_id="UpdateWorldStatusTimer" periodic="True"></timer_spec>
+        </timers>
+    </rolespec>
+
+    <rolespec role_id="CPYSuperior">
+        <states>
+            <state state_id="Start"></state>
+            <state state_id="Configured"></state>
+            <state state_id="Running"></state>
+            <state state_id="Stopped"></state>
+        </states>
+        <actions>
+            <action action_name="ConfigureAction" method_name="DoConfigureAction" from_state="Start" to_state="Configured">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.ConfigureMessage"></message_spec>
+                </action_input>
+            </action>
+            <action action_name="StartAction" method_name="DoStartAction" from_state="Start" to_state="Running">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.StartMessage"></message_spec>
+                </action_input>
+                <action_outputs>
+                    <timer_action type="Start" timer_id="UpdateWorldStatusTimer"></timer_action>
+                </action_outputs>
+            </action>
+            <action action_name="PlanManuever" method_name="DoPlanAction" from_state="Running" to_state="Running">
+                <action_input>
+                    <timer_event_spec timer_id="ReplanTimer"></timer_event_spec>
+                </action_input>
+                <action_outputs>
+                    <message_action dest_role_id="CPYSubordinate" type="one_to_each">
+                        <message_spec classname="org.cougaar.cpe.agents.messages.ManueverPlanMessage"></message_spec>
+                    </message_action>
+                </action_outputs>
+            </action>
+        </actions>
+        <timers>
+            <timer_spec timer_id="ReplanTimer" periodic="True"></timer_spec>
+        </timers>
+    </rolespec>
+
+    <!--    This is the BN role to implemented by all BN plugins.-->
+    <rolespec role_id="BNEntity">
+        <states>
+            <state state_id="Start"></state>
+            <state state_id="Configured"></state>
+            <state state_id="Running"></state>
+            <state state_id="Stopped"></state>
+        </states>
+        <actions>
+            <action action_name="ConfigureAction" method_name="DoConfigureAction" from_state="Start" to_state="Configured">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.ConfigureMessage"></message_spec>
+                </action_input>
+            </action>
+            <action action_name="StartAction" method_name="DoStartAction" from_state="Start" to_state="Running">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.StartMessage"></message_spec>
+                </action_input>
+                <action_outputs>
+                    <timer_action type="Start" timer_id="UpdateWorldStatusTimer"></timer_action>
+                </action_outputs>
+            </action>
+            <action action_name="UpdateWorldState" method_name="DoUpdateWorldStatusAction" from_state="Running" to_state="Running">
+                <action_input>
+                    <timer_event_spec timer_id="UpdateWorldStatusTimer"></timer_event_spec>
+                </action_input>
+                <action_outputs>
+                    <message_action dest_role_id="BNSuperior" type="exactly_one">
+                        <message_spec classname="org.cougaar.cpe.agents.messages.WorldStateUpdateMessage"></message_spec>
+                    </message_action>
+                </action_outputs>
+            </action>
+        </actions>
+        <timers>
+            <timer_spec timer_id="UpdateWorldStatusTimer" periodic="True"></timer_spec>
+        </timers>
+    </rolespec>
+
+    <!--    This corresponds to BDE agents and any other agents which can directly control the BN agents.-->
+    <rolespec role_id="BNSuperior">
+        <states>
+            <state state_id="Start"></state>
+            <state state_id="Configured"></state>
+            <state state_id="Running"></state>
+            <state state_id="Stopped"></state>
+        </states>
+        <actions>
+            <action action_name="ConfigureAction" method_name="DoConfigureAction" from_state="Start" to_state="Configured">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.ConfigureMessage"></message_spec>
+                </action_input>
+            </action>
+            <action action_name="StartAction" method_name="DoStartAction" from_state="Start" to_state="Running">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.StartMessage"></message_spec>
+                </action_input>
+                <action_outputs>
+                    <timer_action type="Start" timer_id="UpdateWorldStatusTimer"></timer_action>
+                </action_outputs>
+            </action>
+            <action action_name="ProcessReplanTimer" method_name="DoProcessReplanTimer" from_state="Running" to_state="Running">
+                <action_input>
+                    <timer_event_spec timer_id="ReplanTimer"></timer_event_spec>
+                </action_input>
+            </action>
+            <action action_name="ProcessUpdateMessage" method_name="processWorldStateUpdateMessage" from_state="Running" to_state="Running">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.UnitStatusUpdateMessage"></message_spec>
+                </action_input>
+            </action>
+        </actions>
+        <timers>
+            <timer_spec timer_id="ReplanTimer" periodic="True"></timer_spec>
+        </timers>
+    </rolespec>
+
+    <!--***************************************************-->
+    <!--  PLUGIN DEFINITIONS                               -->
+    <!--    These plugins implement the role defined above.-->
+
+    <plugin_spec>
+        <component_name>
+            CPYAgentPlugin
+        </component_name>
+        <class_name>
+            org.cougaar.cpe.agents.plugin.UnitAgentPlugin
+        </class_name>
+        <role_impl_spec role_id="CPYEntity">
+            <operating_modes>
+                <operating_mode operating_mode_id="WorldStateUpdatePeriod">
+                    <omcrangelist>
+                        <omcpoint value="10000"></omcpoint><omcpoint value="15000"></omcpoint>
+                        <omcpoint value="20000"></omcpoint><omcpoint value="25000"></omcpoint>
+                        <omcpoint value="30000"></omcpoint><omcpoint value="35000"></omcpoint>
+                    </omcrangelist>
+                    <omcpoint value="10000"></omcpoint>
+                </operating_mode>
+            </operating_modes>
+            <action_impls>
+                <action_impl_info action_id="UpdateWorldStatusAction">
+                    <measurements>
+                        <measurement_spec action_id="UpdateWorldStatusAction" type="StartTimeStamp"></measurement_spec>
+                    </measurements>
+                    <action_model_table>
+                        <action_model_entry>
+                            <action_outputs>
+                                <cpu_action>
+                                    <tconstant>
+                                        <units type="JavaInstructionUnits"></units>
+                                        <!--This is a "synthetic" settings for the amount of time to complete a world state update.-->
+                                        <value>1000</value>
+                                    </tconstant>
+                                </cpu_action>
+                            </action_outputs>
+                        </action_model_entry>
+                    </action_model_table>
+                </action_impl_info>
+            </action_impls>
+        </role_impl_spec>
+    </plugin_spec>
+
+    <!-- The C2AgentPlugin implements two roles, the CPYSuperior and BNEntity roles.  Since this is the case,
+        the states and actions for the two roles must be identically
+        mapped (e.g. with the same names and same next states.   A more rational approach would be to have a plugin per role and to
+        declare what objects are published to BB and which plugins can create, change, and delete these objects. -->
+    <plugin_spec>
+        <component_name>
+            BNAgentPlugin
+        </component_name>
+        <class_name>
+            org.cougaar.cpe.agents.plugin.C2AgentPlugin
+        </class_name>
+        <role_impl_spec role_id="BNEntity">
+            <operating_modes>
+                <operating_mode operating_mode_id="UpdateStatePeriod">
+                    <omcrangelist>
+                        <omcpoint value="10000"></omcpoint>
+                        <omcpoint value="15000"></omcpoint>
+                        <omcpoint value="20000"></omcpoint>
+                        <omcpoint value="25000"></omcpoint>
+                        <omcpoint value="30000"></omcpoint>
+                        <omcpoint value="35000"></omcpoint>
+                        <omcpoint value="40000"></omcpoint>
+                        <omcpoint value="45000"></omcpoint>
+                    </omcrangelist>
+                    <omcpoint value="30000"></omcpoint>
+                </operating_mode>
+            </operating_modes>
+            <action_impls>
+                <action_impl_info action_id="UpdateWorldState">
+                    <action_model_table>
+                        <action_model_entry>
+                            <action_outputs>
+                                <cpu_action>
+                                    <!--                              This value is synthetic and hence configurable.-->
+                                    <tconstant>
+                                        <units type="JavaInstructionUnits"></units>
+                                        <value>1000</value>
+                                    </tconstant>
+                                </cpu_action>
+                            </action_outputs>
+                        </action_model_entry>
+                    </action_model_table>
+                </action_impl_info>
+            </action_impls>
+        </role_impl_spec>
+        <role_impl_spec role_id="CPYSuperior">
+            <operating_modes>
+                <operating_mode operating_mode_id="BNPlanningDepth">
+                    <omcrangelist>
+                        <omcpoint value="3"></omcpoint>
+                        <omcpoint value="4"></omcpoint>
+                        <omcpoint value="5"></omcpoint>
+                        <omcpoint value="6"></omcpoint>
+                        <omcpoint value="7"></omcpoint>
+                        <omcpoint value="8"></omcpoint>
+                        <omcpoint value="9"></omcpoint>
+                    </omcrangelist>
+                    <omcpoint value="5"></omcpoint>
+                </operating_mode>
+                <operating_mode operating_mode_id="BNPlanningBreadth">
+                    <omcrangelist>
+                        <omcpoint value="10"></omcpoint>
+                        <omcpoint value="20"></omcpoint>
+                        <omcpoint value="30"></omcpoint>
+                        <omcpoint value="40"></omcpoint>
+                        <omcpoint value="50"></omcpoint>
+                        <omcpoint value="60"></omcpoint>
+                        <omcpoint value="70"></omcpoint>
+                        <omcpoint value="80"></omcpoint>
+                    </omcrangelist>
+                    <omcpoint value="40"></omcpoint>
+                </operating_mode>
+                <operating_mode operating_mode_id="PlanningDelay">
+                    <omcrangelist>
+                        <omcpoint value="5000"></omcpoint>
+                        <omcpoint value="10000"></omcpoint>
+                        <omcpoint value="15000"></omcpoint>
+                        <omcpoint value="20000"></omcpoint>
+                        <omcpoint value="25000"></omcpoint>
+                    </omcrangelist>
+                    <omcpoint value="10000"></omcpoint>
+                </operating_mode>
+            </operating_modes>
+            <action_impls>
+                <action_impl_info action_id="PlanManuever">
+                    <!-- Fully automated measurements do not have to be configured here. Only measurements which are synthetic, e.g. -->
+                    <!-- generated by code needs to be declared within the actual action_impl_info entity.  -->
+                    <measurements>
+                        <measurement_spec action_id="PlanManuever" type="Delay" measurement_point_id="PlanManueverDelay"></measurement_spec>
+                    </measurements>
+                    <!--  This is a "dumb" action model entry. It identifies the dependences on operating modes and role specs, but -->
+                    <!-- Does not specify the actual resource consumption values.  We need to be able to derive a more appropriate mapping.-->
+                    <action_model_table>
+                        <action_model_entry>
+                            <operating_mode_infos>
+                                <operating_mode_info operating_mode_id="BNPlanningBreadth">
+                                    <omcrangelist>
+                                        <omcrange lower="0" upper="PlusInf"></omcrange>
+                                    </omcrangelist>
+                                </operating_mode_info>
+                                <operating_mode_info operating_mode_id="BNPlanningDepth">
+                                    <omcrangelist>
+                                        <omcrange lower="0" upper="PlusInf"></omcrange>
+                                    </omcrangelist>
+                                </operating_mode_info>
+                            </operating_mode_infos>
+                            <!-- The planning time is depending on the number of subordinate roles attached. -->
+                            <role_dependencies>
+                                <role_dependency role_id="CPYEntity" type="Cardinality"></role_dependency>
+                            </role_dependencies>
+                            <action_outputs>
+                                <cpu_action>
+                                    <tvariable>
+                                        <units type="JavaInstructionUnits"></units>
+                                        <constraints>
+                                            <omcrangelist>
+                                                <omcrange lower="0" upper="PlusInf"></omcrange>
+                                            </omcrangelist>
+                                        </constraints>
+                                    </tvariable>
+                                </cpu_action>
+                            </action_outputs>
+                        </action_model_entry>
+                    </action_model_table>
+                </action_impl_info>
+            </action_impls>
+        </role_impl_spec>
+    </plugin_spec>
+
+    <plugin_spec>
+        <component_name>BDEAgentPlugin</component_name>
+        <class_name>
+            org.cougaar.cpe.agents.plugin.BDEAgentPlugin
+        </class_name>
+        <role_impl_spec role_id="BNSuperior">
+            <operating_modes>
+                <operating_mode operating_mode_id="BDEPlanningBreadth">
+                    <omcrangelist>
+                        <omcpoint value="30"></omcpoint>
+                        <omcpoint value="50"></omcpoint>
+                        <omcpoint value="70"></omcpoint>
+                        <omcpoint value="90"></omcpoint>
+                        <omcpoint value="100"></omcpoint>
+                        <omcpoint value="120"></omcpoint>
+                    </omcrangelist>
+                </operating_mode>
+                <operating_mode operating_mode_id="BDEPlanningDepth">
+                    <omcrangelist>
+                        <omcpoint value="4"></omcpoint><omcpoint value="5"></omcpoint>
+                        <omcpoint value="6"></omcpoint><omcpoint value="7"></omcpoint>
+                        <omcpoint value="8"></omcpoint><omcpoint value="9"></omcpoint>
+                        <omcpoint value="10"></omcpoint><omcpoint value="11"></omcpoint>
+                    </omcrangelist>
+                </operating_mode>
+            </operating_modes>
+            <action_impls>
+                <action_impl_info action_id="ProcessReplanTimer">
+                    <measurements>
+                        <measurement_spec action_id="PlanManuever" type="Delay" measurement_point_id="PlanManueverDelay"></measurement_spec>
+                    </measurements>
+                    <!--  This is a "dumb" action model entry. It identifies the dependences on operating modes and role specs, but -->
+                    <!-- Does not specify the actual resource consumption values.  We need to be able to derive a more appropriate mapping.-->
+                    <action_model_table>
+                        <action_model_entry>
+                            <operating_mode_infos>
+                                <operating_mode_info operating_mode_id="BDEPlanningBreadth">
+                                    <omcrangelist>
+                                        <omcrange lower="0" upper="PlusInf"></omcrange>
+                                    </omcrangelist>
+                                </operating_mode_info>
+                                <operating_mode_info operating_mode_id="BDEPlanningDepth">
+                                    <omcrangelist>
+                                        <omcrange lower="0" upper="PlusInf"></omcrange>
+                                    </omcrangelist>
+                                </operating_mode_info>
+                            </operating_mode_infos>
+                            <!-- The planning time is depending on the number of subordinate roles attached. -->
+                            <role_dependencies>
+                                <role_dependency role_id="BNEntity" type="Cardinality"></role_dependency>
+                            </role_dependencies>
+                            <action_outputs>
+                                <cpu_action>
+                                    <tvariable>
+                                        <units type="JavaInstructionUnits"></units>
+                                        <constraints>
+                                            <omcrangelist>
+                                                <omcrange lower="0" upper="PlusInf"></omcrange>
+                                            </omcrangelist>
+                                        </constraints>
+                                    </tvariable>
+                                </cpu_action>
+                            </action_outputs>
+                        </action_model_entry>
+                    </action_model_table>
+                </action_impl_info>
+            </action_impls>
+        </role_impl_spec>
+    </plugin_spec>
+
+<!-- **************************************************   -->
+<!--    Agent definitions.                                -->
+
+
+    <agent_spec agent_id="BDE1" message_address="BDE1">
+        <plugin_instance>
+            <component_name>BDEAgentPlugin</component_name>
+            <class_name>
+                org.cougaar.cpe.agents.plugin.BDEAgentPlugin
+            </class_name>
+            <role_instance_map>
+                <role_instance_info role_id="BNSuperior" relationship_instance_id="R1"></role_instance_info>
+<!--                //role_id="BNSuperior" relationship_instance_id="R1">-->
+            </role_instance_map>
+        </plugin_instance>
+    </agent_spec>
+
+    <agent_spec agent_id="BN1" message_address="BN1">
+        <plugin_instance>
+            <component_name>BDEAgentPlugin</component_name>
+            <class_name>
+                org.cougaar.cpe.agents.plugin.C2AgentPlugin
+            </class_name>
+            <role_instance_map>
+                <role_instance_info role_id="BNEntity" relationship_instance_id="R1"></role_instance_info>
+                <role_instance_info role_id="CPYSuperior" relationship_instance_id="R2"></role_instance_info>
+            </role_instance_map>
+        </plugin_instance>
+    </agent_spec>
+
+    <agent_spec agent_id="BN2" message_address="BN2">
+        <plugin_instance>
+            <component_name>BDEAgentPlugin</component_name>
+            <class_name>
+                org.cougaar.cpe.agents.plugin.C2AgentPlugin
+            </class_name>
+            <role_instance_map>
+                <role_instance_info role_id="BNEntity" relationship_instance_id="R1"></role_instance_info>
+                <role_instance_info role_id="CPYSuperior" relationship_instance_id="R3"></role_instance_info>
+            </role_instance_map>
+        </plugin_instance>
+    </agent_spec>
+
+    <agent_spec agent_id="BN3" message_address="BN3">
+        <plugin_instance>
+            <component_name>BDEAgentPlugin</component_name>
+            <class_name>
+                org.cougaar.cpe.agents.plugin.C2AgentPlugin
+            </class_name>
+            <role_instance_map>
+                <role_instance_info role_id="BNEntity" relationship_instance_id="R1"></role_instance_info>
+                <role_instance_info role_id="CPYSuperior" relationship_instance_id="R4"></role_instance_info>
+            </role_instance_map>
+        </plugin_instance>
+    </agent_spec>
+
+    <agent_spec agent_id="CPY1" message_address="CPY1">
+        <plugin_instance>
+            <component_name>CPYAgentPlugin</component_name>
+            <class_name>
+                org.cougaar.cpe.agents.plugin.UnitAgentPlugin
+            </class_name>
+            <role_instance_map>
+                <role_instance_info role_id="CPYEntity" relationship_instance_id="R2"></role_instance_info>
+            </role_instance_map>
+        </plugin_instance>
+    </agent_spec>
+    <agent_spec agent_id="CPY2" message_address="CPY2">
+        <plugin_instance>
+            <component_name>CPYAgentPlugin</component_name>
+            <class_name>
+                org.cougaar.cpe.agents.plugin.UnitAgentPlugin
+            </class_name>
+            <role_instance_map>
+                <role_instance_info role_id="CPYEntity" relationship_instance_id="R2"></role_instance_info>
+            </role_instance_map>
+        </plugin_instance>
+    </agent_spec>
+    <agent_spec agent_id="CPY3" message_address="CPY3">
+        <plugin_instance>
+            <component_name>CPYAgentPlugin</component_name>
+            <class_name>
+                org.cougaar.cpe.agents.plugin.UnitAgentPlugin
+            </class_name>
+            <role_instance_map>
+                <role_instance_info role_id="CPYEntity" relationship_instance_id="R2"></role_instance_info>
+            </role_instance_map>
+        </plugin_instance>
+    </agent_spec>
+
+<!--    The rest of the CPY entities are similar and not specified here.-->
+
+    <relationship_instance relationship_id="BN_C2_Relationship" relationship_instance_id="R1" >
+        <agent_instance_info agent_id="BDE1" role_id="BNSuperior"></agent_instance_info>
+        <agent_instance_info agent_id="BN1" role_id="BNEntity"></agent_instance_info>
+        <agent_instance_info agent_id="BN2" role_id="BNEntity"></agent_instance_info>
+        <agent_instance_info agent_id="BN3" role_id="BNEntity"></agent_instance_info>
+    </relationship_instance>
+
+    <relationship_instance relationship_id="CPY_C2_Relationship" relationship_instance_id="R2" >
+        <agent_instance_info agent_id="BN1" role_id="CPYSuperior"></agent_instance_info>
+        <agent_instance_info agent_id="CPY1" role_id="CPYEntity"></agent_instance_info>
+        <agent_instance_info agent_id="CPY2" role_id="CPYEntity"></agent_instance_info>
+        <agent_instance_info agent_id="CPY3" role_id="CPYEntity"></agent_instance_info>
+    </relationship_instance>
+
+    <relationship_instance relationship_id="CPY_C2_Relationship" relationship_instance_id="R3" >
+        <agent_instance_info agent_id="BN2" role_id="CPYSuperior"></agent_instance_info>
+        <agent_instance_info agent_id="CPY4" role_id="CPYEntity"></agent_instance_info>
+        <agent_instance_info agent_id="CPY5" role_id="CPYEntity"></agent_instance_info>
+        <agent_instance_info agent_id="CPY6" role_id="CPYEntity"></agent_instance_info>
+    </relationship_instance>
+
+    <relationship_instance relationship_id="CPY_C2_Relationship" relationship_instance_id="R4" >
+        <agent_instance_info agent_id="BN2" role_id="CPYSuperior"></agent_instance_info>
+        <agent_instance_info agent_id="CPY7" role_id="CPYEntity"></agent_instance_info>
+        <agent_instance_info agent_id="CPY8" role_id="CPYEntity"></agent_instance_info>
+        <agent_instance_info agent_id="CPY9" role_id="CPYEntity"></agent_instance_info>
+    </relationship_instance>
+
+</techspec>

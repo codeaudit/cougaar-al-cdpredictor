@@ -1,12 +1,16 @@
-<?xml version="1.0"?>
- <!DOCTYPE techspec [
+<!--<?xml version="1.0" encoding="UTF-8"?>-->
  <!ELEMENT units EMPTY>
 
- <!-- Building blocks -->
- <!ATTLIST units type (Milliseconds | Seconds | JavaInstructionUnits | Bytes | Probability | Dimensionless) #REQUIRED>
+ <!-- Build in Unit definitions -->
+ <!ATTLIST units type (Milliseconds | Seconds | JavaInstructionUnits | Bytes | Probability | Dimensionless | Qualitative) #REQUIRED>
  <!ELEMENT value (#PCDATA) >
 
- <!ELEMENT omcrangelist (omcpoint | omcrange)+>
+<!-- An ordered set of symbolic values.  For example ( Low, Medium, High)  -->
+ <!ELEMENT ordered_set ( value+ ) >
+ <!ATTLIST ordered_set ordered_set_name CDATA #REQUIRED>
+
+ <!-- Operating model related information. -->
+ <!ELEMENT omcrangelist (omcpoint | omcrange | omcpointlist)+>
  <!ELEMENT omcpoint EMPTY>
  <!ATTLIST omcpoint value CDATA #REQUIRED>
  <!ELEMENT omcrange EMPTY>
@@ -18,102 +22,163 @@
  <!ELEMENT tvariable ( units, constraints, value? )>
  <!ELEMENT constraints ( omcrangelist )>
 
- <!ELEMENT plugin_spec (component_name, class_name, description?, roleimpl? ) >
+ <!-- Classes, componets and names -->
+
  <!ELEMENT component_name (#PCDATA) >
- <!ELEMENT class_name (#PCDATA)>
- <!ELEMENT parent (#PCDATA) >
- <!ELEMENT roleimpl (#PCDATA) >
+ <!ELEMENT class_name (#PCDATA) >
 
 <!-- <!ATTLIST techspec component_type ( Plugin | Agent | Node | Host | Link ) #REQUIRED >
 <!ATTLIST techspec layer ( Application | Network | Execution ) #REQUIRED > -->
 
  <!-- Relationships -->
  <!ELEMENT relationship ( roleinfo+ )>
- <!ATTLIST relationship relationship_id IDREF #REQUIRED
+ <!ATTLIST relationship relationship_id ID #REQUIRED
                         name CDATA #REQUIRED>
  <!ELEMENT roleinfo EMPTY>
 <!-- The id of the role is given by role_id (See role_id attribute of the rolespec below-->
- <!ATTLIST roleinfo role_id IDREF #REQUIRED
+ <!ATTLIST roleinfo role_id CDATA #REQUIRED
                     cardinality CDATA #REQUIRED>
 
 <!--     Role specs -->
- <!ELEMENT rolespec ( states, actions )>
+ <!ELEMENT rolespec ( states, actions, timers? )>
  <!ATTLIST rolespec role_id ID #REQUIRED>
- <!ATTLIST rolespec relationship_id IDREF #REQUIRED>
+<!-- <!ATTLIST rolespec relationship_id IDREF #REQUIRED>-->
  <!ELEMENT actions ( action* )>
  <!ELEMENT states ( state* )>
+ <!ELEMENT timers ( timer_spec*)>
 
 <!-- States-->
  <!ELEMENT state EMPTY >
- <!ATTLIST state state_id ID #REQUIRED>
+ <!ATTLIST state state_id CDATA #REQUIRED>
 
-<!--     Action specs -->
+<!--     Action specs.  The inputs to an action and the outputs from an action are fixed.  action_outputs
+    can be non-deterministic or can vary between multiple invocations in the actual implementation.  Currently,
+    we assume an entirely determinstic output, though non-deterministic tech specs may be accommodated in the future.-->
 
- <!ELEMENT action ( condition?, action_input, action_output )>
+ <!ELEMENT action ( condition?, action_input, action_outputs? )>
  <!ATTLIST action action_name CDATA #REQUIRED
                   method_name CDATA #REQUIRED
-                  from_state IDREF #REQUIRED
-                  to_state IDREF #REQUIRED>
+                  from_state CDATA #REQUIRED
+                  to_state CDATA #REQUIRED>
 
  <!ELEMENT condition (#PCDATA)>
  <!ELEMENT action_input ( timer_event_spec | message_spec )+ >
- <!ELEMENT action_output ( timer_action | message_action | cpu_action | delay_action )+ >
+ <!ELEMENT action_outputs ( timer_action | message_action | cpu_action | delay_action )* >
 
-<!-- A typed message specification.  Used to specify matching types of messages. -->
+<!-- A typed message specification.  Used to specify matching types of messages that are acceptable as
+ inputs to messages. -->
  <!ELEMENT message_spec (matching_predicate?) >
  <!ATTLIST message_spec classname CDATA #REQUIRED>
  <!ELEMENT matching_predicate (#PCDATA)>
 
  <!ELEMENT timer_spec EMPTY>
- <!ATTLIST timer_spec timer_id ID #REQUIRED
-                     periodic ( True | False ) #REQUIRED
-                     delay_value CDATA #REQUIRED >
+ <!ATTLIST timer_spec timer_id CDATA #REQUIRED
+                      periodic ( True | False ) #REQUIRED
+                      correct_skew ( True | False ) #IMPLIED
+                      delay_value CDATA #IMPLIED>
 
  <!ELEMENT timer_event_spec EMPTY>
- <!ATTLIST timer_event_spec timer_id IDREF #REQUIRED>
+ <!ATTLIST timer_event_spec timer_id CDATA #REQUIRED>
 
+<!--    Start, Stop or Change the timer to a different firing rate. Note that this is specified in two places,
+ in the action spec as well as in the action_model_function associated with the role_impl_spec.  This is because
+ timer rates are adjustable by the implementation.-->
  <!ELEMENT timer_action EMPTY>
  <!ATTLIST timer_action type ( Start | Stop | Change ) #REQUIRED
-                       timer_id IDREF #REQUIRED>
+                        timer_id CDATA #REQUIRED
+                        period CDATA #IMPLIED
+                        operating_mode_id CDATA #IMPLIED>
+<!-- This is obsolete.-->
 
+<!-- The target of the message action is specified by a set of role_ids and matching functions, including ONE_EXACTLY, ONE_TO_EACH, ONE_TO_ALL. -->
  <!ELEMENT message_action ( message_spec )>
- <!ATTLIST message_action role_id IDREFS #REQUIRED>
+ <!ATTLIST message_action dest_role_id CDATA #REQUIRED
+                          type ( exactly_one | one_to_each | one_to_all ) #REQUIRED>
 
  <!ELEMENT cpu_action ( tconstant | tvariable )>
-
  <!ELEMENT delay_action ( tconstant | tvariable )>
 
- <!ELEMENT operating_mode ( omcrangelist, ( omcrange | omcpoint ) ) >
- <!ATTLIST operating_mode name CDATA #REQUIRED>
+<!-- Measurements, measurement points and measurement chains. -->
 
- <!ELEMENT measurement_point EMPTY>
- <!ATTLIST measurement_point action_id IDREF #REQUIRED
-                             type ( Delay | StartTimeStamp | EndTimeStamp | Synthetic |
-                                    ChainedDelay | ChainedSynthetic ) #REQUIRED>
+<!--  This is a measurement made during an action.-->
+ <!ELEMENT measurement_spec EMPTY>
+   <!ATTLIST measurement_spec action_id CDATA #REQUIRED
+                              type ( Delay | StartTimeStamp | EndTimeStamp | Synthetic |
+                                    ChainedDelay | ChainedSynthetic ) #REQUIRED
+                              measurement_point_id CDATA #IMPLIED>
 
-<!--Role implementation.-->
-<!ELEMENT role_impl_spec ( operating_modes*, action_model_function ) >
- <!ELEMENT operating_modes ( operating_mode+ )>
- <!ELEMENT action_model_function ANY>
+<!--  We need some criteria for matching values from measurement chains.  Matching criteria include action_id, agent_id, component_id-->
+  <!ELEMENT mchain_info #CDATA >
+<!-- This is a synthetic measurement made by the action implementation and specifies either a typed value
+ expresed in units or the ordered_set_name.-->
+ <!ELEMENT declared_measurement_spec ( units | ordered_set_name ) >
 
-<!-- May be obsolete -->
-<!-- <!ELEMENT actiontype EMPTY>-->
-<!-- <!ATTLIST actiontype type (Message | Timer | CPUTime | Network | Memory) #REQUIRED>-->
+ <!-- Extract a field from the measurement chain associated with an event. -->
+<!-- <!ELEMENT chained_measurement_point ( input_info, measurement_info )>-->
+<!-- <!ELEMENT measurement_info ( measurement_type ) >-->
+<!--   <!ATTLIST measurement_info role_id IDREF #REQUIRED-->
+<!--                            action_id IDREF #REQUIRED>-->
+
+<!--Role implementation.  The implementation specifies the operating modes
+and the specific action models which augmenet the action models in the action spec.-->
+  <!ELEMENT role_impl_spec ( operating_modes?, action_impls? ) >
+    <!ATTLIST role_impl_spec role_id CDATA #REQUIRED>
+    <!ELEMENT operating_modes ( operating_mode+ )>
+
+ <!-- Each role implementation has a set of operating modes which are exported as "Agent.RoleInstanceName.OperatingModeName" -->
+ <!--Note.  The dependency between operating modes and timer values must be explicitly spelled out here if it exists.-->
+ <!ELEMENT operating_mode ( omcrangelist, ( omcrange | omcpoint )? ) >
+   <!ATTLIST operating_mode operating_mode_id CDATA #REQUIRED
+                            timer_id CDATA #IMPLIED>
+
+ <!ELEMENT action_impls ( action_impl_info+ )>
+ <!ELEMENT action_impl_info ( measurements?, ( action_model_table | action_model_function )? ) >
+ <!ATTLIST action_impl_info action_id CDATA #REQUIRED>
+ <!ELEMENT measurements ( measurement_spec+ )>
+
+  <!-- This is a simple action model function consisting of a lookup table. The operating mode_info elements must describe
+    disjoint parts of the OMC space, i.e. all elements in the entry refer to different parts of the operating mode space.-->
+ <!ELEMENT action_model_table ( action_model_entry+ ) >
+ <!ELEMENT action_model_entry (operating_mode_infos?, role_dependencies?, action_outputs) >
+
+<!--This is a placeholder for action models. In the future these will be replaced by a more general set of action-->
+<!--model functions. -->
+ <!ELEMENT action_model_function ( #PCDATA )>
+
+<!-- A reference to an existing operating mode and a set of OMC Range list values valid for the mode. -->
+ <!ELEMENT operating_mode_infos ( operating_mode_info+ )>
+ <!ELEMENT operating_mode_info ( omcrangelist? )>
+    <!ATTLIST operating_mode_info operating_mode_id CDATA #REQUIRED>
+
+<!-- A role dependency states the dependency of an action model function on another role. Cardinality indicates a
+ dependency on the number of active roles of type role_id.  Any states that if the number of active role instances is greater
+ than zero.  None indicates a dependency on no roles being active.  Right now, this is rather simplistic,  One could imagine
+ a much more complex set of role dependencies.-->
+ <!ELEMENT role_dependencies ( role_dependency+) >
+ <!ELEMENT role_dependency EMPTY>
+ <!ATTLIST role_dependency role_id CDATA #REQUIRED
+                           type ( Cardinality | Any | None ) #REQUIRED>
+
+<!--Agents are defined by a set of plug in instantiations. -->
+ <!ELEMENT plugin_spec (component_name, class_name, description?, role_impl_spec+ ) >
+ <!ELEMENT description (#PCDATA) >
+
+ <!ELEMENT agent_spec ( plugin_instance+ )>
+ <!ATTLIST agent_spec agent_id CDATA #REQUIRED message_address CDATA #REQUIRED>
+
+
+ <!ELEMENT plugin_instance ( component_name, instance_name, role_instance_map, operating_mode_infos? )>
+ <!ELEMENT role_instance_map ( role_instance_info+ ) >
+ <!ELEMENT role_instance_info EMPTY>
+ <!ATTLIST role_instance_info role_id CDATA #REQUIRED
+                              relationship_instance_id CDATA #REQUIRED>
+
+<!-- A relationship instance is a set of roles (instantiated in agents),  Under this simplified approach,
+    each agent implements only one role participating in a given relationship. -->
+ <!ELEMENT relationship_instance ( agent_instance_info+ )>
+ <!ATTLIST relationship_instance relationship_id CDATA #REQUIRED
+                                 relationship_instance_id CDATA #REQUIRED>
+ <!ELEMENT agent_instance_info>
+ <!ATTLIST agent_instance_info agent_id CDATA #REQUIRED role_id CDATA #REQUIRED>
 
  <!ELEMENT techspec ANY>
-]>
-<techspec>
-    <tconstant>
-       <units type="JavaInstructionUnits"/>
-       <value>1000</value>
-    </tconstant>
-    <tvariable>
-        <units type="Seconds"/>
-        <constraints>
-            <omcrangelist>
-                <omcrange lower="0" upper="PlusInf"/>
-            </omcrangelist>
-        </constraints>
-    </tvariable>
-
-</techspec>

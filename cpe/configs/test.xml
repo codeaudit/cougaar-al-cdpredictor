@@ -1,0 +1,356 @@
+<?xml version="1.0"?>
+ <!DOCTYPE techspec [
+ <!ELEMENT techspec ANY>
+ <!ELEMENT units EMPTY>
+
+ <!-- Building blocks -->
+ <!ATTLIST units type (Milliseconds | Seconds | JavaInstructionUnits | Bytes | Probability | Dimensionless | Qualitative) #REQUIRED>
+ <!ELEMENT value (#PCDATA) >
+
+<!-- An ordered set of symbolic values.  For example ( Low, Medium, High)  -->
+ <!ELEMENT ordered_set ( value+ ) >
+ <!ATTLIST ordered_set ordered_set_name ID #REQUIRED>
+
+ <!-- Operating model related information. -->
+ <!ELEMENT omcrangelist (omcpoint | omcrange )+>
+ <!ELEMENT omcpoint EMPTY>
+ <!ATTLIST omcpoint value CDATA #REQUIRED>
+ <!ELEMENT omcrange EMPTY>
+ <!ATTLIST omcrange lower CDATA #REQUIRED
+                    upper CDATA #REQUIRED>
+
+ <!ELEMENT tconstant ( units, value )>
+ <!-- This needs to be changed to indicate allowable values -->
+ <!ELEMENT tvariable ( units, constraints, value? )>
+ <!ELEMENT constraints ( omcrangelist )>
+
+ <!-- Classes, componets and names -->
+
+ <!ELEMENT component_name (#PCDATA) >
+ <!ELEMENT class_name (#PCDATA) >
+
+<!-- <!ATTLIST techspec component_type ( Plugin | Agent | Node | Host | Link ) #REQUIRED >
+<!ATTLIST techspec layer ( Application | Network | Execution ) #REQUIRED > -->
+
+ <!-- Relationships -->
+ <!ELEMENT relationship ( roleinfo+ )>
+ <!ATTLIST relationship relationship_id ID #REQUIRED
+                        name CDATA #REQUIRED>
+ <!ELEMENT roleinfo EMPTY>
+<!-- The id of the role is given by role_id (See role_id attribute of the rolespec below-->
+ <!ATTLIST roleinfo role_id CDATA #REQUIRED
+                    cardinality CDATA #REQUIRED>
+
+<!--     Role specs -->
+ <!ELEMENT rolespec ( states, actions, timers? )>
+ <!ATTLIST rolespec role_id ID #REQUIRED>
+<!-- <!ATTLIST rolespec relationship_id IDREF #REQUIRED>-->
+ <!ELEMENT actions ( action* )>
+ <!ELEMENT states ( state* )>
+ <!ELEMENT timers ( timer_spec*)>
+
+<!-- States-->
+ <!ELEMENT state EMPTY >
+ <!ATTLIST state state_id CDATA #REQUIRED>
+
+<!--     Action specs.  The inputs to an action and the outputs from an action are fixed.  action_outputs
+    can be non-deterministic or can vary between multiple invocations in the actual implementation.  Currently,
+    we assume an entirely determinstic output, though non-deterministic tech specs may be accommodated in the future.-->
+
+ <!ELEMENT action ( condition?, action_input, action_outputs? )>
+ <!ATTLIST action action_name CDATA #REQUIRED
+                  method_name CDATA #REQUIRED
+                  from_state CDATA #REQUIRED
+                  to_state CDATA #REQUIRED>
+
+ <!ELEMENT condition (#PCDATA)>
+ <!ELEMENT action_input ( timer_event_spec | message_spec )+ >
+ <!ELEMENT action_outputs ( timer_action | message_action | cpu_action | delay_action )* >
+
+<!-- A typed message specification.  Used to specify matching types of messages that are acceptable as
+ inputs to messages. -->
+ <!ELEMENT message_spec (matching_predicate?) >
+ <!ATTLIST message_spec classname CDATA #REQUIRED>
+ <!ELEMENT matching_predicate (#PCDATA)>
+
+ <!ELEMENT timer_spec EMPTY>
+ <!ATTLIST timer_spec timer_id ID #REQUIRED
+                      periodic ( True | False ) #REQUIRED
+                      correct_skew ( True | False ) #IMPLIED
+                      delay_value CDATA #IMPLIED>
+
+ <!ELEMENT timer_event_spec EMPTY>
+ <!ATTLIST timer_event_spec timer_id IDREF #REQUIRED>
+
+<!--    Start, Stop or Change the timer to a different firing rate. Note that this is specified in two places,
+ in the action spec as well as in the action_model_function associated with the role_impl_spec.  This is because
+ timer rates are adjustable by the implementation.-->
+ <!ELEMENT timer_action EMPTY>
+ <!ATTLIST timer_action type ( Start | Stop | Change ) #REQUIRED
+                        timer_id IDREF #REQUIRED
+                        period CDATA #IMPLIED
+                        operating_mode_id IDREF #IMPLIED>
+
+<!-- The target of the message action is specified by a set of role_ids and matching functions, including ONE_EXACTLY, ONE_TO_EACH, ONE_TO_ALL. -->
+ <!ELEMENT message_action ( message_spec )>
+ <!ATTLIST message_action dest_role_id CDATA #REQUIRED
+                          type ( exactly_one | one_to_each | one_to_all ) #REQUIRED>
+
+ <!ELEMENT cpu_action ( tconstant | tvariable )>
+ <!ELEMENT delay_action ( tconstant | tvariable )>
+
+<!-- Measurements, measurement points and measurement chains. -->
+
+<!--  This is a measurement made during an action.-->
+ <!ELEMENT measurement_spec EMPTY>
+   <!ATTLIST measurement_spec action_id CDATA #REQUIRED
+                              type ( Delay | StartTimeStamp | EndTimeStamp | Synthetic |
+                                    ChainedDelay | ChainedSynthetic ) #REQUIRED
+                              measurement_point_id CDATA #IMPLIED>
+
+<!-- This is a synthetic measurement made by the action implementation and specifies either a typed value
+ expresed in units or the ordered_set_name.-->
+ <!ELEMENT declared_measurement_spec ( units | ordered_set_name ) >
+
+ <!-- Extract a field from the measurement chain associated with an event. -->
+<!-- <!ELEMENT chained_measurement_point ( input_info, measurement_info )>-->
+<!-- <!ELEMENT measurement_info ( measurement_type ) >-->
+<!--   <!ATTLIST measurement_info role_id IDREF #REQUIRED-->
+<!--                            action_id IDREF #REQUIRED>-->
+
+<!--Role implementation.  The implementation specifies the operating modes
+and the specific action models which augmenet the action models in the action spec.-->
+  <!ELEMENT role_impl_spec ( operating_modes?, action_impls? ) >
+    <!ATTLIST role_impl_spec role_id CDATA #REQUIRED>
+    <!ELEMENT operating_modes ( operating_mode+ )>
+
+ <!-- Each role implementation has a set of operating modes which are exported as "Agent.RoleInstanceName.OperatingModeName" -->
+ <!ELEMENT operating_mode ( omcrangelist, ( omcrange | omcpoint ) ) >
+   <!ATTLIST operating_mode operating_mode_id CDATA #REQUIRED>
+
+ <!ELEMENT action_impls ( action_impl_info+ )>
+ <!ELEMENT action_impl_info ( measurements?, ( action_model_table | action_model ) ) >
+ <!ATTLIST action_impl_info action_id CDATA #REQUIRED>
+ <!ELEMENT measurements ( measurement_spec+ )>
+
+  <!-- This is a simple action model function consisting of a lookup table. The operating mode_info elements must describe
+    disjoint parts of the OMC space, i.e. all elements in the entry refer to different parts of the operating mode space.-->
+ <!ELEMENT action_model_table ( action_model_entry+ ) >
+ <!ELEMENT action_model_entry (operating_mode_infos, role_dependencies?, action_outputs) >
+
+ <!ELEMENT action_model ( #PCDATA )>
+
+<!-- A reference to an existing operating mode and a set of values within the mode. -->
+ <!ELEMENT operating_mode_infos ( operating_mode_info* )>
+ <!ELEMENT operating_mode_info ( omcrangelist? )>
+    <!ATTLIST operating_mode_info operating_mode_id CDATA #REQUIRED>
+
+<!-- A role dependency states the dependency of an action model function on another role. Cardinality indicates a
+ dependency on the number of active roles of type role_id.  Any states that if the number of active role instances is greater
+ than zero.  None indicates a dependency on no roles being active.  Right now, this is rather simplistic,  One could imagine
+ a much more complex set of role dependencies.-->
+ <!ELEMENT role_dependencies ( role_dependency+) >
+ <!ELEMENT role_dependency EMPTY>
+ <!ATTLIST role_dependency role_id CDATA #REQUIRED
+                           type ( Cardinality | Any | None ) #REQUIRED>
+
+<!--Agents are defined by a set of plug in instantiations. -->
+ <!ELEMENT plugin_spec (component_name, class_name, description?, role_impl_spec+ ) >
+ <!ELEMENT description (#PCDATA) >
+
+ <!ELEMENT agent_spec ( plugin_instance+ )>
+ <!ELEMENT plug_in_instance ( component_name, class_name, role_instance_map )>
+ <!ELEMENT role_instance_map ( role_id, role_instance_name ) >
+
+ <!ELEMENT relationship_instance (relationship_id, relationship_instance_id, agent_role_id+ )>
+
+]>
+<techspec>
+    <relationship relationship_id="CPY_C2_Relationship" name="CPE CPY C2 Relationship">
+        <roleinfo role_id="CPYSuperior" cardinality="1"></roleinfo>
+        <roleinfo role_id="CPYEntity" cardinality="N"></roleinfo>
+    </relationship>
+
+    <relationship relationship_id="BN_C2_Relationship" name="BN CPY C2 Relationship">
+        <roleinfo role_id="BNSuperior" cardinality="1"></roleinfo>
+        <roleinfo role_id="BNEntity" cardinality="N"></roleinfo>
+    </relationship>
+
+    <!--    <relationship relationship_id="BN_C2_Relationship" name="CPE BN C2 Relationship">-->
+    <!--        <roleinfo role_id="CPYSuperior" cardinality="1"></roleinfo>-->
+    <!--        <roleinfo role_id="CPYSubordinate" cardinality="N"></roleinfo>-->
+    <!--    </relationship>-->
+    <rolespec role_id="CPYEntity">
+        <states>
+            <state state_id="Start"></state>
+            <state state_id="Configured"></state>
+            <state state_id="Running"></state>
+            <state state_id="Stopped"></state>
+        </states>
+        <actions>
+            <action action_name="ConfigureAction" method_name="DoConfigureAction" from_state="Start" to_state="Configured">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.ConfigureMessage"></message_spec>
+                </action_input>
+            </action>
+            <action action_name="StartAction" method_name="DoStartAction" from_state="Start" to_state="Running">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.StartMessage"></message_spec>
+                </action_input>
+                <action_outputs>
+                    <timer_action type="Start" timer_id="UpdateWorldStatusTimer"></timer_action>
+                </action_outputs>
+            </action>
+            <action action_name="UpdateWorldStatusAction" method_name="DoUpdateWorldStatusAction" from_state="Running" to_state="Running">
+                <action_input>
+                    <timer_event_spec timer_id="UpdateWorldStatusTimer"></timer_event_spec>
+                </action_input>
+                <action_outputs>
+                    <message_action dest_role_id="CPYSuperior" type="exactly_one">
+                        <message_spec classname="org.cougaar.cpe.agents.messages.WorldStateUpdateMessage"></message_spec>
+                    </message_action>
+                </action_outputs>
+            </action>
+        </actions>
+        <timers>
+            <timer_spec timer_id="UpdateWorldStatusTimer" periodic="True"></timer_spec>
+        </timers>
+    </rolespec>
+
+    <rolespec role_id="CPYSuperior">
+        <states>
+            <state state_id="Start"></state>
+            <state state_id="Configured"></state>
+            <state state_id="Running"></state>
+            <state state_id="Stopped"></state>
+        </states>
+        <actions>
+            <action action_name="ConfigureAction" method_name="DoConfigureAction" from_state="Start" to_state="Configured">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.ConfigureMessage"></message_spec>
+                </action_input>
+            </action>
+            <action action_name="StartAction" method_name="DoStartAction" from_state="Start" to_state="Running">
+                <action_input>
+                    <message_spec classname="org.cougaar.cpe.agents.messages.StartMessage"></message_spec>
+                </action_input>
+                <action_outputs>
+                    <timer_action type="Start" timer_id="UpdateWorldStatusTimer"></timer_action>
+                </action_outputs>
+            </action>
+            <action action_name="UpdateWorldStatusAction" method_name="DoUpdateWorldStatusAction" from_state="Running" to_state="Running">
+                <action_input>
+                    <timer_event_spec timer_id="UpdateWorldStatusTimer"></timer_event_spec>
+                </action_input>
+                <action_outputs>
+                    <message_action dest_role_id="CPYSuperior" type="exactly_one">
+                        <message_spec classname="org.cougaar.cpe.agents.messages.WorldStateUpdateMessage"></message_spec>
+                    </message_action>
+                </action_outputs>
+            </action>
+            <action action_name="PlanManuever" method_name="DoPlanAction" from_state="Running" to_state="Running">
+                <action_input>
+                    <timer_event_spec timer_id="ReplanTimer"></timer_event_spec>
+                </action_input>
+                <action_outputs>
+                    <message_action dest_role_id="CPYSubordinate" type="one_to_each">
+                        <message_spec classname="org.cougaar.cpe.agents.messages.ManueverPlanMessage"></message_spec>
+                    </message_action>
+                </action_outputs>
+            </action>
+        </actions>
+        <timers>
+            <timer_spec timer_id="ReplanTimer" periodic="True"></timer_spec>
+        </timers>
+    </rolespec>
+
+    <!-- The C2AgentPlugin implements two roles, the CPYSuperior and BNEntity  Since this is the case, the states and actions for the two roles must be identically
+        mapped (e.g. with the same names and same next states.   A more rational approach would be to have a plugin per role and to
+        declare what objects are published to BB and which plugins can create, change, and delete these objects. -->
+    <plugin_spec>
+        <component_name>
+            BNPlugin
+        </component_name>
+        <class_name>
+            org.cougaar.cpe.agents.plugin.C2AgentPlugin
+        </class_name>
+        <role_impl_spec role_id="CPYSuperior">
+            <operating_modes>
+                <operating_mode operating_mode_id="BNPlanningDepth">
+                    <omcrangelist>
+                        <omcpoint value="3"></omcpoint>
+                        <omcpoint value="4"></omcpoint>
+                        <omcpoint value="5"></omcpoint>
+                        <omcpoint value="6"></omcpoint>
+                        <omcpoint value="7"></omcpoint>
+                        <omcpoint value="8"></omcpoint>
+                        <omcpoint value="9"></omcpoint>
+                    </omcrangelist>
+                    <omcpoint value="5"></omcpoint>
+                </operating_mode>
+                <operating_mode operating_mode_id="BNPlanningBreadth">
+                    <omcrangelist>
+                        <omcpoint value="10"></omcpoint>
+                        <omcpoint value="20"></omcpoint>
+                        <omcpoint value="30"></omcpoint>
+                        <omcpoint value="40"></omcpoint>
+                        <omcpoint value="50"></omcpoint>
+                        <omcpoint value="60"></omcpoint>
+                        <omcpoint value="70"></omcpoint>
+                        <omcpoint value="80"></omcpoint>
+                    </omcrangelist>
+                    <omcpoint value="40"></omcpoint>
+                </operating_mode>
+                <operating_mode operating_mode_id="PlanningDelay">
+                    <omcrangelist>
+                        <omcpoint value="5000"></omcpoint>
+                        <omcpoint value="10000"></omcpoint>
+                        <omcpoint value="15000"></omcpoint>
+                        <omcpoint value="20000"></omcpoint>
+                        <omcpoint value="25000"></omcpoint>
+                    </omcrangelist>
+                    <omcpoint value="10000"></omcpoint>
+                </operating_mode>
+            </operating_modes>
+            <action_impls>
+                <action_impl_info action_id="PlanManuever">
+                    <!--                    An action model function of type "general function"-->
+                    <measurements>
+                        <measurement_spec action_id="PlanManuever" type="Delay" measurement_point_id="PlanManueverDelay" ></measurement_spec>
+                    </measurements>
+                    <action_model_table>
+                        <action_model_entry>
+                            <operating_mode_infos>
+                                <operating_mode_info operating_mode_id="BNPlanningBreadth">
+                                    <omcrangelist>
+                                        <omcrange lower="0" upper="PlusInf"></omcrange>
+                                    </omcrangelist>
+                                </operating_mode_info>
+                                <operating_mode_info operating_mode_id="BNPlanningDepth">
+                                    <omcrangelist>
+                                        <omcrange lower="0" upper="PlusInf"></omcrange>
+                                    </omcrangelist>
+                                </operating_mode_info>
+                            </operating_mode_infos>
+                            <role_dependencies>
+                                <role_dependency role_id="CPYEntity" type="Cardinality"></role_dependency>
+                            </role_dependencies>
+                            <action_outputs>
+                                <cpu_action>
+                                    <tvariable>
+                                        <units type="JavaInstructionUnits"></units>
+                                        <constraints>
+                                            <omcrangelist>
+                                                <omcrange lower="0" upper="PlusInf"></omcrange>
+                                            </omcrangelist>
+                                        </constraints>
+                                    </tvariable>
+                                </cpu_action>
+                            </action_outputs>
+                        </action_model_entry>
+                    </action_model_table>
+                </action_impl_info>
+            </action_impls>
+        </role_impl_spec>
+    </plugin_spec>
+</techspec>
