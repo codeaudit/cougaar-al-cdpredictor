@@ -25,12 +25,13 @@ import org.cougaar.cpe.agents.messages.OpmodeNotificationMessage;
 import org.cougaar.core.adaptivity.OperatingModeCondition;
 import org.cougaar.cpe.agents.plugin.control.*;
 import org.cougaar.cpe.ui.ControlDisplayPanel;
-import org.cougaar.tools.database.test;
+import org.cougaar.tools.database.*;
 
 import java.io.File;
 //import java.io.FileInputStream;
 import java.util.*;
 import java.util.Comparator;
+import java.io.*;
 
 public class QueueingModel extends ComponentPlugin {
 	private LoggingService log;
@@ -129,7 +130,6 @@ public class QueueingModel extends ComponentPlugin {
 			}
 			//System.out.println("AVG SCORES " + scores);
 		} catch (Exception e) {
-			//throw new RuntimeException("Unexpected condition reached");
 			e.printStackTrace();
 			return null;
 		}
@@ -238,6 +238,7 @@ public class QueueingModel extends ComponentPlugin {
 
 			started = true;
 			measurement();
+			readMAU();
 		}
 
 		if (!measurementPointSubscription.getAddedCollection().isEmpty() || !measurementPointSubscription.getRemovedCollection().isEmpty()) {
@@ -257,18 +258,15 @@ public class QueueingModel extends ComponentPlugin {
 	public void measurement() {
 
 		try {
-			//last 5 minutes of history (1 sample every 5 seconds = 12 * 5 = 60 samples /min))
-			HashMap scores = getMeanScore(System.currentTimeMillis(), 60);
-			//test t = new test();
+			//last (SCORE * 5) seconds of history
+			HashMap scores = getMeanScore(System.currentTimeMillis(), SCORE);
 
 			measurementPoints.clear();
 			measurementPoints.addAll(measurementPointSubscription.getCollection());
 
-			//	Find the mean and variance
-			logger.shout("\n *------------------CONSOLIDATED MEASUREMENT DATA (last 5 or 50 seconds approx.)-------------* @" + this.getAgentIdentifier());
-			//get all delays
+
+			logger.shout("\n *MEASUREMENT DATA* @" + this.getAgentIdentifier());
 			ControlMeasurement c = consolidateDelays(false);
-			//System.out.println(c.toString());
 
 			//store the system snapshot in a measurement point
 			boolean wasOpen = true;
@@ -277,65 +275,70 @@ public class QueueingModel extends ComponentPlugin {
 				getBlackboardService().openTransaction();
 			}
 			controlMP.addMeasurement(c);
-			//System.out.println(controlMP.toString());
 			if (getBlackboardService().isTransactionOpen() && !wasOpen) {
 				getBlackboardService().closeTransaction();
 			}
 
-			//-------------------old style -----------------------------------------
-			//TODO remove later
-			//qmh.invokeMatlab(c.getTaskTimes());
-
-			//if inside qmh something is in process, the function will return a null
-			//HashMap h = qmh.getControlSet(processingDelayStats);
-
-			//a null HashMap ensures no opmodes are shipped
-			//if (h != null) {
-			//	shipControlSet(h);
-			//}
-			//TODO REMOVE: TEST FOR SENDING MESSAGES BACK TO SUBORDINATES:
-			//ControlMessage controlMsg = new ControlMessage("a", "b");
-			//controlMsg.putControlParameter((Object) "BN1Replan", new Integer(10));
-			//for (int l = 0; l < SubordinateList.length; l++)
-			//sendMessage((Serializable) controlMsg, csbr[l]);
-			//------------------end old style---------------------------------------
-
 			//if system has been purturbed control, predicted entry rate is different from last time or stress is present
 			//set timerCount as a multiple of nextTime for Control Measurement
-			if ((timerCount++ == 6) && (hasSystemBeenPurturbed())) {
+			if ((timerCount++ == CONTROL) && (hasSystemBeenPurturbed())) {
 				timerCount = 0;
-				SearchAndRank s = new SearchAndRank(c, scores);
-				ArrayList estimated_qp = s.generateQueueingParameters(c, scores);
-				//ships the ith ranking control set from the class s
-				// this control set is a hashmap of hashmaps
-				ControlMessage cm = s.getTop(1);
-				//System.out.println("Control String "+cm.toString());
 
-				if (cm != null)
-					shipControlSet(cm);
-
-				//GUI stuff	---------------------------
-				if (estimated_qp.size() > 0)
-					cdp.updateQueueingParameters(estimated_qp.subList(0, 10));
-
-				if (scores.size() > 0)
-					cdp.updateControls(scores);
-
-				wasOpen = true;
-				if (!getBlackboardService().isTransactionOpen()) {
-					wasOpen = false;
-					getBlackboardService().openTransaction();
-				}
-				if (scores != null) {
-					long currTime = System.currentTimeMillis();
-					avgScoresMP.addMeasurement(new TimePeriodMeasurement((lastTime - startTime) / 1000, (currTime - startTime) / 1000, new Double(getScore(scores))));
-					lastTime = currTime;
-				}
-				if (getBlackboardService().isTransactionOpen() && !wasOpen) {
-					getBlackboardService().closeTransaction();
+				//check if c is ok, if not get a good candidate
+				ControlMeasurement candidate_CM = null;
+				long ts = 0;
+				if (ifControlMeasurementOk(c) == false) {
+					Iterator itr = controlMP.getMeasurements(4);
+					while (itr.hasNext()) {
+						ControlMeasurement temp_CM = (ControlMeasurement) itr.next();
+						if ((ifControlMeasurementOk(temp_CM) == true) && (temp_CM.getTimeStamp() > ts)) {
+							candidate_CM = temp_CM;
+							ts = temp_CM.getTimeStamp();
+						}
+					}
+					c = candidate_CM; //c becomes the new c
+				} else {
+					candidate_CM = c; //c is ok 
 				}
 
-				//---------------------------------------
+				if (candidate_CM != null) {
+
+					SearchAndRank s = new SearchAndRank(c, scores);
+					ArrayList estimated_qp = s.generateQueueingParameters(c, scores);
+					//ships the ith ranking control set from the class s
+					// this control set is a hashmap of hashmaps
+					ControlMessage cm = s.getTop(1);
+					//System.out.println("Control String "+cm.toString());
+
+					if (cm != null)
+						shipControlSet(cm);
+
+					dc.setValues(scores, c, cm, MAU, s.getMG1(), s.getWhitt(), s.getArena(), s.getScore());
+
+					//GUI stuff	---------------------------
+					if (estimated_qp.size() > 0)
+						cdp.updateQueueingParameters(estimated_qp);
+					//cdp.updateQueueingParameters(estimated_qp.subList(0, 10));
+
+					if (scores.size() > 0)
+						cdp.updateControls(scores);
+
+					wasOpen = true;
+					if (!getBlackboardService().isTransactionOpen()) {
+						wasOpen = false;
+						getBlackboardService().openTransaction();
+					}
+					if (scores != null) {
+						long currTime = System.currentTimeMillis();
+						avgScoresMP.addMeasurement(new TimePeriodMeasurement(lastTime, currTime, new Double(getScore(scores))));
+						lastTime = currTime;
+					}
+					if (getBlackboardService().isTransactionOpen() && !wasOpen) {
+						getBlackboardService().closeTransaction();
+					}
+
+					//end GUI Stuff----------------------------				
+				}
 			}
 
 		} catch (Exception e) {
@@ -343,58 +346,93 @@ public class QueueingModel extends ComponentPlugin {
 		} finally {
 			// Reset the alarm service.
 			if (started) {
-				long nextTime = 10000; //Measurement every nextTime seconds
+				long nextTime = SAMPLE; //Measurement every nextTime seconds
 				getAlarmService().addRealTimeAlarm(new MeasurementAlarm(nextTime));
 			}
 
 		}
 	}
 
+	public void readMAU() {
+
+		int i, j, indexs, indexn;
+		String str = null;
+		String fname = "MAU.txt";
+		BufferedReader is = null;
+
+		try {
+
+			is = new BufferedReader(new FileReader(fname));
+
+			str = is.readLine();
+			indexs = 0;
+			indexn = str.indexOf('\t', 0);
+			MAU[0] = Double.parseDouble(str.substring(indexs, indexn));
+			indexs = indexn + 1;
+			indexn = str.indexOf('\t', indexn + 1);
+			MAU[1] = Double.parseDouble(str.substring(indexs, indexn));
+			indexs = indexn + 1;
+			indexn = str.indexOf('\t', indexn + 1);
+			MAU[2] = Double.parseDouble(str.substring(indexs, indexn));
+			indexs = indexn + 1;
+			indexn = str.indexOf('\t', indexn + 1);
+			MAU[3] = Double.parseDouble(str.substring(indexs, indexn));
+			indexs = indexn + 1;
+			indexn = str.indexOf('\t', indexn + 1);
+			MAU[4] = Double.parseDouble(str.substring(indexs, indexn));
+
+		} catch (IOException e) {
+		}
+
+	}
+
+	private boolean ifControlMeasurementOk(ControlMeasurement c) {
+		HashMap h = c.getOpmodes();
+		boolean check = true;
+		for (int i = 0; i < SubordinateList.length; i++) {
+			if (h.containsKey(MessageAddress.getMessageAddress(SubordinateList[i])) == false) {
+				check = false;
+				break;
+			}
+		}
+		return check;
+	}
+
 	private double getScore(HashMap scores) {
 		double score_avg = 0;
-		double[] mau = { 15, 1, -50, -5, -0.2 }; //KAVPF
+		//double[] mau = { 15, 1, -50, -5, -0.2 }; //KAVPF
 
 		String[] Kills = { "BN3.Kills", "BN1.Kills", "BN2.Kills" };
 		String[] Attritions = { "BN1.Attrition", "BN2.Attrition", "BN3.Attrition" };
 		String[] Violations = { "BN1.Violations", "BN3.Violations", "BN2.Violations" };
 		String[] Penalities = { "BN1.Penalties", "BN3.Penalties", "BN2.Penalties" };
-		String[] FuelConsumption =
-			{
-				"BN1.FuelConsumption.CPY1",
-				"BN1.FuelConsumption.CPY2",
-				"BN1.FuelConsumption.CPY3",
-				"BN2.FuelConsumption.CPY4",
-				"BN2.FuelConsumption.CPY5",
-				"BN2.FuelConsumption.CPY6",
-				"BN3.FuelConsumption.CPY7",
-				"BN3.FuelConsumption.CPY8",
-				"BN3.FuelConsumption.CPY9" };
+		String[] FuelConsumption = { "BN1.FuelConsumption.CPY1", "BN1.FuelConsumption.CPY2", "BN1.FuelConsumption.CPY3", "BN2.FuelConsumption.CPY4", "BN2.FuelConsumption.CPY5", "BN2.FuelConsumption.CPY6", "BN3.FuelConsumption.CPY7", "BN3.FuelConsumption.CPY8", "BN3.FuelConsumption.CPY9" };
 
 		for (int i = 0; i < Kills.length; i++) {
 			Object o = scores.get(Kills[i]);
 			if (o != null)
-				score_avg += (((Double) o).doubleValue()) * mau[1];
+				score_avg += (((Double) o).doubleValue()) * MAU[0];
 		}
 		for (int i = 0; i < Attritions.length; i++) {
 			Object o = scores.get(Attritions[i]);
 			if (o != null)
-				score_avg += (((Double) o).doubleValue()) * mau[0];
+				score_avg += (((Double) o).doubleValue()) * MAU[1];
 		}
 
 		for (int i = 0; i < Violations.length; i++) {
 			Object o = scores.get(Violations[i]);
 			if (o != null)
-				score_avg += (((Double) o).doubleValue()) * mau[2];
+				score_avg += (((Double) o).doubleValue()) * MAU[2];
 		}
 		for (int i = 0; i < Penalities.length; i++) {
 			Object o = scores.get(Penalities[i]);
 			if (o != null)
-				score_avg += (((Double) o).doubleValue()) * mau[3];
+				score_avg += (((Double) o).doubleValue()) * MAU[3];
 		}
 		for (int i = 0; i < FuelConsumption.length; i++) {
 			Object o = scores.get(FuelConsumption[i]);
 			if (o != null)
-				score_avg += (((Double) o).doubleValue()) * mau[4];
+				score_avg += (((Double) o).doubleValue()) * MAU[4];
 		}
 
 		return score_avg;
@@ -411,7 +449,7 @@ public class QueueingModel extends ComponentPlugin {
 
 	private ControlMeasurement consolidateDelays(boolean print) {
 		double[][] averageProcessingDelays = new double[29][2];
-		double[][] Dlay = getMeanDelay(System.currentTimeMillis(), 20);
+		double[][] Dlay = getMeanDelay(System.currentTimeMillis(), MEASUREMENT);
 		HashMap tempHash = new HashMap();
 
 		//getting BDE avg processing delays
@@ -506,14 +544,7 @@ public class QueueingModel extends ComponentPlugin {
 
 		if (print) {
 			for (int i = 0; i < 29; i++)
-				System.out.println(
-					"Consolidated Mean and Variances of Delays from all agents("
-						+ i
-						+ "): "
-						+ averageProcessingDelays[i][0]
-						+ "   "
-						+ averageProcessingDelays[i][1]
-						+ " millisecs.");
+				System.out.println("Consolidated Mean and Variances of Delays from all agents(" + i + "): " + averageProcessingDelays[i][0] + "   " + averageProcessingDelays[i][1] + " millisecs.");
 			//			System.out.println(
 			//				"DELAY VARIANCE  " + averageProcessingDelays[0][1] + " " + averageProcessingDelays[1][1]);
 		}
@@ -614,6 +645,7 @@ public class QueueingModel extends ComponentPlugin {
 	}
 
 	//messages this node gets
+	private DataCollector dc = new DataCollector();
 	private int timerCount = 0;
 	private OpmodeNotificationMessage onm;
 	private ControlMeasurementPoint controlMP;
@@ -629,5 +661,30 @@ public class QueueingModel extends ComponentPlugin {
 	private ControlDisplayPanel cdp;
 	private long lastTime = 0;
 	private long startTime = 0;
+	double[] MAU = new double[5];
+	 
+	private static final int CONTROL = 4; // 12 * 10sec = 120 sec = 2 min {or 4 if the sample is 30 seonds}
+	private static final int MEASUREMENT = 2; //last six for averaging = 6*10 = 60 sec = 1 min {or 2 if the sample is 30 seconds}
+	private static final int SAMPLE = 30000; //every 10 or 30 seconds 
+	private static final int SCORE = 24; // 1 every 5 seconds=> 24 for a 2 minutes
+	
 
 }
+
+//-------------------old style -----------------------------------------
+//TODO remove later
+//qmh.invokeMatlab(c.getTaskTimes());
+
+//if inside qmh something is in process, the function will return a null
+//HashMap h = qmh.getControlSet(processingDelayStats);
+
+//a null HashMap ensures no opmodes are shipped
+//if (h != null) {
+//	shipControlSet(h);
+//}
+//TODO REMOVE: TEST FOR SENDING MESSAGES BACK TO SUBORDINATES:
+//ControlMessage controlMsg = new ControlMessage("a", "b");
+//controlMsg.putControlParameter((Object) "BN1Replan", new Integer(10));
+//for (int l = 0; l < SubordinateList.length; l++)
+//sendMessage((Serializable) controlMsg, csbr[l]);
+//------------------end old style---------------------------------------

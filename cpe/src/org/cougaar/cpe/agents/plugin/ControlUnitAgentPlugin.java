@@ -287,41 +287,41 @@ public class ControlUnitAgentPlugin extends ComponentPlugin {
 			}
 		}
 	}
-	
+
 	private void publishOpModeChanges(ControlMessage c) {
-			if (c != null) {
-				// valid opmodes exist
-				boolean wasOpen = true;
-				if (!getBlackboardService().isTransactionOpen()) {
-					wasOpen = false;
-					getBlackboardService().openTransaction();
-				}
+		if (c != null) {
+			// valid opmodes exist
+			boolean wasOpen = true;
+			if (!getBlackboardService().isTransactionOpen()) {
+				wasOpen = false;
+				getBlackboardService().openTransaction();
+			}
 
-				//use the changed opmode and publish it
-				Collection opModeCollection = opModeCondSubscription.getCollection();
-				Iterator iter = opModeCollection.iterator();
-				while (iter.hasNext()) {
-					OperatingModeCondition omc = (OperatingModeCondition) iter.next();
+			//use the changed opmode and publish it
+			Collection opModeCollection = opModeCondSubscription.getCollection();
+			Iterator iter = opModeCollection.iterator();
+			while (iter.hasNext()) {
+				OperatingModeCondition omc = (OperatingModeCondition) iter.next();
 
-					//				if (omc.getName().equals("ReplanPeriod")) {
-					//					//change it to new value
-					//					omc.setValue(new Integer(70000));
-					//					System.out.println("Operating mode changed");
-					//				}
-					
-					if ((omc.getName() != null) && (c.getControlParameter(this.getAgentIdentifier(), omc.getName()) != null)) {
-						Object i = c.getControlParameter(this.getAgentIdentifier(), omc.getName());
-						omc.setValue(new Integer(Integer.parseInt(i.toString())));//dont know if this works
-						System.out.println("Operating mode changed in " + this.getAgentIdentifier() + " to " + Integer.parseInt(i.toString()));
-					}
-				}
-				cm=null;
+				//				if (omc.getName().equals("ReplanPeriod")) {
+				//					//change it to new value
+				//					omc.setValue(new Integer(70000));
+				//					System.out.println("Operating mode changed");
+				//				}
 
-				if (getBlackboardService().isTransactionOpen() && !wasOpen) {
-					getBlackboardService().closeTransaction();
+				if ((omc.getName() != null) && (c.getControlParameter(this.getAgentIdentifier(), omc.getName()) != null)) {
+					Object i = c.getControlParameter(this.getAgentIdentifier(), omc.getName());
+					omc.setValue(new Integer(Integer.parseInt(i.toString()))); //dont know if this works
+					System.out.println("Operating mode changed in " + this.getAgentIdentifier() + " to " + Integer.parseInt(i.toString()));
 				}
 			}
+			cm = null;
+
+			if (getBlackboardService().isTransactionOpen() && !wasOpen) {
+				getBlackboardService().closeTransaction();
+			}
 		}
+	}
 	public void measurement() {
 		try {
 			measurementPoints.clear();
@@ -332,7 +332,7 @@ public class ControlUnitAgentPlugin extends ComponentPlugin {
 			//				"\n *------------------CALCULATING DELAY-------------* @"
 			//					+ this.getAgentIdentifier());
 
-			double[][] Dlay = getMeanDelay(System.currentTimeMillis(), 20);
+			double[][] Dlay = getMeanDelay(System.currentTimeMillis(), MEASUREMENT);
 
 			if (Dlay != null) {
 				//				for (int i = 0; i < 7; i++)
@@ -350,7 +350,7 @@ public class ControlUnitAgentPlugin extends ComponentPlugin {
 		} finally {
 			// Now, reset the alarm service.
 			if (started) {
-				long nextTime = 10000;
+				long nextTime = SAMPLE;
 				//				System.out.println(
 				//					getAgentIdentifier()
 				//						+ ":  SCHEDULING NEXT MEASUREMENT in "
@@ -464,4 +464,7 @@ public class ControlUnitAgentPlugin extends ComponentPlugin {
 	IncrementalSubscription measurementPointSubscription, controlTargetRelaySubscription, opModeCondSubscription;
 	private boolean started = false;
 	ControlTargetBufferRelay relayFromSuperior;
+
+	private static final int MEASUREMENT = 2; //last six for averaging = 6*10 = 60 sec = 1 min
+	private static final int SAMPLE = 30000; //every 10 0r 30 seconds  
 }

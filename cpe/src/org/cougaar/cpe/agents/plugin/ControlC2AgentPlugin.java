@@ -200,13 +200,21 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 			//				"\n *------------------CALCULATING DELAY-------------* @"
 			//					+ this.getAgentIdentifier());
 
-			double[][] Dlay = getMeanDelay(System.currentTimeMillis(), 20);
+			double[][] Dlay = getMeanDelay(System.currentTimeMillis(), MEASUREMENT);
 
 			if (Dlay != null) {
-				//				for (int i = 0; i < 7; i++)
-				//					System.out.println(
-				//						"Mean Delays " + i + "  " + Dlay[i] + " secs.");
 
+				//LOCAL POLICY: check for replan time greater than replan period!
+				
+				if (Dlay[2][0] > (0.8 * replanPeriod)) {
+					//change replanPeriod to something locally
+					if (replanPeriod!=60000)
+						publishOpModeChanges("ReplanPeriod", replanPeriod+20000);
+				}
+
+								for (int i = 0; i < 7; i++)
+									System.out.println(
+										"Mean Delays " + i + "  " + Dlay[i][0] + " secs.");
 				//send the delays through TargetControlBufferRelay
 				OpmodeNotificationMessage msg = new OpmodeNotificationMessage(this.getAgentIdentifier(), "rename");
 				msg.setTimeForModes(Dlay);
@@ -218,7 +226,7 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 		} finally {
 			// Now, reset the alarm service.
 			if (started) {
-				long nextTime = 10000;
+				long nextTime = SAMPLE;
 				//				System.out.println(
 				//					getAgentIdentifier()
 				//						+ ":  SCHEDULING NEXT MEASUREMENT in "
@@ -308,14 +316,43 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 				//					omc.setValue(new Integer(70000));
 				//					System.out.println("Operating mode changed");
 				//				}
-				
+
 				if ((omc.getName() != null) && (c.getControlParameter(this.getAgentIdentifier(), omc.getName()) != null)) {
 					Object i = c.getControlParameter(this.getAgentIdentifier(), omc.getName());
-					omc.setValue(new Integer(Integer.parseInt(i.toString())));//dont know if this works
-					System.out.println("Operating mode changed in " + this.getAgentIdentifier() + " to " + Integer.parseInt(i.toString()));
+					omc.setValue(new Integer(Integer.parseInt(i.toString()))); //dont know if this works
+					System.out.println("[HIERARCHICAL CONTROL] Operating mode changed in " + this.getAgentIdentifier() + " to " + Integer.parseInt(i.toString()));
 				}
 			}
-			cm=null;
+			cm = null;
+			if (getBlackboardService().isTransactionOpen() && !wasOpen) {
+				getBlackboardService().closeTransaction();
+			}
+		}
+	}
+
+	private void publishOpModeChanges(String name, int value) {
+		if (name != null) {
+			// valid opmodes exist
+			boolean wasOpen = true;
+			if (!getBlackboardService().isTransactionOpen()) {
+				wasOpen = false;
+				getBlackboardService().openTransaction();
+			}
+
+			//use the changed opmode and publish it
+			Collection opModeCollection = opModeCondSubscription.getCollection();
+			Iterator iter = opModeCollection.iterator();
+			while (iter.hasNext()) {
+				OperatingModeCondition omc = (OperatingModeCondition) iter.next();
+
+				if ((omc.getName() != null) && (omc.getName().equals(name))) {
+					//change it to new value
+					omc.setValue(new Integer(value));
+					System.out.println("[LOCAL POLICY] Operating mode changed in " + this.getAgentIdentifier() + " to " + value);
+				}
+
+			}
+
 			if (getBlackboardService().isTransactionOpen() && !wasOpen) {
 				getBlackboardService().closeTransaction();
 			}
@@ -335,6 +372,11 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 		while (iter.hasNext()) {
 			OperatingModeCondition omc = (OperatingModeCondition) iter.next();
 			m.putControlParameter((Object) omc.getName(), (Object) omc.getValue());
+			
+			//locally storing replan period value
+			if (omc.getName().equalsIgnoreCase("ReplanPeriod")){
+				replanPeriod = ((Integer)omc.getValue()).intValue();
+			}
 		}
 
 		if (getBlackboardService().isTransactionOpen() && !wasOpen) {
@@ -394,5 +436,9 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 	private boolean started = false;
 	ControlTargetBufferRelay relayFromSuperior;
 	HashMap h = new HashMap();
+	int replanPeriod = 0;
+
+	private static final int MEASUREMENT = 2; //last six for averaging = 6*10 = 60 sec = 1 min
+	private static final int SAMPLE = 30000; //every 10 seconds  or 30 seconds 
 
 }
