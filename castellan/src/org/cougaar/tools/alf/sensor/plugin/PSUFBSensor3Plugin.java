@@ -72,7 +72,7 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 
         boolean expired = false;
         long expTime;
-        long delay = 60000;
+        long delay = 180000;
     }
 
 
@@ -155,6 +155,7 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
         String verb, source;    
         Task task;
         if (alarm != null) alarm.cancel();
+
 	if (myTimestampService == null) {
             myTimestampService = (BlackboardTimestampService) getBindingSite().getServiceBroker().getService(this, BlackboardTimestampService.class, null);
             if (myTimestampService == null) {
@@ -246,8 +247,7 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 						if(flag==false)
 						{
 							count_window1++;
-					System.out.println("Window Number:"+" for"+cluster+" is "+count_window1);
-
+					        System.out.println("Window Number:"+" for"+cluster+" is "+count_window1);
 							count_window=count_window1;
 							compute2(count_ps,count_pw);
 						}
@@ -267,7 +267,7 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 			}
 			
 		}
-		alarm = new TriggerFlushAlarm( currentTimeMillis() + 60000 );
+		alarm = new TriggerFlushAlarm( currentTimeMillis() + 180000 );
 		as.addAlarm(alarm) ;	
      }
         	   
@@ -312,7 +312,7 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 	  Iterator iter;
 	  int id;
 	  String status2 = LoadIndicator.NORMAL_LOAD;
-        BufferedReader is = null;
+      BufferedReader is = null;
 	  ConfigFinder finder = getConfigFinder() ;
 	  File ff=null;
 	  String f=null;
