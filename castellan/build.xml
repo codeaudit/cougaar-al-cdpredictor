@@ -58,7 +58,7 @@
 		<copy todir="staging/configs/common">
 			<fileset dir="test/configs/common/" includes="PSU*"/>
 		</copy>
-		<zip zipfile="Logistics_psu_cougaar_overlay.zip" basedir="staging"/>
+		<zip zipfile="AL_psu.zip" basedir="staging"/>
 		<delete dir="staging"/>
 	</target>
 
