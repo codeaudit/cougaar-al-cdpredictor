@@ -16,7 +16,6 @@ import java.lang.reflect.Modifier;
  */
 public class VGWorldConstants {
 
-
     private static String getNodeValueForTag(Document doc, String tagName, String namedItem ) {
         NodeList nodes = doc.getElementsByTagName( tagName );
 
