@@ -13,7 +13,7 @@ import java.util.*;
  */
 public class ControlMeasurement extends MeasurementImpl {
 
-	public ControlMeasurement(String eventName, String actionName, MessageAddress source, long ts, HashMap opmodes, HashMap tft) {
+	public ControlMeasurement(String eventName, String actionName, MessageAddress source, long ts, HashMap opmodes, double[][] tft) {
 		super(eventName, actionName, source);
 		this.timeStamp = ts;
 		this.opModes = opmodes;
@@ -22,25 +22,27 @@ public class ControlMeasurement extends MeasurementImpl {
 
 	public void toString(StringBuffer buf) {
 		super.toString(buf);
-		;
 		buf.append(",OpModes= " + opModes.toString());
-		buf.append(",timeForOpModes= " + opModes.toString());
+		buf.append(",timeForOpModes= " + timeForTasks.toString());
 		buf.append(",TimeStamp= " + timeStamp);
 	}
 
 	public Object getTimeForTask(MessageAddress node, String taskName) {
-		if (timeForTasks.containsKey((Object) node)) {
-			HashMap h = (HashMap) timeForTasks.get((Object) node);
-			if (h.containsKey((Object) taskName)) {
-				return ((Object) h.get((Object) taskName));
-			}
-		}
+//		if (timeForTasks.containsKey((Object) node)) {
+//			HashMap h = (HashMap) timeForTasks.get((Object) node);
+//			if (h.containsKey((Object) taskName)) {
+//				return ((Object) h.get((Object) taskName));
+//			}
+//		}
 		return null;
+	}
+	public double[][] getTaskTimes(){
+		return timeForTasks;
 	}
 
 	public Object getOpModeValue(MessageAddress node, String opmodeName) {
-		if (timeForTasks.containsKey((Object) node)) {
-			HashMap h = (HashMap) timeForTasks.get((Object) node);
+		if (opModes.containsKey((Object) node)) {
+			HashMap h = (HashMap) opModes.get((Object) node);
 			if (h.containsKey((Object) opmodeName)) {
 				return ((Object) h.get((Object) opmodeName));
 			}
@@ -52,5 +54,5 @@ public class ControlMeasurement extends MeasurementImpl {
 	protected long timeStamp;
 	//HashMap of HashMaps: opModes will contain depth, breadth, timer values, score or freshness, even optempo for a particular node say BN1 or CPY5
 	private HashMap opModes = null;
-	private HashMap timeForTasks = null;
+	private double[][] timeForTasks = null;
 }
