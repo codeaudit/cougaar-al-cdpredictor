@@ -58,8 +58,8 @@
 		<copy todir="staging/configs/common">
 			<fileset dir="test/configs/common/" includes="PSU*"/>
 		</copy>
-		<mkdir dir="staging/csmart/config/rules/logistics"/>
-		<copy todir="staging/csmart/config/rules/logistics">
+		<mkdir dir="staging/csmart/config/rules/logistics-predictors"/>
+		<copy todir="staging/csmart/config/rules/logistics-predictors">
 			<fileset dir="data/rules/" includes="*.rule"/>
 		</copy>
 		<zip zipfile="AL_psu.zip" basedir="staging"/>
