@@ -28,6 +28,7 @@
                 debug="true" 
                 optimize="false" 								
                 srcdir="${src}" 
+								excludes="**/alf/sensor/servlet/**/*.java"
                 destdir="${build}">
                 <classpath refid="cougaar.libs"/>
         </javac>
