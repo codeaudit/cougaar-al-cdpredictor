@@ -1,6 +1,6 @@
 /*
   * <copyright>
-  *  Copyright 2001 (Intelligent Automation, Inc.)
+  *  Copyright 2002 (Intelligent Automation, Inc.)
   *  under sponsorship of the Defense Advanced Research Projects
   *  Agency (DARPA).
   *
@@ -181,6 +181,7 @@ public class RelayClientMTImpl implements ClientMessageTransport {
     }
 
     public synchronized void flush() {
+        System.out.print("F+");
         lastAddTime = System.currentTimeMillis();
         if (bas.size() <= 4) {
             return;
@@ -215,7 +216,7 @@ public class RelayClientMTImpl implements ClientMessageTransport {
     /**
      * Maximum batch size in bytes. Default value is 24 Kb of messages.
      */
-    protected int maxBatchSize = 24000;
+    protected int maxBatchSize = 48000;
 
     protected PlanLogStats stats ;
     protected PlanLogConfig config ;
