@@ -11,8 +11,8 @@ import java.util.HashMap;
  */
 public class ControlMessage extends MessageEvent {
 
-	public ControlMessage( String entityName,  String controlSet ) {
-		setValue( controlSet );
+	public ControlMessage( String entityName,  String value ) {
+		setValue( value );
 		this.entityName = entityName;
 	}
 
