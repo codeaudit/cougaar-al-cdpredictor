@@ -12,22 +12,22 @@ import org.cougaar.cpe.agents.messages.ControlMessage;
  * talks to Matlab and Arena to help the QueueingModel plugin 
  */
 public class QueueingParameters extends ControlMeasurement {
-	public QueueingParameters(long ts, HashMap candidateOpmodes, double[][] estimatedtt) {
+	public QueueingParameters(long ts, HashMap candidateOpmodes, double[][] estimatedtt,HashMap scores) {
 		super("SystemPurturbed", "Control", MessageAddress.getMessageAddress("BDE1"), ts, candidateOpmodes, estimatedtt);
 		this.cm = new ControlMessage("SystemPurturbed", "Control");
 		cm.putControlSet(candidateOpmodes);
 
 		getMG1Estimate();
-		computeScore();
+		computeScore(scores);
 	}
 
-	public QueueingParameters(long ts, HashMap candidateOpmodes, HashMap estimatedtt) {
+	public QueueingParameters(long ts, HashMap candidateOpmodes, HashMap estimatedtt,HashMap scores) {
 		super("SystemPurturbed", "Control", MessageAddress.getMessageAddress("BDE1"), ts, candidateOpmodes, estimatedtt);
 		this.cm = new ControlMessage("SystemPurturbed", "Control");
 		cm.putControlSet(candidateOpmodes);
 
 		getMG1Estimate();
-		computeScore();
+		computeScore(scores);
 	}
 
 	public void getMG1Estimate() {
@@ -42,10 +42,10 @@ public class QueueingParameters extends ControlMeasurement {
 		//modelWhittMPF = 0; //set to calculated value later
 	}
 
-	public void computeScore() {
+	public void computeScore(HashMap scores) {
 		if (modelMG1AverageMPF != null) {
 			Score s = new Score(modelMG1AverageMPF, this);
-			score = s.getParametersAndEstimateScore();
+			score = s.getParametersAndEstimateScore(scores);
 			//System.out.println("TOTAL SCORE: "+getTotalScore());
 		}
 	}

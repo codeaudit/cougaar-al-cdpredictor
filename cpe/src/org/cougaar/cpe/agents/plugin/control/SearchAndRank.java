@@ -13,8 +13,9 @@ import java.util.Comparator;
  * talks to Matlab and Arena to help the QueueingModel plugin 
  */
 public class SearchAndRank {
-	public SearchAndRank(ControlMeasurement c) {
+	public SearchAndRank(ControlMeasurement c, HashMap scores) {
 		this.cm = c;
+		this.scores = scores;
 		//this.cm = new ControlMeasurement("System", "Permutations", MessageAddress.getMessageAddress("search"), System.currentTimeMillis(), c.getOpmodes(), c.getTaskTimes());
 	}
 
@@ -61,17 +62,20 @@ public class SearchAndRank {
 		//			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY3"), (Object) t.clone());
 		//		}
 
-		if (queueingParameters.size()>0)
-			controlMsg = ((QueueingParameters) rankedQueueingParameters.get(i-1)).getControlMsg();
-		if (controlMsg != null)
-			System.out.println(controlMsg.toString());
+		//getting a legal control message by checking the ith element has some valid score.
+		if ((rankedQueueingParameters.size() > 0) && (((QueueingParameters) rankedQueueingParameters.get(i - 1)).getTotalScore() != -3)) {
+			controlMsg = ((QueueingParameters) rankedQueueingParameters.get(i - 1)).getControlMsg();
+			if (controlMsg != null)
+				System.out.println("Current CONTROL MESSAGE: " + controlMsg.toString());
+		} else
+			System.out.println("Could not identify CONTROL SET");
 		return controlMsg;
 	}
 
 	/*
 	 * generates the search space
 	 */
-	public void generateQueueingParameters(ControlMeasurement c) {
+	public void generateQueueingParameters(ControlMeasurement c, HashMap scores) {
 		//contains search space, get from techspecs ultimately
 		this.cm = c;
 		int[] rt = { 20000, 40000, 60000 };
@@ -122,7 +126,7 @@ public class SearchAndRank {
 							//System.out.println(count + ": MEASURED"+ cm.getMeanTaskTimes());
 							//System.out.println(count + ": SCALED  "+ est.toString()+"\n");
 							if (sm.getifEstimated())
-								queueingParameters.add(new QueueingParameters(System.currentTimeMillis(), h, est));
+								queueingParameters.add(new QueueingParameters(System.currentTimeMillis(), h, est, scores));
 
 							//System.out.println(count + " [original]: " + temp);
 							//System.out.println(count + " [changed ]: " + (HashMap) itr.next() + "\n");
@@ -133,7 +137,6 @@ public class SearchAndRank {
 
 				}
 
-		
 		rankQueueingParameters();
 		System.out.println("QUEUEING PARAMETERS\n" + toString());
 	}
@@ -284,17 +287,19 @@ public class SearchAndRank {
 	 * 
 	 */
 	public String toString() {
-		String temp = null;
-		temp += "Measured Control_Measurement= " + cm.toString() + "\n";
+		String temp = "";
+		temp += "Actual Control_Measurement= " + cm.toString() + "\n";
+		temp+= "TOP 10 Estimates: \n";
 		Iterator itr = rankedQueueingParameters.iterator();
 		int i = 0;
-		while ((itr.hasNext()) && (i++<10)) {
+		while ((itr.hasNext()) && (i++ < 10)) {
 			temp += ((QueueingParameters) itr.next()).toString() + "\n";
 		}
 		return temp;
 	}
 
 	private ControlMeasurement cm;
+	private HashMap scores;
 	private ArrayList queueingParameters = new ArrayList();
 	private ArrayList rankedQueueingParameters = new ArrayList();
 

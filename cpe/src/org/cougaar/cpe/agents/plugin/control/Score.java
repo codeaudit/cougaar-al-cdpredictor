@@ -71,16 +71,31 @@ public class Score {
 
 	}
 
-	public double[] getParametersAndEstimateScore() {
+	public double[] getParametersAndEstimateScore(HashMap scores) {
 		//BNs
 		String[] bns = { "BN1", "BN2", "BN3" };
+		String[] things = { "EntryRate" };
 		int[] timer_bn = new int[3];
 		int[] plan_depth = new int[3];
 
 		//----revisit later
-		double[] entry_rate = { 0.6, 0.6, 0.6 }; //new double[3];
+		double[] entry_rate = new double[3];
+		if (scores != null) {
+			Object s = scores.get((String) "BN1.EntryRate");
+			if (s != null)
+				entry_rate[0] = ((Double) s).doubleValue();
+			s = scores.get((String) "BN2.EntryRate");
+			if (s != null)
+				entry_rate[1] = ((Double) s).doubleValue();
+			s = scores.get((String) "BN3.EntryRate");
+			if (s != null)
+				entry_rate[2] = ((Double) s).doubleValue();
+		}		
+		//TODO remove later
+		double[] e_rate={0.6,0.6,0.6};
+		
 
-		double[] mau = {42.14, 0.76, -106.88, -2.77, -1.09 };
+		double[] mau = { 42.14, 0.76, -106.88, -2.77, -1.09 };
 		//---------------------------------
 
 		for (int i = 0; i < 3; i++) {
@@ -99,10 +114,10 @@ public class Score {
 		}
 
 		//I dont know mau and entry rate at this point.Using what I got.
-//		if (m != null)
-//			System.out.println(
-//				timer_bn[0] + "," + timer_bn[1] + "," + timer_bn[2] + "," + plan_depth[0] + "," + plan_depth[1] + "," + plan_depth[2] + "," + m[0] + "," + m[1] + "," + m[2]);
-		return estimateScore(entry_rate, timer_bn, plan_depth, m, mau);
+		//		if (m != null)
+		//			System.out.println(
+		//				timer_bn[0] + "," + timer_bn[1] + "," + timer_bn[2] + "," + plan_depth[0] + "," + plan_depth[1] + "," + plan_depth[2] + "," + m[0] + "," + m[1] + "," + m[2]);
+		return estimateScore(e_rate, timer_bn, plan_depth, m, mau);
 		//double[] d = { 0, 0, 0 };
 		//return d;
 
