@@ -245,12 +245,12 @@ public class PlanLogConfigPlugin extends ComponentPlugin
                                 }
 
                                 String isActiveParam = null ;
-                                nodes = doc.getElementsByTagName( "LoggingActive" ) ;
+                                nodes = doc.getElementsByTagName( "LoggingEnabled" ) ;
                                 for (int i=0;i<nodes.getLength();i++) {
                                     Node n = nodes.item(i) ;
                                     isActiveParam = n.getAttributes().getNamedItem( "value" ).getNodeValue() ;
                                 }
-                                
+
                                 if ( isActiveParam != null ) {
                                     if ( isActiveParam.equals( "true" ) ) {
                                         config.setActive( true ) ;
