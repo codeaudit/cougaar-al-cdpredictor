@@ -124,10 +124,11 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
         public void expire()
         {
+            System.out.println("PlanLogPlugin:: Expiring");
             expired = true ;
             BlackboardService bs = getBlackboardService() ;
             bs.openTransaction();
-            mtImpl.execute();
+            execute();
             bs.closeTransaction();
         }
 
@@ -212,10 +213,10 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
                                System.currentTimeMillis(), currentTimeMillis() ) ;
             sendMessage( pdu );
 
-            flushThread = new FlushThread() ;
-            flushThread.start();
-            // Start the periodic alarm to flush the buffer.
-            // getAlarmService().addRealTimeAlarm( new FlushAlarm( System.currentTimeMillis() + 5000 ) ) ;
+            //flushThread = new FlushThread() ;
+            //flushThread.start();
+            //Start the periodic alarm to flush the buffer.
+            getAlarmService().addRealTimeAlarm( new FlushAlarm( System.currentTimeMillis() + 5000 ) ) ;
         }
     }
 
