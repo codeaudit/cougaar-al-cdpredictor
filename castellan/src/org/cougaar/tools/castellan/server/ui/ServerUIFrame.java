@@ -1,9 +1,3 @@
-/*
- * ServerUIFrame.java
- *
- * Created on July 26, 2001, 6:31 PM
- */
-
 package org.cougaar.tools.castellan.server.ui;
 import org.cougaar.tools.castellan.pdu.* ;
 import org.cougaar.tools.castellan.server.* ;
@@ -179,6 +173,7 @@ public class ServerUIFrame extends javax.swing.JFrame {
                 doShowAbout() ;
             }
         } ) ;
+
     }
 
     protected void doSaveSettings() {
@@ -418,7 +413,7 @@ public class ServerUIFrame extends javax.swing.JFrame {
 
         File tempFile = app.getTempFile( ".dot" ) ;
         BoundaryAggregateLayout bal = new BoundaryAggregateLayout() ;
-        int count = bal.layoutAggregateGraph( tempFile, observer ) ;
+        int count = bal.layoutClusteredGraph( tempFile, observer ) ;
 
         if ( count == 0 ) {
             JOptionPane.showMessageDialog( this, "No aggregate nodes processed.", "Workflow graph", JOptionPane.ERROR_MESSAGE ) ;
@@ -429,7 +424,7 @@ public class ServerUIFrame extends javax.swing.JFrame {
         }
 
         Graph g = GraphLayout.doLayout( app.getDotPath(), tempFile ) ;
-        GraphFrame gf = new GraphFrame( "Workflow", g ) ;
+        GraphFrame gf = new WorkflowGraphFrame( observer, "Workflow", g ) ;
         gf.setVisible( true );
     }
 

@@ -88,13 +88,16 @@ public class ServerPlugin extends ComponentPlugin implements PDUSink {
 
 
     public void setupSubscriptions() {
+        System.out.println( "Starting ServerPlugin..." );
         ServiceBroker sb = getServiceBroker() ;
         log = ( LoggingService ) sb.getService( this, LoggingService.class, null ) ;
+        log.shout( "Starting ServerPlugin..." );
 
         impl = new RelayServerMTImpl( null, getBlackboardService() ) ;
         impl.setPDUSink( this );
 
         findOrCreateBuffer() ;
+        System.out.println( "Done." );
         //flushThread = new FlushThread() ;
         //flushThread.start();
     }

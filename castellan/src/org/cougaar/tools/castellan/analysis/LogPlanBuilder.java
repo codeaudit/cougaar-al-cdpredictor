@@ -40,6 +40,22 @@ public class LogPlanBuilder implements PDUSink {
         this.pld = pld ;
     }
 
+    public void addExcludeVerb( String verb ) {
+        excludeTaskVerbs.put( verb, verb ) ;
+    }
+
+    public boolean isExcludeVerb( String verb ) {
+        return excludeTaskVerbs.get( verb ) != null ;
+    }
+
+    public boolean removeExcludeVerb( String verb ) {
+        return excludeTaskVerbs.remove( verb ) != null ;
+    }
+
+    public Iterator getExcludeVerbs() {
+        return excludeTaskVerbs.values().iterator() ;
+    }
+
     public PlanLogDatabase getDatabase() { return pld ; }
 
     public Iterator getAssets() { return pld.getAssets() ; }
@@ -80,7 +96,7 @@ public class LogPlanBuilder implements PDUSink {
     }
 
     public boolean acceptTask( TaskPDU pdu ) {
-        if ( pdu.getTaskVerb().equals( "ReportForDuty" ) || pdu.getTaskVerb().equals( "ReportForService" ) ) {
+        if ( pdu.getTaskVerb().toString().equals( "ReportForDuty" ) || pdu.getTaskVerb().toString().equals( "ReportForService" ) ) {
             return false ;
         }
         return true ;
@@ -101,9 +117,12 @@ public class LogPlanBuilder implements PDUSink {
                 processMPTaskPDU( ( MPTaskPDU ) m ) ;
             }
             else if ( m instanceof TaskPDU ) {
-                System.out.print( "T" ) ;
                 if ( acceptTask( ( TaskPDU ) m ) ) {
+                    System.out.print( "T" ) ;
                     processTaskPDU( ( TaskPDU ) m ) ;
+                }
+                else {
+                    System.out.print( "T-" );
                 }
             }
             else if ( m instanceof ExpansionPDU ) {
@@ -579,6 +598,7 @@ public class LogPlanBuilder implements PDUSink {
         }
     }
 
+    protected HashMap excludeTaskVerbs = new HashMap() ;
     protected MultiHashSet delayedSet = new MultiHashSet() ;
     PlanLogDatabase pld ;
 }

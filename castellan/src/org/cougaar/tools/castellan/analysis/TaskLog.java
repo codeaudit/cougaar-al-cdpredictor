@@ -60,6 +60,7 @@ public class TaskLog extends UniqueObjectLog {
 
     UIDPDU parentTask ;
     String taskVerb ;
+    PlanElementLog planElement ;
     //String planElement ;
     int parentType = TYPE_UNKNOWN ;
 }
