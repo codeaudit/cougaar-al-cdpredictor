@@ -37,12 +37,14 @@ import org.cougaar.util.*;
 import org.cougaar.logistics.plugin.manager.LoadIndicator;
 import org.cougaar.tools.alf.sensor.*;
 import org.cougaar.tools.alf.sensor.plugin.*;
+import org.cougaar.tools.alf.sensor.rbfnn.*;
 import org.cougaar.tools.castellan.pdu.* ;
 import org.cougaar.tools.castellan.util.* ;
 
 import java.util.* ;
 import java.lang.Double;
 
+import java.io.*;
 
 /**
  *
@@ -57,7 +59,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 	IncrementalSubscription planCompletion2Subscription;
 	IncrementalSubscription conusgroundStartSubscription;
 	IncrementalSubscription transcomStartSubscription;
-	IncrementalSubscription rbfNNSubscription;
+	IncrementalSubscription rbfnnSubscription;
 	IncrementalSubscription internalStateSubscription;
 
 	UnaryPredicate planCompletion1Predicate = new UnaryPredicate() { 
@@ -124,8 +126,8 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 		}    
 	};
 
-    UnaryPredicate internalStatePredicate			= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof InternalStateLF;   }    };
-//    UnaryPredicate rbfNNPredicate = new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof RBFNN;   }    };
+    UnaryPredicate internalStatePredicate	= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof InternalStateLF;   }    };
+    UnaryPredicate rbfnnPredicate			= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof RbfRidgeRegression;   }    };
     UIDService uidservice;
     BlackboardService bs;
 
@@ -133,7 +135,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 	PSUSensorCondition completionTime2Condition = null;
 	PSUSensorCondition conusgroundStartCondition = null;
 	PSUSensorCondition transcomStartCondition = null;
-//	RBFNN rbfNN = null;
+	RbfRidgeRegression rbfnn = null;
 	InternalStateLF internalState = null;
 
     public void setupSubscriptions()   {
@@ -150,7 +152,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
         transcomStartSubscription = (IncrementalSubscription) bs.subscribe(transcomStartPredicate);
 
         timeIndicatiorSubscription = (IncrementalSubscription) bs.subscribe(timeIndicatiorPredicate);
-  //      rbfNNSubscription = (IncrementalSubscription) bs.subscribe(rbfNNPredicate);
+        rbfnnSubscription = (IncrementalSubscription) bs.subscribe(rbfnnPredicate);
 		
 		uidservice =(UIDService) getServiceBroker().getService(this, UIDService.class, null);
 
@@ -161,7 +163,27 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 			conusgroundStartCondition = new PSUSensorCondition("conusgroundStart", new OMCRangeList(new Double(0),new Double(Double.MAX_VALUE)),new Double(0), us.nextUID());
 			transcomStartCondition = new PSUSensorCondition("transcomStart", new OMCRangeList(new Double(0),new Double(Double.MAX_VALUE)),new Double(0), us.nextUID());
 			
-	//		rbfNN = new RBFNN();
+			rbfnn = new RbfRidgeRegression();
+			rbfnn.setParameters(10, 0.0000001, 0.00001, 10);
+
+			ConfigFinder finder = getConfigFinder();
+			String inputName = "m.txt";
+
+			try {
+
+				if ( inputName != null && finder != null ) {
+
+					File inputFile = finder.locateFile( inputName ) ;
+					if ( inputFile != null && inputFile.exists() ) {
+						rbfnn.readModel(inputFile);
+			        } else {
+						System.out.println("Input model error.");
+					}
+				}
+
+	        } catch ( Exception e ) {
+		        e.printStackTrace() ;
+			}
 
 			if (completionTime1Condition != null)
 			{
@@ -190,13 +212,10 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 				bs.publishAdd(internalState);
 			}
 
-/*			
-
-			if (rbfNN != null)
+			if (rbfnn != null)
 			{
-				bs.publishAdd(rbfNN);
+				bs.publishAdd(rbfnn);
 			}
-*/
 		}
 
 		bs.setShouldBePersisted(false);
@@ -210,6 +229,14 @@ public class LoadForecasterPlugin extends ComponentPlugin {
     {
         Iterator iter;
         
+		if (rbfnn == null)
+		{
+	        for (iter = rbfnnSubscription.getAddedCollection().iterator() ; iter.hasNext() ; )
+	        {
+		        rbfnn = (RbfRidgeRegression) iter.next();
+				break;
+			}
+		} 
 
 		if (internalState == null)
 		{
@@ -302,25 +329,26 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 
 		} else if (timeindicator.getAgentName().equalsIgnoreCase("1-AD"))	{
 
-			internalState.onead_time = timeindicator.getStartTime() - internalState.PlanStartTime;
+			internalState.Hong[0] = (double) timeindicator.getStartTime() - internalState.PlanStartTime;
+			internalState.Thadakamala++;
 
 		} else if (timeindicator.getAgentName().equalsIgnoreCase("21-TSC-HQ"))	{
 
-			internalState.Hong[0] = timeindicator.getStartTime() - internalState.PlanStartTime;
+			internalState.Hong[1] = (double) timeindicator.getStartTime() - internalState.PlanStartTime;
 			internalState.Thadakamala++;
 
 		} else if (timeindicator.getAgentName().equalsIgnoreCase("3-SUPCOM-HQ"))	{
 
-			internalState.Hong[1] = timeindicator.getStartTime() - internalState.PlanStartTime;
+			internalState.Hong[2] = (double) timeindicator.getStartTime() - internalState.PlanStartTime;
 			internalState.Thadakamala++;
 
 		} else if (timeindicator.getAgentName().equalsIgnoreCase("5-CORPS-ARTY"))	{
 
-			internalState.Hong[2] = timeindicator.getStartTime() - internalState.PlanStartTime;
+			internalState.Hong[3] = (double) timeindicator.getStartTime() - internalState.PlanStartTime;
 			internalState.Thadakamala++;
 		} else if (timeindicator.getAgentName().equalsIgnoreCase("5-CORPS-REAR"))	{
 
-			internalState.Hong[3] = timeindicator.getStartTime() - internalState.PlanStartTime;
+			internalState.Hong[4] = (double) timeindicator.getStartTime() - internalState.PlanStartTime;
 			internalState.Thadakamala++;
 		}
 
@@ -336,12 +364,14 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 			internalState.hari = -1;
 		}
 
+
+/*		Using three inputs
 		if (internalState.onead_time > 0 && internalState.Thadakamala == 2)
 		{
 
-			double xx = rbf(internalState.onead_time, internalState.Hong);
+			double xx = rbfnn.f(internalState.Hong);
 
-			y = xx + 5000;
+//			y = xx + 5000;
 
 			transcomStartCondition.setValue(new Double(y));
 			bs.publishChange(transcomStartCondition);
@@ -349,15 +379,23 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 			System.out.println("The estimated starting time of Transcom = " + y);
 			internalState.Thadakamala = -2;
 		}
+*/
+
+		if (internalState.Thadakamala == 5)
+		{
+
+			double xx = rbfnn.f(internalState.Hong);
+
+			transcomStartCondition.setValue(new Double(xx));
+			bs.publishChange(transcomStartCondition);
+			
+			System.out.println("The estimated starting time of Transcom = " + xx);
+			internalState.Thadakamala = -2;
+		}
+
 
 		System.out.println("Actual time" + timeindicator.getAgentName() + " starts at " + (timeindicator.getStartTime() - internalState.PlanStartTime));
 
 	}
 
-	// This part will be implemented before August 26.
-	private double rbf(long onead_time, long[] Hong) {
-		
-		// rbfNN
-		return	(double) (onead_time + Hong[0] + Hong[1] + Hong[2] + Hong[3])/3;
-	}
 }

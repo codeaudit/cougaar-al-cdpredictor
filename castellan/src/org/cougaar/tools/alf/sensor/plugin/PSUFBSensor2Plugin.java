@@ -35,32 +35,29 @@ import org.cougaar.core.service.community.CommunityService;
 import org.cougaar.core.util.UniqueObject;
 import org.cougaar.core.util.XMLize;
 import org.cougaar.core.util.XMLizable;
+import org.cougaar.util.*;
+import org.cougaar.multicast.AttributeBasedAddress;
+import org.cougaar.planning.ldm.plan.*;
+import org.cougaar.logistics.plugin.manager.LoadIndicator;
+
+import org.cougaar.tools.alf.sensor.plugin.PSUSensorCondition;
+import org.cougaar.tools.alf.sensor.*;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Document;
-
-import org.cougaar.multicast.AttributeBasedAddress;
-
-import org.cougaar.planning.ldm.plan.*;
-import org.cougaar.util.*;
-import org.cougaar.logistics.plugin.manager.LoadIndicator;
 
 import java.util.Iterator;
 import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Arrays;
-
-import org.cougaar.tools.alf.sensor.plugin.PSUSensorCondition;
-import org.cougaar.tools.alf.sensor.*;
-
-
-import java.io.*;
 import java.util.Vector;
 import java.util.Enumeration;
 
+import java.io.*;
+
 /* 
 	programed by Yunho Hong
-	July 23, 2002
+	August 21, 2002
 	Pennsylvania State University
 */
 
@@ -76,19 +73,19 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
     UnaryPredicate timeIndicatiorPredicate			= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof StartIndicator;   }    };
     
 	UnaryPredicate loadIndicatiorPredicate			
-	= new UnaryPredicate()	{ 
-		public boolean execute(Object o) {  
-			if (o instanceof LoadIndicator)
-			{
-				LoadIndicator lindicator = (LoadIndicator) o;
-				if ((lindicator.getAgentName()).equalsIgnoreCase(cluster))
+		= new UnaryPredicate()	{ 
+			public boolean execute(Object o) {  
+				if (o instanceof LoadIndicator)
 				{
-					return true;
+					LoadIndicator lindicator = (LoadIndicator) o;
+					if ((lindicator.getAgentName()).equalsIgnoreCase(cluster))
+					{
+						return true;
+					}
 				}
-			}
-			return false;   
-		}    
-	};
+				return false;   
+			}    
+		};
 
     UnaryPredicate internalStatePredicate			= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof InternalState;   }    };
 
@@ -292,16 +289,18 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 
 						Collection alCommunities2 = communityService.search("(CommunityType=AdaptiveLogistics)");				
 
+						internalState.setalCommunities(alCommunities2);
+
 						if (internalState.alCommunities != null)
 						{
 							for (Iterator iterator = alCommunities2.iterator(); iterator.hasNext();) {
 						        String community = (String) iterator.next();
 								StartIndicator tindicator = new StartIndicator(cluster, uidservice.nextUID(), starttime, 10);
 								tindicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
-								System.out.println(getAgentIdentifier().toString() + ": adding StartIndicator to be sent to " + tindicator.getTargets());
 								bs.publishAdd(tindicator);
 							}
 
+							System.out.println(getAgentIdentifier().toString() + ": adding StartIndicator to be sent to " + tindicator.getTargets());
 							if(!internalState.over) { sendLoadIndicator(0, LoadIndicator.NORMAL_LOAD); }
 						} else {
 							System.out.println(getAgentIdentifier().toString() + " Destination address is null");
@@ -524,8 +523,9 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 				for (Iterator iterator = internalState.alCommunities.iterator(); iterator.hasNext();) {
 					String community = (String) iterator.next();
 					loadIndicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
+					bs.publishAdd(loadIndicator);
 				}
-				bs.publishAdd(loadIndicator);
+
 
 			} else {
 			

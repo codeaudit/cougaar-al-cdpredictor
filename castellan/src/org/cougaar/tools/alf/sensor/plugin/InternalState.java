@@ -19,50 +19,61 @@ public class InternalState implements java.io.Serializable, UniqueObject, XMLiza
 	private UID myUID = null;
 
 	public	long StartTime;
-//	public  long CurrentTime;
-	public  long unittime;
-	public  long timelimit;
-	public	int NoFinish;
-	public	long CTFinish;  // Cumulative waiting time;
-	public	int NoTasks;
+	public  long CurrentTime;
+	public  long Correction;
+	public	int NoTasks;								
 	public	int currentstate;
 	public	boolean over;
 	public	long nextcheckpoint;
 	public  Collection alCommunities = null;
 
+//	public  long unittime;								// waiting time method
+//	public  long timelimit;								// waiting time method
+//	public	int NoFinish;								// waiting time method
+//	public	long CTFinish;  // Cumulative waiting time;	// waiting time method
+
 	public InternalState(long ut, long timelimit1, UID uid) {
 
 		nextcheckpoint = 0;
 		StartTime = -1L;
-//		CurrentTime = 0;
-		unittime = ut;  // 1 sec
-		NoFinish = 0;
-		CTFinish = 0;
-		NoTasks = 0;
+		CurrentTime = 0;
 		currentstate = 0;
-		timelimit = timelimit1;
 		over = false;
+		NoTasks = 0;				
+		Correction = 0;
+
+//		unittime = ut;  // 1 sec	// waiting time method
+//		NoFinish = 0;				// waiting time method
+//		CTFinish = 0;				// waiting time method
+//		timelimit = timelimit1;		// waiting time method
+
 		setUID(uid);
 	}
 
-	public void setNextCheckPoint(long v) {	 nextcheckpoint=v; 	}
-	public void setStartTime(long v)		{	 StartTime=v; 	}
-//	public void setCurrentTime(long v)		{	 CurrentTime=v; 	}
-
-	public long getNextCheckPoint() {	return nextcheckpoint; 	}
-	public long getStartTime()		{	return StartTime; 	}
-//	public long getCurrentTime()		{	return CurrentTime; 	}
-
+	public void setNextCheckPoint(long v)	{	 nextcheckpoint=v; 	}
+	public void setStartTime(long v)		{	 StartTime=v;		}
+	public void setCurrentTime(long v)		{	 CurrentTime=v; 	}
+	
+	public void setCurrentState(int v)		{	 currentstate=v; 	}
+	public void setOver(boolean v)			{	 over=v; 			}
 	public void setalCommunities(Collection alCommunities1) { 	alCommunities = alCommunities1; 	}
+	public void setNoTasks(int v)			{	 NoTasks=v; 	}
+
+	public long getNextCheckPoint()			{	return nextcheckpoint; 	}
+	public long getStartTime()				{	return StartTime; 		}
+	public long getCurrentTime()			{	return CurrentTime; 	}
+
+	public int		getCurrentState()		{	return currentstate; 	}
+	public boolean	getOver()				{	return over; 			}
+	public Collection getalCommunities()	{ 	return alCommunities; 	}
+	public int	getNoTasks()				{ 	return NoTasks; 	}
 
 	public InternalState(String name, OMCRangeList allowedValues, Comparable value, UID uid) {
 		setUID(uid);
 	}   
 
 	public void show() {
-
 		System.out.println("nextcheckpoint = " + nextcheckpoint + ", StartTime = " + StartTime + ", currentstate = " +currentstate);
-
 	}
 
 	public UID getUID() {

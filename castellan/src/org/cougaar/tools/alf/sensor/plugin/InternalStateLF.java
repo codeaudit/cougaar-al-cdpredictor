@@ -20,7 +20,7 @@ public class InternalStateLF implements java.io.Serializable, UniqueObject, XMLi
 
     public long PlanStartTime;
 	public int hari, Thadakamala;
-	public long [] Hong = {0,0,0,0};
+	public double [] Hong = {0,0,0,0,0};
 	public long globalsea_time, globalair_time, onead_time;
 
 	public InternalStateLF(UID uid) {
@@ -34,6 +34,25 @@ public class InternalStateLF implements java.io.Serializable, UniqueObject, XMLi
 
 		setUID(uid);
 	}
+
+	public void setPlanStartTimet(long v)	{	 PlanStartTime=v; 	}
+	public void setGlobalsea_time(long v)	{	 globalsea_time=v;	}
+	public void setGlobalair_time(long v)	{	 globalair_time=v; 	}
+	public void setOnead_time(long v)		{	 onead_time=v; 		}
+	public void setHari(int v)				{	 hari=v; 	}
+	public void setThadakamala(int v)		{	 Thadakamala=v; 	}
+	public void setHong(double [] v)			{	 Hong=v; 			}
+
+	public long getPlanStartTimet()	{	 return PlanStartTime; 		}
+	public long getGlobalsea_time()	{	 return globalsea_time;		}
+	public long getGlobalair_time()	{	 return globalair_time; 	}
+	public long getOnead_time()		{	 return onead_time; 		}
+
+	public int getHari()			{	 return hari;				}
+	public int getThadakamala()		{	 return Thadakamala; 		}
+
+	public double [] getHong()		{	 return Hong; 				}
+	
 
 	public void show() {
 
