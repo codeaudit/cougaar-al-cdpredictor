@@ -1,0 +1,11 @@
+<TargetGenConfig>
+    <!-- This affects the density of targets being generated.-->
+    <ProbGeneration value="0.45"/>
+    <SeedValue value="3405691582"></SeedValue>
+    <!-- This affects how many clusters can be present at a time.  -->
+    <ActiveClusters value="3"></ActiveClusters>
+    <MinClusterTime value="35000"></MinClusterTime>
+    <MaxClusterTime value="60000"></MaxClusterTime>
+    <MinClusterDelay value="40000"></MinClusterDelay>
+    <MaxClusterDelay value="95000"></MaxClusterDelay>
+</TargetGenConfig>
