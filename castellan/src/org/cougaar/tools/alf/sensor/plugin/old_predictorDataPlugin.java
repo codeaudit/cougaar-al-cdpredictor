@@ -63,7 +63,7 @@ import java.lang.*;
 
 
 
-public class predictorDataPlugin extends ComponentPlugin implements pluginSupport {
+public class predictorDataPlugin extends ComponentPlugin  {
 
 	class FlushThread extends Thread {
 
