@@ -2,5 +2,7 @@
   <settings>
         <PlanLogAgent identifier="PlanLogAgent"/>
         <LoggingActive value="true"/>
+        <LogAllocationResults value="false"/>
+        <LogTaskRemoves value="false"/>
   </settings>
 </plpconfig>

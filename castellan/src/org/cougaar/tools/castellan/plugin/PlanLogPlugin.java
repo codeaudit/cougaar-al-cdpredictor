@@ -96,7 +96,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
                 BlackboardService bs = getBlackboardService() ;
                 bs.openTransaction();
-                mtImpl.execute();
+                execute();
                 bs.closeTransaction();
             }
         }
@@ -161,10 +161,10 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
     public void setupSubscriptions() {
         //DEBUG
-        System.out.println("PlanLogPlugin::Setting up subscriptions...");
-
-        config= getConfigInfo() ;
         log = ( LoggingService ) getServiceBroker().getService( this, LoggingService.class, null ) ;
+        log.info("PlanLogPlugin::Setting up subscriptions...");
+        config= getConfigInfo() ;
+        getBlackboardService().publishAdd( config ) ;  // Make this visible to the BB so that a servlet can see it.
 
         if ( config != null && config.getLogCluster() != null ) {
 
@@ -239,6 +239,8 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
         ConfigFinder finder = getConfigFinder() ;
         ClusterIdentifier clusterId = null ;
+
+        // Start with the default settings
         PlanLogConfig config = new PlanLogConfig() ;
 
         ServiceBroker sb = getServiceBroker() ;
@@ -275,16 +277,22 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
                         try {
                             Node root = doc.getDocumentElement() ;
                             if( root.getNodeName().equals( "plpconfig" ) ) {
-                                NodeList nodes = doc.getElementsByTagName( "PlanLogAgent" );
+                                clusterName = getNodeValueForTag(doc, "PlanLogAgent", "identifier" );
 
-                                // Get target plan log
-                                for (int i=0;i<nodes.getLength();i++) {
-                                    Node n = nodes.item(i) ;
-                                    clusterName = n.getAttributes().getNamedItem( "identifier" ).getNodeValue() ;
-                                    System.out.println( "Found identifier=" + clusterName );
-                                }
                                 if ( clusterName != null ) {
                                     config.setLogCluster( clusterName );
+                                }
+
+                                String value = getNodeValueForTag( doc, "LogAllocationResults", "value" ) ;
+                                if ( value != null ) {
+                                    boolean logar = Boolean.valueOf( value ).booleanValue() ;
+                                    config.setLogAllocationResults( logar );
+                                }
+
+                                value = getNodeValueForTag( doc, "LogTaskRemoves", "value" ) ;
+                                if ( value != null ) {
+                                    boolean logtr = Boolean.valueOf( value ).booleanValue() ;
+                                    config.setLogTaskRemoves( logtr );
                                 }
 
                                 // Get logging level
@@ -319,8 +327,8 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         }
 
         if ( config.getLogCluster() == null ) {
-            System.out.println( "Warning:: No configuration information found for agent " + getBindingSite().getAgentIdentifier() ) ;
-            log.info( "Warning:: No configuration information found for agent " + getBindingSite().getAgentIdentifier() );
+            //System.out.println( "Warning:: No configuration information found for agent " + getBindingSite().getAgentIdentifier() ) ;
+            log.error( "Warning:: No configuration information found for agent " + getBindingSite().getAgentIdentifier() );
         }
         else {
             if ( config.getLogCluster().equals( getBindingSite().getAgentIdentifier().cleanToString() ) ) {
@@ -330,8 +338,23 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
             }
         }
 
+        System.out.println("PlanLogPlugin:: Configuration data " + config );
+
         return config ;
 
+    }
+
+    private String getNodeValueForTag(Document doc, String tagName, String namedItem ) {
+        NodeList nodes = doc.getElementsByTagName( tagName );
+
+        String value = null ;
+        // Get target plan log
+        for (int i=0;i<nodes.getLength();i++) {
+            Node n = nodes.item(i) ;
+            value = n.getAttributes().getNamedItem( namedItem ).getNodeValue() ;
+            //System.out.println( "Found identifier=" + value );
+        }
+        return value;
     }
 
 
@@ -605,14 +628,16 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
                 // an AllocationResultPDU
                 Allocation al = (Allocation) o;
                 pdu = PlanToPDUTranslator.makeAllocationMessage(cet, ct, al, action);
-                if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_NONE) {
-                    // Do nothing by default
-                }
-                else if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_FULL) {
-                    checkAllocationResultChanged(al);
-                }
-                else if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_SUCCESS) {
-                    checkARSuccess(ct, cet, al, pdus);
+                if ( config.isLogAllocationResults() ) {
+                    if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_NONE) {
+                        // Do nothing by default
+                    }
+                    else if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_FULL) {
+                        checkAllocationResultChanged(al);
+                    }
+                    else if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_SUCCESS) {
+                        checkARSuccess(ct, cet, al, pdus);
+                    }
                 }
                 //checkAllocationResultChanged( al ) ;
             }
@@ -682,14 +707,16 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
                     // an AllocationResultPDU
                     Allocation al = (Allocation) o;
                     pdu = PlanToPDUTranslator.makeAllocationMessage(cet, ct, al, action);
-                    if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_NONE) {
-                        // Do nothing by default
-                    }
-                    else if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_FULL) {
-                        checkAllocationResultChanged(al);
-                    }
-                    else if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_SUCCESS) {
-                        checkARSuccess(ct, cet, al, pdus);
+                    if ( config.isLogAllocationResults() ) {
+                        if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_NONE) {
+                            // Do nothing by default
+                        }
+                        else if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_FULL) {
+                            checkAllocationResultChanged(al);
+                        }
+                        else if (logAllocationResultsLevel == PlanLogConstants.AR_LOG_LEVEL_SUCCESS) {
+                            checkARSuccess(ct, cet, al, pdus);
+                        }
                     }
                 }
                 else if (o instanceof Aggregation) {
@@ -840,7 +867,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         currentExecutionTime = currentTimeMillis() ;
         currentTime = System.currentTimeMillis() ;
 
-        stats.setNumAddsTotal( allElements.getAddedCollection().size());
+        //stats.setNumAddsTotal( allElements.getAddedCollection().size());
 
         for ( Iterator e = allElements.getAddedCollection().iterator(); e.hasNext(); )
         {
@@ -856,8 +883,10 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
         processChangedList( allElements.getChangedList() );
 
-        for ( Enumeration e = allElements.getRemovedList(); e.hasMoreElements(); ) {
-            processObject( ( UniqueObject ) e.nextElement(), EventPDU.ACTION_REMOVE );
+        if ( config.isLogTaskRemoves() ) {
+            for ( Enumeration e = allElements.getRemovedList(); e.hasMoreElements(); ) {
+                processObject( ( UniqueObject ) e.nextElement(), EventPDU.ACTION_REMOVE );
+            }
         }
 
         // Execute
