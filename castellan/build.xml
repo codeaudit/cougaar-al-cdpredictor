@@ -33,7 +33,7 @@
 	</target>
 
 	<target name="jar" depends="compile">
-		<jar jarfile="castellan.jar" baseDir="${build}"/>
+		<jar jarfile="${jar}" baseDir="${build}"/>
 	</target>
 
 	<target name="create_cougaar_overlay">
@@ -46,6 +46,7 @@
 			<fileset dir="data/libs" includes="*.jar"/>
 		</copy>
 		<zip zipfile="psu_cougaar_overlay.zip" basedir="staging"/>
+		<delete dir="staging"/>
 	</target>
 
 	<target name="clean" depends="delete,compile,jar"/>
