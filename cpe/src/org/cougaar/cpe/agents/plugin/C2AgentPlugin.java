@@ -61,6 +61,11 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
      * Measurement point for replanning times.
      */
     private DelayMeasurementPoint replanTimeMP;
+	/**
+	 * Measurement point for updation times
+	 */
+	private DelayMeasurementPoint updateProcessMP;
+	private DelayMeasurementPoint zonePlanProcessMP;
 
     /**
      * Number of instructions to process update status.
@@ -522,14 +527,15 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         //getBlackboardService().openTransaction();
 
         // Lock the black board in this version to prevent messages from being fired!
+//		TODO NG: Need PBT (replan)
+		long startTime = System.currentTimeMillis() ;
         boolean wasOpen = true ;
         if ( !getBlackboardService().isTransactionOpen() ) {
             wasOpen = false ;
             getBlackboardService().openTransaction();
         }
 
-        long lastWakeupTime = targetWakeupTime ;
-        long startTime = System.currentTimeMillis() ;
+        long lastWakeupTime = targetWakeupTime ;        
         replanTimerDelayMP.addMeasurement( new DelayMeasurement( "ReplanTimerFired", "ProcessReplan",
                 getAgentIdentifier(), lastWakeupTime, startTime ) ) ;
 
@@ -547,15 +553,14 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
             // measureProcessReplanTimer() ;
             planAndDistribute();
         }
-
-        replanTimeMP.addMeasurement( new DelayMeasurement( "ProcessReplan", null, getAgentIdentifier(), startTime, System.currentTimeMillis() ));
-
+       
         // Schedule replanning alarm.
         targetWakeupTime = startTime + getReplanPeriodInMillis();
         if ( started ) {
             getAlarmService().addRealTimeAlarm( new ReplanAlarm( targetWakeupTime  ) ) ;
         }
-
+//		TODO NG: Need ET (replan)
+		replanTimeMP.addMeasurement( new DelayMeasurement( "ReplanTime", "ReplanTime", getAgentIdentifier(), startTime, System.currentTimeMillis() ));	
         // Execute for good measure.
         // TODO Check to see if an execute is really called for here.
         // execute() ;
@@ -633,8 +638,24 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     protected void processMessageFromSuperior( MessageEvent message ) {
         System.out.println("Processing message from superior " + message );
         if ( message instanceof ZoneScheduleMessage ) {
+//			TODO NG: Need PBT (zone plan)
+			long startTime1 = System.currentTimeMillis();
+
+						boolean wasOpen = true;
+						if (!getBlackboardService().isTransactionOpen()) {
+							wasOpen = false;
+							getBlackboardService().openTransaction();
+						}
             ZoneScheduleMessage zoneScheduleMessage = (ZoneScheduleMessage) message ;
             mergeZoneSchedule( zoneScheduleMessage.getSchedule() ) ;
+//			TODO NG: Need ET (zone plan)
+					  zonePlanProcessMP.addMeasurement(
+						  new DelayMeasurement(
+							  "ProcessZonePlanBN",
+							  "ProcessZonePlanBN",
+							  getAgentIdentifier(),
+							  startTime1,
+							  System.currentTimeMillis()));
         }
         else if ( message instanceof ConfigureMessage ) {
             doConfigure( (ConfigureMessage) message ) ;
@@ -777,6 +798,14 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     protected void processMessagesFromSubordinates( MessageEvent message ) {
         // System.out.println( "\n" + getAgentIdentifier() + ":: PROCESSING MESSAGE from subordinate " + message );
         if ( message instanceof UnitStatusUpdateMessage ) {
+//			TODO NG: Need PBT (update)
+					  //Measurement
+					  long startTime1 = System.currentTimeMillis();
+					  boolean wasOpen = true;
+					  if (!getBlackboardService().isTransactionOpen()) {
+						  wasOpen = false;
+						  getBlackboardService().openTransaction();
+					  }
             UnitStatusUpdateMessage wsum = (UnitStatusUpdateMessage) message ;
 
             // QoS measurement.
@@ -818,6 +847,16 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
                 log.shout("\n" + getAgentIdentifier() + " CREATING INITIAL MANUEVER PLAN...");
                 planAndDistribute();
             }
+//			TODO NG: Need ET (update)
+			long endTime1 = System.currentTimeMillis();
+
+						updateUnitStatusDelayMP.addMeasurement(
+							new DelayMeasurement(
+								"updateUnitStatusDelayMP",
+								"updateUnitStatusDelayMP",
+								null,
+								startTime1,
+								endTime1));
 
         }
     }
@@ -977,6 +1016,10 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         getBlackboardService().publishAdd( replanTimeMP );
         updateUnitStatusDelayMP = new EventDurationMeasurementPoint( "UpdateUnitStateDelay" ) ;
         getBlackboardService().publishAdd( updateUnitStatusDelayMP );
+		updateProcessMP = new EventDurationMeasurementPoint("ProcessUpdate");
+		getBlackboardService().publishAdd(updateProcessMP);
+		zonePlanProcessMP =	new EventDurationMeasurementPoint("ProcessZonePlan");
+		getBlackboardService().publishAdd(zonePlanProcessMP);
     }
 
     private String getNodeValueForTag(Document doc, String tagName, String namedItem ) {
