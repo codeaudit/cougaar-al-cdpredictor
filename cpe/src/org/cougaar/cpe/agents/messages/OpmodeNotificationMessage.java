@@ -3,7 +3,7 @@ package org.cougaar.cpe.agents.messages;
 import org.cougaar.cpe.model.UnitEntity;
 import org.cougaar.tools.techspecs.events.MessageEvent;
 import java.util.HashMap;
-
+import org.cougaar.core.mts.MessageAddress;
 /**
  * User: Nathan Gnanasambandam
  * Date: July 15, 2004
@@ -11,7 +11,7 @@ import java.util.HashMap;
  */
 public class OpmodeNotificationMessage extends MessageEvent {
 
-	public OpmodeNotificationMessage( String entityName,  String value ) {
+	public OpmodeNotificationMessage( MessageAddress entityName,  String value ) {
 		setValue( value );
 		this.entityName = entityName;
 	}
@@ -20,7 +20,7 @@ public class OpmodeNotificationMessage extends MessageEvent {
 		return (String) getValue() ;
 	}
 
-	public String getEntityName() {
+	public MessageAddress getEntityName() {
 		return entityName;
 	}
 	
@@ -45,8 +45,12 @@ public class OpmodeNotificationMessage extends MessageEvent {
 	public double[][] getTimeForModes(){
 			return this.timeForTasks;
 	}
+	
+	public HashMap getAllOpmodes(){
+		return opmodes;
+	}
 
-	protected String entityName ;
+	protected MessageAddress entityName ;
 	protected HashMap opmodes= new HashMap();
 	protected double[][] timeForTasks = null;
 		
