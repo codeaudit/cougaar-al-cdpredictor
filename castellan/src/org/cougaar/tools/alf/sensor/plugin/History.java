@@ -69,4 +69,17 @@ import java.util.*;
 			listOfSubItem.put(nomenclature, historyElement);
 		}
 
+		public String getName() {
+		    return name;
+		}
+
+		public final int hashCode() {
+		    return name.hashCode();
+		}
+
+		public final boolean equals(Object o) {
+			return (o == this) ||
+				(o instanceof History && ((History)o).getName().equals(this.name));
+		}
+
 	}
