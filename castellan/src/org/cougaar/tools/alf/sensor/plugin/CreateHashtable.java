@@ -24,9 +24,10 @@
 
 package org.cougaar.tools.alf.sensor.plugin;
 
+
 import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.Vector;
+import java.util.Hashtable;
 
 
 public class CreateHashtable {
@@ -154,7 +155,7 @@ public class CreateHashtable {
 
     public Hashtable returnHT() {
 
-        if (hashtable != null) {
+        if (hashtable!= null) {
             return hashtable;
         }
         return null;

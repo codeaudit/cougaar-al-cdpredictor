@@ -57,7 +57,7 @@ public class SupplyDataUpdate {
 
         if (alt.isEmpty()) {
             CreateHashtable ch = new CreateHashtable(supplier, customer, supplyclass, item_name, task_publish_date, task_commitment_date, task_end_date, supply_quantity, uid);
-            hashTable = ch.setSupplyHT();
+            hashTable = (Hashtable) ch.setSupplyHT();
             alt.add(0, hashTable);
             flag = true;
 
@@ -97,7 +97,7 @@ public class SupplyDataUpdate {
             }
             if (flag == false) {
                 CreateHashtable ch3 = new CreateHashtable(supplier, customer, supplyclass, item_name, task_publish_date, task_commitment_date, task_end_date, supply_quantity, uid);
-                hashTable = ch3.setSupplyHT();
+                hashTable = (Hashtable) ch3.setSupplyHT();
                 alt.add(alt.size(), hashTable);
             }
         }
@@ -329,7 +329,7 @@ public class SupplyDataUpdate {
               }
            }
        }
-           retainAllItems(max_psal_new);
+           max_psal_new = retainAllItems(max_psal_new);
            return max_psal_new;
     }else
        {
@@ -339,11 +339,13 @@ public class SupplyDataUpdate {
     }
     //Add a method to retain additional items
 
-    public void retainAllItems(PredictorSupplyArrayList psal){
+    public PredictorSupplyArrayList retainAllItems(PredictorSupplyArrayList psal){
         Collection c = psal;
         PredictorSupplyArrayList psal_new = new PredictorSupplyArrayList();
         psal_new.addAll(c);
         if(psal_new!= null && max_psal!= null) {
+            System.out.println("psal_new size is"+psal_new.size());
+            System.out.println("max_psal size is"+max_psal.size());
         for(int i = 0; i < max_psal.size();i++){
             Vector item_check_vector = (Vector) max_psal.get(i);
             String item_check = item_check_vector.elementAt(3).toString();
@@ -358,7 +360,6 @@ public class SupplyDataUpdate {
                 else
                 {
                     anew.add(anew.size(),new Boolean(false));
-                    continue;
                 }
             }
             boolean temp_bool = false;
@@ -370,6 +371,7 @@ public class SupplyDataUpdate {
             }
             if(temp_bool == false){
                 psal_new.add(psal_new.size(),item_check_vector);
+                System.out.println("psal_new has new item added");
             }
 
         }
@@ -387,24 +389,26 @@ public class SupplyDataUpdate {
                 else
                 {
                     anew.add(anew.size(),new Boolean(false));
-                    continue;
                 }
             }
             boolean temp_bool = false;
-            for(int x =0; x < anew.size();x++){
-            if(new Boolean(anew.get(x).toString()).booleanValue() == true){
+            for(int y =0; y < anew.size();y++){
+            if(new Boolean(anew.get(y).toString()).booleanValue() == true){
                temp_bool = true;
                 break;
             }
             }
             if(temp_bool == false){
                 max_psal.add(max_psal.size(),item_check_vector);
+                System.out.println("max_psal has new item added");
             }
         }
+            return psal_new;
         }
         else
         {
-            return ;
+            System.out.println("retainAllItems didnt execute");
+            return psal;
         }
 
     }
@@ -425,24 +429,12 @@ public class SupplyDataUpdate {
 
       public void printToFile(String cu, String sucl, String itm, long cday, long commitdate, long fday, double qty, boolean toggle, String uid){
         toggle = print_flag;
-        StringTokenizer st = new StringTokenizer(itm);
-        StringBuffer sb = new StringBuffer();
-        while (st.hasMoreTokens()) {
-            String new_token = st.nextToken();
-            if(new_token == "/"){
-              continue;
-            }
-            else
-            {
-            sb = sb.append(new_token);
-            }
-        }
-        String new_item = sb.toString();
+        String sb_new_item = getPrintableStringForItemFile(itm);
         String dir = System.getProperty("org.cougaar.workspace");
         if(toggle == true){
-            if(new_item!= null){
+            if(sb_new_item!= null){
            try {
-               String Filename = cu + sucl + new_item + ".txt";
+               String Filename = cu + sucl + sb_new_item + ".txt";
                pr = new PrintWriter(new BufferedWriter(new java.io.FileWriter(dir+"/"+Filename,true)));
                pr.print(cu);
                pr.print(",");
@@ -467,6 +459,40 @@ public class SupplyDataUpdate {
         }
         }
     }
+
+    public String getPrintableStringForItemFile(String item){
+        StringTokenizer st = new StringTokenizer(item);
+        StringBuffer sb = new StringBuffer();
+        while (st.hasMoreTokens()) {
+            String new_token = st.nextToken();
+            if(new_token == "/"){
+              continue;
+            }
+            else
+            {
+            sb = sb.append(new_token);
+            }
+        }
+        String new_item = sb.toString();
+        StringBuffer sb_new = new StringBuffer();
+        char[] char_item = new_item.toCharArray();
+        for(int i =0; i< char_item.length; i++){
+            char temp = char_item[i];
+            String char_temp = new Character(temp).toString();
+            if(char_temp.equalsIgnoreCase("/") == true || char_temp.equalsIgnoreCase(".") ==true  || char_temp.equalsIgnoreCase("\"")== true
+            || char_temp.equalsIgnoreCase(",")== true || char_temp.equalsIgnoreCase("-")== true
+            || char_temp.equalsIgnoreCase(":")== true){
+                  continue;
+            } else
+            {
+                sb_new.append(char_temp);
+            }
+        }
+        String sb_new_item = sb_new.toString();
+        return sb_new_item;
+    }
+
+
     Hashtable hashTable;
     ArrayList alt = new ArrayList();
     int j = 0;
