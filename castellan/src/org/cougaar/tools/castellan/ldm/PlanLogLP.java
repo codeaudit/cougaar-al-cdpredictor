@@ -59,17 +59,22 @@ public class PlanLogLP extends LogPlanLogicProvider implements EnvelopeLogicProv
             // Process incoming and outgoing.
             synchronized ( buffer ) {
                 // Copy any incoming tasks into the incoming queue
-                if ( incoming.size() > 0 ) {
-                    for (int i=0;i<incoming.size();i++) {
-                        buffer.addIncoming( ( LogMessage ) incoming.get(i) );
-                    }
-                }
+                clearIncoming();
                 ArrayList outgoing = buffer.getOutgoing() ;
                 for ( int i=0;i<outgoing.size();i++) {
                     logplan.sendDirective( ( LogMessage ) outgoing.get(i) );
                 }
                 buffer.clearOutgoing();
             }
+        }
+    }
+
+    protected void clearIncoming() {
+        if ( incoming.size() > 0 ) {
+            for (int i=0;i<incoming.size();i++) {
+                buffer.addIncoming( ( LogMessage ) incoming.get(i) );
+            }
+            incoming.clear();
         }
     }
 
@@ -81,6 +86,7 @@ public class PlanLogLP extends LogPlanLogicProvider implements EnvelopeLogicProv
 
             if ( buffer != null ) {
                 synchronized ( buffer ) {
+                    clearIncoming();
                     buffer.addIncoming( ( LogMessage ) directive );
                 }
             }
@@ -90,6 +96,6 @@ public class PlanLogLP extends LogPlanLogicProvider implements EnvelopeLogicProv
         }
     }
 
-    ArrayList incoming = new ArrayList( 10 ) ;
-    LogMessageBuffer buffer ;
+    protected ArrayList incoming = new ArrayList( 10 ) ;
+    protected LogMessageBuffer buffer ;
 }
