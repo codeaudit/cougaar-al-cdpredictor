@@ -154,7 +154,20 @@ public class predictorServlet extends BaseServletComponent implements Blackboard
     	out.println("</html>");
   	}
 
-  	protected void postFailure(PrintWriter out) 
+    protected void postTurnONSuccess(PrintWriter out)
+  	{
+    	out.println("<html>");
+    	out.println("<head>");
+    	out.println("<title>Predictor Switch</title>");
+    	out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">");
+    	out.println("</head>");
+    	out.println("<body bgcolor=\"#FFFFFF\">");
+    	out.println("<H3><CENTER>Turn ON Successful !!</CENTER></H3>");
+    	out.println("</body>");
+    	out.println("</html>");
+  	}
+
+  	protected void postFailure(PrintWriter out)
   	{
     	out.println("<html>");
     	out.println("<head>");
@@ -166,8 +179,21 @@ public class predictorServlet extends BaseServletComponent implements Blackboard
     	out.println("</body>");
     	out.println("</html>");
   	}
-  
-  	protected void publish(PrintWriter out) 
+
+    protected void postTurnONFailure(PrintWriter out)
+  	{
+    	out.println("<html>");
+    	out.println("<head>");
+    	out.println("<title>Predictor Switch</title>");
+    	out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">");
+    	out.println("</head>");
+    	out.println("<body bgcolor=\"#FFFFFF\">");
+    	out.println("<H3><CENTER> Turn Off UnSuccessful !!</CENTER></H3>");
+    	out.println("</body>");
+    	out.println("</html>");
+  	}
+
+  	protected void publish(PrintWriter out)
   	{ 	 
 		getComm(out); 	
     
@@ -200,7 +226,7 @@ public class predictorServlet extends BaseServletComponent implements Blackboard
     		for (Iterator iterator = targets.iterator(); iterator.hasNext();) 
 			{
 				MessageAddress target = (MessageAddress) iterator.next();
-            	TestRelay relay = new TestRelay(myUIDService.nextUID(), agentId, target , "foo" ,null);
+            	TestRelay relay = new TestRelay(myUIDService.nextUID(), agentId, target , "OFF" ,null);
             	blackboard.openTransaction();
             	blackboard.publishAdd(relay);
             	blackboard.closeTransaction();
@@ -208,7 +234,43 @@ public class predictorServlet extends BaseServletComponent implements Blackboard
     		postSuccess(out);
 		}
   	}
-  
+
+    public void printTurnON(PrintWriter out)
+  	{
+  		Collection targets = new HashSet();
+  		myUIDService = (UIDService) serviceBroker.getService(this,UIDService.class, null);
+  		communityService = (CommunityService) serviceBroker.getService(this, CommunityService.class, null);
+    	if (communityService == null)
+    	{
+    		myLoggingService.error("CommunityService not available.");
+     		return;
+   		}
+    	CommunityRoster cr = communityService.getRoster("ALSUPPLY-COMM");
+    	Collection alSupplyCommunities = cr.getMemberAgents();
+    	targets.addAll(alSupplyCommunities);
+    	CommunityRoster cr1 = communityService.getRoster("NCA-COMM");
+    	Collection alSupplyCommunities1 = cr1.getMemberAgents();
+    	targets.addAll(alSupplyCommunities1);
+
+    	if(targets.isEmpty())
+    	{
+    		postTurnONFailure(out);
+        	return;
+    	}
+    	else
+    	{
+    		for (Iterator iterator = targets.iterator(); iterator.hasNext();)
+			{
+				MessageAddress target = (MessageAddress) iterator.next();
+            	TestRelay relay = new TestRelay(myUIDService.nextUID(), agentId, target , "ON" ,null);
+            	blackboard.openTransaction();
+            	blackboard.publishAdd(relay);
+            	blackboard.closeTransaction();
+        	}
+    		postTurnONSuccess(out);
+		}
+  	}
+
   private class MyServlet extends HttpServlet {
   		
   	public void doGet(
@@ -229,8 +291,12 @@ public class predictorServlet extends BaseServletComponent implements Blackboard
           else if (action.equals(STATUS)) 
           {           
             publish(out);
-          } 
-        } 
+          }
+          else if (action.equals(STATUS1))
+          {
+            printTurnON(out);
+          }
+        }
         catch (Exception topLevelException) 
         {
           exceptionFailure(out, topLevelException);
@@ -261,18 +327,24 @@ public class predictorServlet extends BaseServletComponent implements Blackboard
   		out.println("<form method =\"get\" action=\"http://localhost:8800/$" + getAgentID() + getPath());
   		out.println("\">");
   		out.println("<tr>");
-  		out.println("<td><B>Turn OFF Predictor Utility </td>");
-  		out.println("</tr>");
+  		out.println("<td><B>TURN OFF PREDICTOR</td>");
+        out.println("</tr>");
   		out.println("<input type=\"submit\" name=\"" + ACTION_PARAM +
-                "\" value=\"" + STATUS + "\">\n");  	
+                "\" value=\"" + STATUS + "\">\n<BR>");
+        out.println("<BR><tr>");
+        out.println("<td><B>TURN ON PREDICTOR</td>&nbsp");
+        out.println("</tr>");
+        out.println("<input type=\"submit\" name=\"" + ACTION_PARAM +
+                "\" value=\"" + STATUS1 + "\">\n");
   		printHtmlEnd(out);
   	}
   
   }
 	
   public static final String ACTION_PARAM = "action";
-  public static final String STATUS = "Turn Off";
-  	
+  public static final String STATUS = "Submit OFF";
+  public static final String STATUS1 = "Submit ON";
+
   private HttpServletRequest request;
   private HttpServletResponse response;
   protected MessageAddress agentId;
