@@ -830,15 +830,20 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
     public void execute() {
         if ( allElements == null ) {
+            if ( log.isWarnEnabled() ) {
+                log.warn("PlanLogPlugin:: Null subscription?");
+            }
             return ;
         }
 
         currentExecutionTime = currentTimeMillis() ;
         currentTime = System.currentTimeMillis() ;
 
-        for ( Enumeration e = allElements.getAddedList(); e.hasMoreElements(); )
+        stats.setNumAddsTotal( allElements.getAddedCollection().size());
+
+        for ( Iterator e = allElements.getAddedCollection().iterator(); e.hasNext(); )
         {
-            Object o = e.nextElement();
+            Object o = e.next();
             if ( o instanceof Task ) {
                 //Task temp = ( Task ) o ;
                 // Just count these UIDs up since we should only ever see one add.
