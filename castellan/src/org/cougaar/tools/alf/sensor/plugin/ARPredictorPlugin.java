@@ -125,9 +125,9 @@ public class ARPredictorPlugin extends ComponentPlugin {
 			predictAllocationResults(c1);
 		}
 
-		if (c3!=null)	{
-			predictAllocationResults(c3);
-		}
+//		if (c3!=null)	{
+//			predictAllocationResults(c3);
+//		}
 
     }
 
@@ -263,8 +263,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 			for (int i = 0; i < nAllocations; i++) {
 
 				Allocation ai = (Allocation)allocIterator.next();	Task ti = (Task) ai.getTask();
-
-/////////////// Examine whethe it is a task of BulkPOL or Ammunition.
 
 				// nomenclature
 				String nomenclature = null;
