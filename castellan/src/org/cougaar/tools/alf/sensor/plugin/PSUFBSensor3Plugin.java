@@ -368,8 +368,8 @@ class result
 		 double deduce(int avg1, int cum2)
 		{
 		
-			double cumlm = cumln-(0.15*cumln);
-			double cumls = cumln-(0.30*cumln);
+			double cumlm = cumln-(0.30*cumln);
+			double cumls = cumln-(0.50*cumln);
 
 			if (avg1!=-1)
 			{
