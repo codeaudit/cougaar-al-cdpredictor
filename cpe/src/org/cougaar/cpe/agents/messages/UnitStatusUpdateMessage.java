@@ -4,15 +4,24 @@ import org.cougaar.cpe.model.UnitEntity;
 import org.cougaar.cpe.model.WorldState;
 import org.cougaar.cpe.model.WorldStateModel;
 
+import java.util.ArrayList;
+
 /**
  *  Sent by the WorldState to the UnitAgent and the UnitAgent to the
  *  C2Agent.
  */
 public class UnitStatusUpdateMessage extends org.cougaar.tools.techspecs.events.MessageEvent {
-    public UnitStatusUpdateMessage( org.cougaar.cpe.model.UnitEntity entity, WorldStateModel ws  ) {
+    public UnitStatusUpdateMessage( UnitEntity entity, WorldStateModel ws ) {
         super();
         setValue( entity );
         this.perceivedWorldState = ws ;
+    }
+
+    public UnitStatusUpdateMessage( UnitEntity entity, WorldStateModel perceivedWorldState, ArrayList cpeEvents) {
+        super() ;
+        setValue( entity );
+        this.perceivedWorldState = perceivedWorldState;
+        this.cpeEvents = cpeEvents;
     }
 
     /**
@@ -36,6 +45,12 @@ public class UnitStatusUpdateMessage extends org.cougaar.tools.techspecs.events.
     }
 
     protected org.cougaar.cpe.model.WorldStateModel perceivedWorldState ;
+
+    public ArrayList getEvents() {
+        return cpeEvents;
+    }
+
+    protected ArrayList cpeEvents ;
 
     public static final int MESSAGE_BYTE_LENGTH = 50000 ;
 }

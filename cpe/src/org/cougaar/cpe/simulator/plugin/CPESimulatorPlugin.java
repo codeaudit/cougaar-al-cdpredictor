@@ -21,6 +21,7 @@ import org.cougaar.cpe.relay.TargetBufferRelay;
 import org.cougaar.cpe.relay.TimerMessage;
 import org.cougaar.cpe.planning.zplan.BNAggregate;
 import org.cougaar.cpe.planning.zplan.ZoneWorld;
+import org.cougaar.cpe.util.CloneUtils;
 import org.cougaar.tools.techspecs.qos.*;
 import org.cougaar.tools.techspecs.events.MessageEvent;
 import org.cougaar.tools.techspecs.events.ActionEvent;
@@ -56,6 +57,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     private String targetGeneratorClassName;
     private String targetGeneratorConfigFile;
     private CPEEventListener worldEventListener;
+    private ArrayList worldEvents = new ArrayList();
 
     protected void execute() {
         // First, check to see if there are any new client relays.
@@ -352,9 +354,18 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                 model = new WorldStateModel( referenceWorldState ) ;
             }
 
-            UnitStatusUpdateMessage wsum = new UnitStatusUpdateMessage( entity, model ) ;
+            // Send all the events to the target.
+            ArrayList events = (ArrayList) CloneUtils.deepClone( worldEvents ) ;
+            UnitStatusUpdateMessage wsum = new UnitStatusUpdateMessage( entity, model, events ) ;
             wsum.setPriority( ActionEvent.PRIORITY_HIGH );
             mt.sendMessage( o.getSource(), wsum );
+        }
+
+        // Now, send the messages to the control relay.
+        for (Iterator iterator = controlRelaySubscription.iterator(); iterator.hasNext();) {
+            //
+            // Object o = (Object) iterator.next();
+
         }
     }
 
@@ -497,7 +508,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             referenceWorldState.addEventListener( worldEventListener = new CPEEventListener() {
                 public void notify(CPEEvent e)
                 {
-
+                   worldEvents.add( e ) ;
                 }
             });
 
