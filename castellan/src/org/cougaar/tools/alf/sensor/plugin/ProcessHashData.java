@@ -42,7 +42,7 @@ public class ProcessHashData {
     public PredictorArrayList iterateList() {
         int z = -1;
         //String supplier = ((Vector)((Hashtable)arrayList.get(0)).get(new Integer(1))).elementAt(0).toString();
-        hashTableList = new PredictorArrayList(arrayList.size());
+        hashTableList = new PredictorArrayList("123-MSB",arrayList.size());
         for (int j = 0; j < arrayList.size(); j++) {
             //String customer = ((Vector)((Hashtable)arrayList.get(j)).get(new Integer(1))).elementAt(1).toString();
             String customer = ((Vector)((Hashtable)arrayList.get(j)).get(new Integer(1))).elementAt(0).toString();
@@ -129,7 +129,7 @@ public class ProcessHashData {
     }
 
     public PredictorArrayList1 sortItemType(Object[][] ob){
-        long start = System.currentTimeMillis();
+        //long start = System.currentTimeMillis();
         //System.out.println(" sortItemType start of for loop in sort function " +  new Date(start));
         PredictorArrayList1 item_arraylist = new PredictorArrayList1();
         //int k = 7;
@@ -168,17 +168,17 @@ public class ProcessHashData {
          } else
              return null;
     }
-       long end = System.currentTimeMillis();
+       //long end = System.currentTimeMillis();
     //System.out.println("sortItemType End of for loop in sort function " +  new Date(end)
-                       //+ " total time to sort in milliseconds" +
-                       //(end - start));
+                      // + " total time to sort in milliseconds" +
+                      // (end - start));
        return item_arraylist;
     }
 
 
   public void loraSort(Object[] ob) {
     //System.out.println("Collection Size: " + ob.length);
-    long start = System.currentTimeMillis();
+    //long start = System.currentTimeMillis();
     //System.out.println(" LORA SORT start of for loop in sort function " +  new Date(start));
     Arrays.sort(ob, new Comparator () {
       public int compare (Object a, Object b) {
@@ -190,10 +190,10 @@ public class ProcessHashData {
         if (end1.longValue() > end2.longValue()) return +1;
         return 0;
       }});
-    long end = System.currentTimeMillis();
+    //long end = System.currentTimeMillis();
     //System.out.println("LORA SORT End of for loop in sort function " +  new Date(end)
-                      // + " total time to sort in milliseconds" +
-                      // (end - start));
+                       //+ " total time to sort in milliseconds" +
+                       //(end - start));
   }
 
   public void sort(Object[][] ob) {
@@ -201,7 +201,7 @@ public class ProcessHashData {
         int k = 3;
         int j = 0;
       //System.out.println("Collection Size: " + ob.length);
-      long start = System.currentTimeMillis();
+      //long start = System.currentTimeMillis();
       //System.out.println(" start of for loop in sort function " +  new Date(start));
         for (int i = 0; i < ob.length; i++) {
             for (j = i + 1; j < ob.length; j++) {
@@ -227,9 +227,9 @@ public class ProcessHashData {
                 }
             }
         }
-      long end = System.currentTimeMillis();
+      //long end = System.currentTimeMillis();
       //System.out.println(" End of for loop in sort function " +  new Date(end) + " total time to sort in minutes " +
-                        // ((end - start)/60000));
+                       // ((end - start)/60000));
     }
 
 

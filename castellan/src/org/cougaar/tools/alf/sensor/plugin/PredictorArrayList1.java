@@ -8,6 +8,7 @@ public class PredictorArrayList1 extends ArrayList implements java.io.Serializab
 
     public PredictorArrayList1(){
       super();
+        
     }
 
     public PredictorArrayList1(int capacity){

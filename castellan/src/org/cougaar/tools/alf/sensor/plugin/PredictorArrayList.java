@@ -11,9 +11,24 @@ public class PredictorArrayList extends ArrayList implements java.io.Serializabl
       this.name = name;
     }
 
-    public PredictorArrayList(int capacity){
+    public PredictorArrayList(String name, int capacity){
       super(capacity);
+      this.name = name;
     }
+
+   public String getName() {       //change
+    return name;
+  }
+
+   public final int hashCode() {      //change
+    return name.hashCode();
+  }
+
+  public final boolean equals(Object o) {       //change
+    return (o == this) ||
+      (o instanceof PredictorArrayList &&
+    ((PredictorArrayList)o).getName().equals(this.name));
+  }
 
     public String name;
 }

@@ -79,7 +79,7 @@ public class CreateHashtable {
                 }
             }
         } else {
-            System.out.println("No Hashtable created");
+            //System.out.println("No Hashtable created");
         }
 
     }
@@ -110,7 +110,7 @@ public class CreateHashtable {
 
             return hashtable;
         } else {
-            System.out.println("No Hashtable created");
+            //System.out.println("No Hashtable created");
         }
 
         return null;

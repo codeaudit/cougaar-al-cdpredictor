@@ -106,19 +106,19 @@ public class PredictorDataPlugin extends ComponentPlugin {
 
     }; */
 
-    UnaryPredicate htPredicate = new UnaryPredicate() {
+  /*  UnaryPredicate htPredicate = new UnaryPredicate() {
         public boolean execute(Object o) {
             return o instanceof Hashtable;
         }
 
-    };
+    };  */
 
-    UnaryPredicate hashArrayPredicate = new UnaryPredicate() {
+  /*  UnaryPredicate hashArrayPredicate = new UnaryPredicate() {    //change
         public boolean execute(Object o) {
             return o instanceof PredictorArrayList1;
         }
 
-    };
+    }; */
 
    /* UnaryPredicate AlarmPredicate = new UnaryPredicate() {
         public boolean execute(Object o) {
@@ -141,7 +141,6 @@ public class PredictorDataPlugin extends ComponentPlugin {
 				Task tempTask = (Task) o;
                 if(tempTask.getVerb().equals(Constants.Verb.PROJECTSUPPLY)){
                 if(tempTask.getPrepositionalPhrase("For").getIndirectObject().equals("47-FSB")== true){
-                //if(Owner.equalsIgnoreCase(cluster)== false){
                     return true;
                 }
                 else {
@@ -179,20 +178,20 @@ public class PredictorDataPlugin extends ComponentPlugin {
             //flagger = true;
         //}
         if (myBS.didRehydrate() == false) {
-            ht = new Hashtable();
-            myBS.publishAdd(ht);
+            //ht = new Hashtable();
+            //myBS.publishAdd(ht);
             //myLoggingService.shout("ht saved");
-            hashArray = new PredictorArrayList1();
-            myBS.publishAdd(hashArray);
+            //hashArray = new PredictorArrayList1();
+            //myBS.publishAdd(hashArray);
             //myLoggingService.shout("hashArray saved");
-            al = new PredictorArrayList(cluster);
-            myBS.publishAdd(al);
+            //al = new PredictorArrayList(cluster);
+            //myBS.publishAdd(al);
             //myLoggingService.shout("al saved");
             myBS.setShouldBePersisted(false);
         } else {
             //retrievehtfromBB();
             rehydrate_flag = true;
-            retrievehashArrayfromBB();
+            //retrievehashArrayfromBB();   //change
             retrieveALfromBB();
             //retrieveAlarmfromBB();
             //myLoggingService.shout("retrieveALfromBB");
@@ -233,13 +232,15 @@ public class PredictorDataPlugin extends ComponentPlugin {
                 //myLoggingService.shout("Alarm fired in execute");
                 //long end = System.currentTimeMillis();
                 //System.out.println("Alarm End PDPAlarm function " +  new Date(end)
-                     //  + " total time in milliseconds" +
-                      // (end - time));
+                       //+ " total time in milliseconds" +
+                       //(end - time));
                 alarm.cancel();
             }
         }
+        if(rehydrate_flag == false){     //change
         relationshipList();
         getPlannedDemand();
+        }
     }
 
    /* public void retrievehtfromBB(){
@@ -260,16 +261,16 @@ public class PredictorDataPlugin extends ComponentPlugin {
         }
     }  */
 
-    public void retrievehashArrayfromBB(){
+   /* public void retrievehashArrayfromBB(){           //change
       if(hashArray == null){
           //myLoggingService.shout("hashArray null");
           Collection c = myBS.query(hashArrayPredicate);
           for(Iterator iter = c.iterator();iter.hasNext() ;){
               hashArray = (PredictorArrayList1) iter.next();
-              //myLoggingService.shout("Number of unique relationships: "+hashArray.size());
+              myLoggingService.shout("Number of unique relationships: "+hashArray.size());
               //myLoggingService.shout("hashArray PredictorArrayList1");
           }
-        /*    Collection c1 = hashArraySubscription.getAddedCollection();
+            Collection c1 = hashArraySubscription.getAddedCollection();
             Collection c2 = hashArraySubscription.getChangedCollection();
             for(Iterator iter = c1.iterator();iter.hasNext() ;){
                 hashArray = (ArrayList) iter.next();
@@ -280,9 +281,9 @@ public class PredictorDataPlugin extends ComponentPlugin {
                 hashArray = (ArrayList) iter.next();
                 myLoggingService.shout("hashArray size changed"+hashArray.size());
                 myLoggingService.shout("hashArray ArrayList");
-            } */
+            }
         }
-    }
+    }  */
 
     public void retrieveALfromBB(){
       if(al == null){
@@ -396,7 +397,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
                         chashtable.setHT();
                         if (hashArray.isEmpty()) {
                             hashArray.add(0, chashtable.returnHT());
-                            myBS.publishChange(hashArray);
+                            myBS.publishAdd(hashArray);
                         } else {
                             hashArray.add((hashArray.size()), chashtable.returnHT());
                             myBS.publishChange(hashArray);
@@ -437,9 +438,9 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                 if (tem != null) {
                                                     if ((chash.getHT()).equals(((Hashtable) hashArray.get(j)).get(new Integer(1)))) {
                                                         ht = (Hashtable) hashArray.get(j);
-                                                        /*if(j == 0){
+                                                        if(j == 0){
                                                             myBS.publishAdd(ht);
-                                                        }*/
+                                                        }
                                                     }
                                                 }
                                             }
@@ -494,7 +495,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
                                                     }
                                                 }
                                                 }
-                                                //myBS.publishChange(ht);
+                                                myBS.publishChange(ht);
                                                 myBS.publishChange(hashArray);
                                             }
                                         }
@@ -518,10 +519,10 @@ public class PredictorDataPlugin extends ComponentPlugin {
         counter++;
         if (counter == 1) {
             ProcessHashData phd = new ProcessHashData(hashArray);
-            if (phd != null) {
+            if (phd!= null) {
                 al = phd.iterateList();
                 if (al!= null) {
-                    myBS.publishChange(al);
+                    myBS.publishAdd(al);
                 }
             }
         } else
@@ -617,9 +618,9 @@ public class PredictorDataPlugin extends ComponentPlugin {
     private TriggerFlushAlarm alarm = null;
 
     private CreateHashtable chashtable;
-    private Hashtable ht = null;
+    private Hashtable ht = new Hashtable();
     private Hashtable hasht = new Hashtable();
-    PredictorArrayList1 hashArray = null;
+    PredictorArrayList1 hashArray = new PredictorArrayList1();
 
     private int counter = 0;
     private long t = 0;
