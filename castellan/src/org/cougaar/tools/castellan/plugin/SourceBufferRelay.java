@@ -58,7 +58,7 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
     }
 
     public Object getContent() {
-        System.out.println("SourceBufferRelay::getContent() called on " + this );
+        // System.out.println("SourceBufferRelay::getContent() called on " + this );
         Object[] c = outgoing.toArray() ;
         outgoing.clear();
         return c ;
