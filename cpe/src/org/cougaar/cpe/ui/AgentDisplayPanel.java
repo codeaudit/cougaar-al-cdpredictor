@@ -252,20 +252,6 @@ public class AgentDisplayPanel extends JFrame {
         gbc.weighty = 100 ; gbc.weightx = 100 ;
         gbc.anchor = GridBagConstraints.CENTER ;
 
-        Collections.sort( measurementPoints, new Comparator() {
-            public int compare(Object o1, Object o2)
-            {
-                MeasurementPoint mp1 = (MeasurementPoint) o1, mp2 = (MeasurementPoint) o2 ;
-                if ( mp1.getName() == null ) {
-                    return 1 ;
-                }
-                if ( mp2.getName() == null ) {
-                    return 0 ;
-                }
-                return mp1.getName().compareTo( mp2.getName() ) ;
-            }
-        } ) ;
-
         for (int i = 0; i < measurementPoints.size(); i++) {
             MeasurementPoint measurementPoint = (MeasurementPoint)measurementPoints.get(i);
             if ( measurementPoint instanceof EventDurationMeasurementPoint ) {
