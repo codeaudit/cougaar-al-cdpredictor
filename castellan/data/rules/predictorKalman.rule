@@ -1,4 +1,4 @@
-####################################################
+############################################
 # Rule to insert Predictor plugin
 
 predictorKalman = "org.cougaar.tools.alf.sensor.plugin.PredictorPlugin"
