@@ -95,6 +95,19 @@ public class ReferenceWorldState extends WorldState
                     }
                 }
             }
+
+            //
+            // Remove all non-visible targets
+            //
+            for (Iterator iterator = contactsByIdMap.values().iterator(); iterator.hasNext();)
+            {
+                TargetContact targetContact = (TargetContact) iterator.next();
+                TargetEntity entity = (TargetEntity) ws.getEntity( targetContact.getId() ) ;
+                if ( entity == null || entity.isActive() == false || !isVisible( ws, entity ) ) {
+                    //System.out.println("Removing contact " + entity.getId() + " from sensor with range " + yHorizon );
+                    iterator.remove();
+                }
+            }
         }
 
         public TargetContact makeReferenceContact( TargetEntity entity ) {
