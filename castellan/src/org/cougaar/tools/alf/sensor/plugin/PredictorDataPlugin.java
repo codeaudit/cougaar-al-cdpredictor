@@ -24,7 +24,8 @@
 //  Revision 1.1 by hgupta 03/22/04
 //  Revision 1.0 by hgupta: Initial Revision
 
-package org.cougaar.tools.predictor.plugin;
+
+package org.cougaar.tools.alf.sensor.plugin;
 
 import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.core.blackboard.IncrementalSubscription;
@@ -42,7 +43,6 @@ import org.cougaar.planning.ldm.plan.*;
 import org.cougaar.util.UnaryPredicate;
 
 import java.util.*;
-
 
 public class PredictorDataPlugin extends ComponentPlugin {
 

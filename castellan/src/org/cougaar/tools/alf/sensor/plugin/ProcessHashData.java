@@ -22,7 +22,7 @@
   *
   */
 
-package org.cougaar.tools.predictor.plugin;
+package org.cougaar.tools.alf.sensor.plugin;
 
 import java.io.BufferedWriter;
 import java.io.PrintWriter;
@@ -46,8 +46,8 @@ public class ProcessHashData {
 				String item_name = (String)iter.next();
 				ArrayList valuesList = (ArrayList)inner_hashmap.get(item_name);
 				demandPerDay(valuesList);
-				String formattedName = formatItemName(item_name);
-				printList(formattedName, valuesList);
+				//String formattedName = formatItemName(item_name);
+				//printList(formattedName, valuesList);
 			}
 		}
 		return hashmap;

@@ -22,7 +22,7 @@
   *
   */
 
-package org.cougaar.tools.predictor.plugin;
+package org.cougaar.tools.alf.sensor.plugin;
 
 import org.cougaar.core.util.*;
 

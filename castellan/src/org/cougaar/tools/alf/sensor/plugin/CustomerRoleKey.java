@@ -24,7 +24,7 @@
   */
 
 
-package org.cougaar.tools.predictor.plugin;
+package org.cougaar.tools.alf.sensor.plugin;
 
 public class CustomerRoleKey implements java.io.Serializable {
 

@@ -22,7 +22,7 @@
   *
   */
 
-package org.cougaar.tools.predictor.plugin;
+package org.cougaar.tools.alf.sensor.plugin;
 
 import java.util.ArrayList;
 import java.util.HashMap;

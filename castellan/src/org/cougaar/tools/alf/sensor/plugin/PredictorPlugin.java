@@ -22,7 +22,7 @@
   *
 */
 
-package org.cougaar.tools.predictor.plugin;
+package org.cougaar.tools.alf.sensor.plugin;
 
 import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.core.blackboard.IncrementalSubscription;
