@@ -561,6 +561,11 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
 
     public void execute(EnvelopeTuple env, Collection changeReports) {
         Object o = env.getObject();
+
+        if ( config != null && !config.isActive() ) {
+            return ;
+        }
+
         currentExecutionTime = cluster.currentTimeMillis();
         currentTime = System.currentTimeMillis();
 
@@ -578,10 +583,12 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
             PlanLogConfig config = ( PlanLogConfig ) o ;
             System.out.println("PlanEventLogLP::Received configuration settings...");
             setLogConfig( config );
-            DeclarePDU pdu =
-               new DeclarePDU( config.getNodeIdentifier(),
-                       cluster.getClusterIdentifier().cleanToString(), System.currentTimeMillis(), -1 ) ;
-            sendMessage( pdu );
+            if ( config.isActive() ) {
+                DeclarePDU pdu =
+                   new DeclarePDU( config.getNodeIdentifier(),
+                           cluster.getClusterIdentifier().cleanToString(), System.currentTimeMillis(), -1 ) ;
+                sendMessage( pdu );
+            }
             return;
         }
 
