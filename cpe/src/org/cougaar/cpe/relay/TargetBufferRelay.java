@@ -44,6 +44,23 @@ public class TargetBufferRelay implements Relay.Target, Serializable {
         addIncoming( ( Object[] ) c ) ;
     }
 
+    /**
+     * This has a matching tag.
+     *
+     * @param tag
+     * @param uid
+     * @param source
+     * @param c
+     */
+    public TargetBufferRelay(String tag, UID uid, MessageAddress source, Object c ) {
+        this( uid, source, c ) ;
+        this.tag = tag ;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
     public GenericRelayMessageTransport getGmrt()
     {
         return gmrt;
@@ -70,6 +87,26 @@ public class TargetBufferRelay implements Relay.Target, Serializable {
         throw new RuntimeException( "Cannot set UID at runtime." ) ;
     }
 
+    public int getBufferSize() {
+        return responses.size() ;
+    }
+
+    public int getNumResponses() {
+        return numResponses;
+    }
+
+    public int getNumUpdates() {
+        return numUpdates;
+    }
+
+    public int getNumSent() {
+        return numSent;
+    }
+
+    public int getNumReceived() {
+        return numReceived;
+    }
+
     /**
      * Handles groups of incoming data.
      * @param ics
@@ -78,11 +115,13 @@ public class TargetBufferRelay implements Relay.Target, Serializable {
         if ( gmrt != null ) {
             for ( int i=0;i<ics.length;i++) {
                 gmrt.addMessage( ics[i], getSource() );
+                numReceived ++ ;
             }
         }
         else {
             for ( int i=0;i<ics.length;i++) {
                 content.add( ics[i] ) ;
+                numReceived ++ ;
             }
         }
     }
@@ -101,7 +140,12 @@ public class TargetBufferRelay implements Relay.Target, Serializable {
      */
     public synchronized void addResponse( Serializable o ) {
         responses.add( o ) ;
-        responseChanged = true ;
+        numReceived ++ ;
+
+        // Toggle the respond changed.
+        if ( !responseChanged ) {
+            responseChanged = true ;
+        }
     }
 
     /**
@@ -118,7 +162,7 @@ public class TargetBufferRelay implements Relay.Target, Serializable {
 
     /**
      * Returns an array of objects which are responses. This is called by the
-     * logic provider only!
+     * logic provider only to clear the buffered contents.
      */
     public synchronized Object getResponse() {
         Object[] resp = new Object[ responses.size() ] ;
@@ -127,15 +171,29 @@ public class TargetBufferRelay implements Relay.Target, Serializable {
         }
         responses.clear();
         responseChanged = false ;
+        numResponses ++ ;
         return resp ;
     }
 
     public int updateContent(Object o, Relay.Token token) {
         // System.out.println("updateContent() called on " + this);
         addIncoming( ( Object[] ) o );
+        numUpdates ++ ;
         return Relay.CONTENT_CHANGE ;
     }
 
+    /**
+     * Called by the LP to add responses.
+     */
+    protected int numResponses = 0 ;
+    /**
+     * Called by the LP to update the local content with received messages.
+     */
+    protected int numUpdates = 0 ;
+    protected int numSent = 0 ;
+    protected int numReceived = 0 ;
+
+    protected String tag ;
     protected boolean responseChanged = false ;
     protected UID uid ;
     protected MessageAddress source ;

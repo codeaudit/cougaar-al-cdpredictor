@@ -4,18 +4,26 @@ import org.cougaar.cpe.model.WorldState;
 import org.cougaar.cpe.model.VGWorldConstants;
 import org.cougaar.cpe.agents.plugin.C2AgentPlugin;
 import org.cougaar.cpe.agents.plugin.WorldStateReference;
+import org.cougaar.cpe.relay.SourceBufferRelay;
+import org.cougaar.cpe.relay.TargetBufferRelay;
 import org.cougaar.tools.techspecs.qos.MeasurementPoint;
 import org.cougaar.tools.techspecs.qos.DelayMeasurementPoint;
 import org.cougaar.tools.techspecs.qos.EventDurationMeasurementPoint;
 
 import javax.swing.*;
+import javax.swing.event.TableModelListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.table.TableModel;
 
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.plugin.ComponentPlugin;
+import org.cougaar.core.relay.Relay;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * User: wpeng
@@ -28,6 +36,140 @@ public class AgentDisplayPanel extends JFrame {
 
     private RefreshThread refreshThread;
     private JScrollPane spMeasurementPanel;
+    private RelayPanel relayPanel;
+
+    static class RelayTableModel implements TableModel {
+
+        final static String[] COLUMN_NAMES = { "Type", "Destination", "Queries", "Sent", "Received", "Buffered" } ;
+
+        public int getRowCount() {
+            return relays.size() ;
+        }
+
+        public int getColumnCount() {
+            return COLUMN_NAMES.length ;
+        }
+
+        public String getColumnName(int columnIndex) {
+            return COLUMN_NAMES[columnIndex] ;
+        }
+
+        public Class getColumnClass(int columnIndex) {
+            return String.class ;
+        }
+
+        public boolean isCellEditable(int rowIndex, int columnIndex) {
+            return false;
+        }
+
+        public void setData( Collection data ) {
+            relays.clear();
+            relays.addAll( data ) ;
+            for (Iterator iterator = listeners.iterator(); iterator.hasNext();) {
+                TableModelListener l = (TableModelListener) iterator.next();
+                l.tableChanged( new TableModelEvent( this ) );
+            }
+        }
+
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            Object r = relays.get(rowIndex) ;
+            if ( r instanceof SourceBufferRelay ) {
+                SourceBufferRelay sb = (SourceBufferRelay) r ;
+                switch (columnIndex) {
+                    case 0:
+                        return "Source";
+                    case 1:
+                        return sb.getTarget().getAddress();
+                    case 2:
+                        return Integer.toString(sb.getNumQueries());
+                    case 3:
+                        return Integer.toString(sb.getNumSent());
+                    case 4 :
+                         return Integer.toString( sb.getNumReceived() ) ;
+                    case 5 :
+                         return Integer.toString( sb.getBufferSize() ) ;
+                    default :
+                        return "?";
+                }
+            }
+            else if ( r instanceof TargetBufferRelay ) {
+                TargetBufferRelay tr = (TargetBufferRelay) r ;
+                switch ( columnIndex ) {
+                   case 0 :
+                        return "Target" ;
+                   case 1 :
+                        return tr.getSource().getAddress() ;
+                   case 2 :
+                        return Integer.toString( tr.getNumResponses() );
+                   case 3 :
+                        return Integer.toString( tr.getNumSent() ) ;
+                   case 4 :
+                        return Integer.toString( tr.getNumReceived() ) ;
+                   case 5 :
+                        return Integer.toString( tr.getBufferSize() ) ;
+                   default :
+                        return "?" ;
+                }
+            }
+            return "?" ;
+        }
+
+        public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+        }
+
+        public void addTableModelListener(TableModelListener l) {
+            listeners.add( l ) ;
+        }
+
+        public void removeTableModelListener(TableModelListener l) {
+            listeners.remove( l ) ;
+        }
+
+        ArrayList relays = new ArrayList() ;
+        ArrayList listeners = new ArrayList() ;
+    }
+
+    public class RelayPanel extends JPanel {
+        private GridBagLayout gbl;
+        private RelayTableModel model;
+
+        public RelayPanel() {
+            setLayout( gbl = new GridBagLayout() );
+
+            // Add a JTable
+            model = new RelayTableModel() ;
+
+            JTable table = new JTable( model ) ;
+            GridBagConstraints gbc = new GridBagConstraints() ;
+            gbc.gridx = gbc.gridy = 0 ;
+            gbc.fill = GridBagConstraints.BOTH ;
+            gbc.weightx = gbc.weighty = 100 ;
+            gbc.insets = new Insets( 32, 32, 32, 32 ) ;
+
+            JScrollPane sp ;
+            gbl.setConstraints( sp = new JScrollPane(table), gbc );
+            add( sp ) ;
+
+            JPanel panel = new JPanel( new FlowLayout() ) ;
+            // Add a button to dump results and to test liveness of the relays.
+            JButton logResults = new JButton( "Log results" ) ;
+            panel.add( logResults ) ;
+            JButton testRelay = new JButton( "Ping" ) ;
+            panel.add( testRelay ) ;
+
+            gbc.gridx = 0 ;gbc.gridy++ ;
+            gbc.anchor = GridBagConstraints.WEST ;
+            gbc.fill = GridBagConstraints.HORIZONTAL ;
+            gbc.insets = new Insets( 0, 32, 32, 32 ) ;
+            gbc.weightx = 100 ; gbc.weighty = 1 ;
+            gbl.setConstraints( panel, gbc );
+            add( panel ) ;
+        }
+
+        public void updateData( Collection c ) {
+            model.setData( c );
+        }
+    }
 
     public AgentDisplayPanel( String agentName, AgentDisplayPlugin plugin ) {
         this.plugin = plugin ;
@@ -48,6 +190,8 @@ public class AgentDisplayPanel extends JFrame {
         }
         rightTabbedPane.add( "Controls", controlPanel = new ControlsPanel() ) ;
         sp.setDividerLocation( 400 );
+
+        rightTabbedPane.add( "Relays", relayPanel = new RelayPanel() ) ;
 
         refreshThread = new RefreshThread() ;
         refreshThread.start();
@@ -145,6 +289,10 @@ public class AgentDisplayPanel extends JFrame {
         measurementPanel.repaint();
     }
 
+    public void updateRelays(Collection collection) {
+        relayPanel.updateData( collection );
+    }
+
     protected void updateControls( ArrayList operatingModes ) {
         controlPanel.setOperatingModes( operatingModes );
     }
@@ -188,6 +336,7 @@ public class AgentDisplayPanel extends JFrame {
     AgentDisplayPlugin plugin ;
     JSplitPane sp ;
 
+
     private class RefreshThread extends Thread {
         public void run() {
             while ( true ) {
@@ -199,6 +348,7 @@ public class AgentDisplayPanel extends JFrame {
 
                 controlPanel.updateValues();
                 updateMeasurementPanels() ;
+                relayPanel.repaint();
                 if ( leftDisplayPanel != null ) {
                     leftDisplayPanel.repaint();
                 }

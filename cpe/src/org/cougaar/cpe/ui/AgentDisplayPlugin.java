@@ -26,11 +26,14 @@ package org.cougaar.cpe.ui;
 
 import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.blackboard.IncrementalSubscription;
+import org.cougaar.core.blackboard.Subscription;
 import org.cougaar.core.adaptivity.OperatingModeCondition;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.util.UnaryPredicate;
 import org.cougaar.tools.techspecs.qos.MeasurementPoint;
 import org.cougaar.cpe.agents.plugin.WorldStateReference;
+import org.cougaar.cpe.relay.SourceBufferRelay;
+import org.cougaar.cpe.relay.TargetBufferRelay;
 
 import javax.swing.*;
 import java.util.ArrayList;
@@ -79,6 +82,12 @@ public class AgentDisplayPlugin extends ComponentPlugin {
                 return o instanceof MeasurementPoint ;
             }
         } ) ;
+
+        relaySubscription = (IncrementalSubscription) getBlackboardService().subscribe( new UnaryPredicate() {
+            public boolean execute(Object o) {
+                return o instanceof SourceBufferRelay || o instanceof TargetBufferRelay ;
+            }
+        } ) ;
     }
 
     public long getBaseTime() {
@@ -123,6 +132,10 @@ public class AgentDisplayPlugin extends ComponentPlugin {
             } ) ;
             panel.updateMeasurements( measurementPoints );
         }
+
+        if ( !relaySubscription.getCollection().isEmpty() ) {
+            panel.updateRelays( relaySubscription.getCollection() );
+        }
     }
 
     LoggingService logger ;
@@ -133,4 +146,6 @@ public class AgentDisplayPlugin extends ComponentPlugin {
     long baseTime = 0 ;
 
     IncrementalSubscription worldStateSubscription, opModeCondSubscription, measurementPointSubscription ;
+    private IncrementalSubscription relaySubscription;
+
 }

@@ -35,12 +35,53 @@ import java.util.Collections;
 
 public class SourceBufferRelay implements Relay.Source, Serializable {
     private MessageAddress target;
+    private String tag;
+    private int numResponses = 0 ;
+    private int numSent;
+    private int numReceived;
+
+    /**
+     * Signifies queries from the LP to empty relay content.
+     */
+    private int numQueries ;
 
     public SourceBufferRelay(UID uid, MessageAddress target, MessageAddress source) {
         targets = Collections.singleton(target);
         this.source = source;
         this.target = target ;
         this.uid = uid;
+    }
+
+    public SourceBufferRelay(String tag, UID uid, MessageAddress target, MessageAddress source) {
+        targets = Collections.singleton(target);
+        this.source = source;
+        this.target = target ;
+        this.uid = uid;
+        this.tag = tag ;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public int getBufferSize() {
+        return outgoing.size() ;
+    }
+
+    public int getNumResponses() {
+        return numResponses;
+    }
+
+    public int getNumSent() {
+        return numSent;
+    }
+
+    public int getNumReceived() {
+        return numReceived;
+    }
+
+    public int getNumQueries() {
+        return numQueries;
     }
 
     public GenericRelayMessageTransport getGmrt()
@@ -81,6 +122,7 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
         // System.out.println("SourceBufferRelay::getContent() called on " + this );
         Object[] c = outgoing.toArray() ;
         outgoing.clear();
+        numQueries++ ;
         isOutgoingChanged = false ;
         return c ;
     }
@@ -96,7 +138,8 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
     static final Object[] nullArray = new Object[0] ;
 
     /**
-     * Get responses.
+     * Get responses.  This is called by an application or MessageTransport to receive events from
+     * this relay.
      */
     public synchronized Object[] clearReponses() {
         if ( responses.size() == 0 ) {
@@ -113,6 +156,7 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
 
     public void addOutgoing( Serializable o ) {
         outgoing.add( o ) ;
+        numSent ++ ;
         isOutgoingChanged = true ;
     }
 
@@ -120,16 +164,19 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
         if ( gmrt != null ) {
             for (int i = 0 ; i < resp.length ; i++) {
                 gmrt.addMessage( resp[i], getTarget() ) ;
+                numReceived ++ ;
             }
         }
         else {
             for (int i = 0 ; i < resp.length ; i++) {
                 responses.add(resp[i]);
+                numReceived ++ ;
             }
         }
     }
 
     public int updateResponse(MessageAddress address, Object o) {
+        numResponses ++ ;
         processReponse((Object[]) o);
         return Relay.RESPONSE_CHANGE ;
     }
@@ -146,7 +193,7 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
                 MessageAddress source,
                 Object content,
                 Token token) {
-            return new TargetBufferRelay(uid, source, content);
+            return new TargetBufferRelay( uid, source, content);
         }
 
         private Object readResolve() {
