@@ -567,6 +567,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
             getBlackboardService().publishAdd( mwm.getKills() ) ;
             getBlackboardService().publishAdd( mwm.getPenalties() ) ;
             getBlackboardService().publishAdd( mwm.getViolations() ) ;
+            getBlackboardService().publishAdd( mwm.getPredictedEntryRate() );
 
 			// Make configuration message and send it to the subordinate.
 			if (subordinateCombatOrganizations.get(agg.getId()) == null) {

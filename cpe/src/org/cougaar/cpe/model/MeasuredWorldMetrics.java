@@ -24,6 +24,7 @@ public class MeasuredWorldMetrics extends WorldMetrics
     MeasurementPoint score  ;
     MeasurementPoint scoringRate ;
     MeasurementPoint entryRate ;
+    TimePeriodMeasurementPoint predictedEntryRate;    
     private Double ZERO = new Double(0);
 
     public MeasuredWorldMetrics(String name, WorldState state, int integrationPeriod)
@@ -37,6 +38,7 @@ public class MeasuredWorldMetrics extends WorldMetrics
         violations = new TimePeriodMeasurementPoint( name + ".Violations", Integer.class ) ;
         score = new TimePeriodMeasurementPoint( name + ".Score", Float.class ) ;
         scoringRate = new TimePeriodMeasurementPoint( name + ".ScoringRate", Float.class ) ;
+        predictedEntryRate= new TimePeriodMeasurementPoint( name + ".PredictedEntryRate", Integer.class ) ;
         entryRate = new TimePeriodMeasurementPoint( name + ".EntryRate", Integer.class ) ;
         fuelConsumption = new TimePeriodMeasurementPoint( name + ".FuelConsumption", Double.class ) ;
 
@@ -48,6 +50,10 @@ public class MeasuredWorldMetrics extends WorldMetrics
         violations.setMaximumHistorySize( Integer.MAX_VALUE );
         score.setMaximumHistorySize( Integer.MAX_VALUE );
         fuelConsumption.setMaximumHistorySize( Integer.MAX_VALUE );
+    }
+
+    public TimePeriodMeasurementPoint getPredictedEntryRate() {
+        return predictedEntryRate;
     }
 
     public MeasurementPoint getAmmoShortFalls()
@@ -123,9 +129,7 @@ public class MeasuredWorldMetrics extends WorldMetrics
 
     public synchronized void processTimeAdvanceEvent(TimeAdvanceEvent ev)
     {
-//        System.out.println("Process time advance event for " + getName() + " time=" + ev.getNewTime() +
-//                ",integrationPeriod=" +integrationPeriod+
-//                ",lastIntegrationTime=" + lastIntegrationTime);
+        //System.out.println("MeasuredWorldMetrics:: Advancing time " + ev);
         if ( ev.getNewTime() - lastIntegrationTime >= integrationPeriod ) {
             attrition.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Double( accumAttrition )));
             penalties.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Integer( accumPenalties )));
@@ -161,7 +165,7 @@ public class MeasuredWorldMetrics extends WorldMetrics
             accumKills = 0 ;
             accumViolations = 0 ;
             accumEntries = 0 ;
-
+            accumPredictedEntries = 0 ;
             lastIntegrationTime = ev.getNewTime() ;
         }
         lastTime = ev.getNewTime() ;

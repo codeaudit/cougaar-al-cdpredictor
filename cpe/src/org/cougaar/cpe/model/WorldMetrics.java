@@ -181,6 +181,11 @@ public class WorldMetrics implements CPEEventListener
         {
            accumEntries++ ;
         }
+        else if ( ev.getRegion().getRegionName().equals(ReferenceWorldState.REGION_PREDICTED_ENTRY_REGION) &&
+                ev.getType() == RegionEvent.EVENT_REGION_ENTRY )
+        {
+            accumPredictedEntries++ ;
+        }
     }
 
     long lastIntegrationTime = -1 ;
@@ -201,6 +206,7 @@ public class WorldMetrics implements CPEEventListener
     protected int accumKills ;
     protected double accumAttrition ;
     protected int accumEntries ;
+    protected int accumPredictedEntries ;
     protected double accumFuelConsumption ;
 
     protected int totalViolations ;

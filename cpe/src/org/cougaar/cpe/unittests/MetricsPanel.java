@@ -47,6 +47,7 @@ public class MetricsPanel extends  JPanel {
         measurementPoints.add( wm.getPenalties() ) ;
         measurementPoints.add( wm.getViolations() ) ;
         measurementPoints.add( wm.getFuelConsumption() ) ;
+        measurementPoints.add( wm.getPredictedEntryRate() ) ;
 
         setLayout( gbl = new GridBagLayout());
 

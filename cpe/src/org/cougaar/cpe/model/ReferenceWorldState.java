@@ -46,17 +46,24 @@ public class ReferenceWorldState extends WorldState
      * The identifier for the region used to measure op tempo.
      */
     public static final String REGION_OP_TEMPO = "OpTempoRegion";
+    public static final String REGION_PREDICTED_ENTRY_REGION = "PredictedEntryRegion" ;
+
+    /**
+     * Predict the entry rate 60 seconds from now.
+     */
+    private static final double PREDICTED_ENTRY_DELAY = 60.0;
 
     public ReferenceWorldState(double boardWidth, double boardHeight, double penaltyHeight, double recoveryLine, double deltaT)
     {
         super(boardWidth, boardHeight, penaltyHeight, recoveryLine, deltaT);
-        longRangeSensor = new StandardSensor( VGWorldConstants.getLongSensorMaxError(), 0, ( float ) boardHeight ) ;
-        mediumRangeSensor = new StandardSensor( VGWorldConstants.getMediumSensorMaxError(), 0, VGWorldConstants.getMediumSensorRange() ) ;
-        shortRangeSensor = new StandardSensor( 0, 0, VGWorldConstants.getUnitSensorHeight() ) ;
-        sensors.add( longRangeSensor ) ;
-        sensors.add( mediumRangeSensor ) ;
-        sensors.add( shortRangeSensor ) ;
-        regions.add( new Region(new Rectangle2D.Double(0,0,boardWidth,VGWorldConstants.getUnitRangeHeight()), REGION_OP_TEMPO ) ) ;
+        initSensors();
+//        longRangeSensor = new StandardSensor( VGWorldConstants.getLongSensorMaxError(), 0, ( float ) boardHeight ) ;
+//        mediumRangeSensor = new StandardSensor( VGWorldConstants.getMediumSensorMaxError(), 0, VGWorldConstants.getMediumSensorRange() ) ;
+//        shortRangeSensor = new StandardSensor( 0, 0, VGWorldConstants.getUnitSensorHeight() ) ;
+//        sensors.add( longRangeSensor ) ;
+//        sensors.add( mediumRangeSensor ) ;
+//        sensors.add( shortRangeSensor ) ;
+//        regions.add( new Region(new Rectangle2D.Double(0,0,boardWidth,VGWorldConstants.getUnitRangeHeight()), REGION_OP_TEMPO ) ) ;
         setDefaultMetric( new MeasuredWorldMetrics( WorldState.DEFAULT_METRIC, this, defaultIntegrationPeriod ) ) ;
     }
 
@@ -66,7 +73,6 @@ public class ReferenceWorldState extends WorldState
         super(boardWidth, boardHeight, penaltyHeight, recoveryLine, deltaT);
         setSensorModelType( sensorType );
         initSensors();
-        regions.add( new Region(new Rectangle2D.Double(0,0,boardWidth,VGWorldConstants.getUnitRangeHeight()), REGION_OP_TEMPO ) ) ;
         setDefaultMetric( new MeasuredWorldMetrics( WorldState.DEFAULT_METRIC, this, defaultIntegrationPeriod ) ) ;
     }
 
@@ -77,6 +83,9 @@ public class ReferenceWorldState extends WorldState
         sensors.add( longRangeSensor ) ;
         sensors.add( mediumRangeSensor ) ;
         sensors.add( shortRangeSensor ) ;
+        regions.add( new Region(new Rectangle2D.Double(0,0,getBoardWidth(),VGWorldConstants.getUnitRangeHeight()), REGION_OP_TEMPO ) ) ;
+        regions.add( new Region(new Rectangle2D.Double(0,0,getBoardWidth(),VGWorldConstants.getUnitRangeHeight() +
+                PREDICTED_ENTRY_DELAY * VGWorldConstants.getTargetMoveRate()), REGION_PREDICTED_ENTRY_REGION ) ) ;
     }
 
     public SensorModel makeSensor( float maxXError, float maxYError, float sensorRange ) {
