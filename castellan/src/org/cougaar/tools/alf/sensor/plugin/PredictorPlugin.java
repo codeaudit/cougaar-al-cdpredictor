@@ -446,15 +446,16 @@ public class PredictorPlugin extends ComponentPlugin {
     }
 
     public long getCustomerLeadTime(long lastSupplyDay, long commLossDay) {
-        int intcommlossday = (int) commLossDay/86400000;
-        clt = lastSupplyDay*86400000 - intcommlossday*86400000;
+        clt = lastSupplyDay*86400000 - commLossDay;
         return clt;
     }
 
     public long getPredictorGap(long lastSupplyDay, long clt) {
-        int currenttime = (int) currentTimeMillis()/86400000;
-        gap = currenttime*86400000 + clt - lastSupplyDay*86400000;
-        gap = gap * 4;
+        gap = currentTimeMillis() + clt - lastSupplyDay*86400000;
+        System.out.println("GAPNOINT "+gap);
+        gap = (int) (gap/86400000);
+        System.out.println("GAPWITHINT "+gap);
+        gap = gap*4*86400000;
         return gap;
     }
 
@@ -515,7 +516,7 @@ public class PredictorPlugin extends ComponentPlugin {
                             if((int) gap_value/86400000 >= 1)  {
                                  String customer = arraylist_vector.elementAt(0).toString();
                                  String supply_class = arraylist_vector.elementAt(1).toString();
-                                 String item_class = arraylist_vector.elementAt(2).toString();
+                                 String item_class = arraylist_vector.elementAt(2).toString(); //Long parselong to be used in future
                                  long supply_date = new Long(arraylist_vector.elementAt(3).toString()).longValue();
                                  long commitmentday = new Long(arraylist_vector.elementAt(7).toString()).longValue();
                                  double quantity = new Double(arraylist_vector.elementAt(8).toString()).doubleValue();
