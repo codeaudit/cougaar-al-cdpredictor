@@ -32,6 +32,7 @@ import java.io.File;
 public class SupplierPlugin extends ComponentPlugin implements MessageSink {
     private HashMap supplyPlans;
     private boolean started = false ;
+    private LoggingService logger;
 
     protected void execute() {
         Collection newOrgs = findOrgsSubscription.getAddedCollection() ;
@@ -243,6 +244,12 @@ public class SupplierPlugin extends ComponentPlugin implements MessageSink {
         splanner.plan( wsm, scheduleDelay, customerNames, supplyVehicles );
 
         supplyPlans = splanner.getPlans() ;
+
+        if ( supplyPlans == null ) {
+            logger.warn( "Could not create supply plan.");
+            return ;
+        }
+
         //System.out.println( getAgentIdentifier() + "::INFO:: CREATED SUSTAINMENT PLANS " );
         for (Iterator iterator = supplyPlans.entrySet().iterator(); iterator.hasNext();) {
             Map.Entry entry = (Map.Entry) iterator.next();
@@ -283,6 +290,9 @@ public class SupplierPlugin extends ComponentPlugin implements MessageSink {
     }
 
     protected void setupSubscriptions() {
+        logger = ( LoggingService ) getServiceBroker().getService( this, LoggingService.class, null ) ;
+
+
         System.out.println("\nSTARTING agent " + getAgentIdentifier() );
         gmrt = new GenericRelayMessageTransport( this, getServiceBroker(), getAgentIdentifier(),
                 this, getBlackboardService() ) ;

@@ -1,6 +1,5 @@
 package org.cougaar.cpe.agents.plugin;
 
-import org.cougaar.core.adaptivity.OMCPoint;
 import org.cougaar.core.adaptivity.OMCRangeList;
 import org.cougaar.core.adaptivity.OperatingModeCondition;
 import org.cougaar.core.blackboard.IncrementalSubscription;
@@ -9,34 +8,32 @@ import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.relay.Relay;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.UIDService;
+import org.cougaar.cpe.agents.messages.*;
+import org.cougaar.cpe.agents.qos.QoSConstants;
+import org.cougaar.cpe.model.*;
+import org.cougaar.cpe.mplan.ManueverPlanner;
+import org.cougaar.cpe.planning.zplan.BNAggregate;
+import org.cougaar.cpe.planning.zplan.ZoneTask;
+import org.cougaar.cpe.planning.zplan.ZoneWorld;
+import org.cougaar.cpe.relay.GenericRelayMessageTransport;
+import org.cougaar.cpe.relay.MessageSink;
+import org.cougaar.cpe.relay.SourceBufferRelay;
+import org.cougaar.cpe.relay.TargetBufferRelay;
+import org.cougaar.cpe.util.CPUConsumer;
+import org.cougaar.cpe.util.ConfigParserUtils;
+import org.cougaar.cpe.util.StandardAlarm;
 import org.cougaar.glm.ldm.asset.Organization;
 import org.cougaar.planning.ldm.plan.Role;
+import org.cougaar.tools.techspecs.events.MessageEvent;
+import org.cougaar.tools.techspecs.events.TimerEvent;
+import org.cougaar.tools.techspecs.qos.*;
 import org.cougaar.util.ConfigFinder;
 import org.cougaar.util.UnaryPredicate;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.cougaar.cpe.agents.messages.*;
-import org.cougaar.cpe.agents.qos.QoSConstants;
-import org.cougaar.cpe.agents.Constants;
-import org.cougaar.cpe.model.*;
-import org.cougaar.cpe.mplan.ManueverPlanner;
-import org.cougaar.tools.techspecs.qos.*;
-import org.cougaar.cpe.relay.GenericRelayMessageTransport;
-import org.cougaar.cpe.relay.MessageSink;
-import org.cougaar.cpe.relay.SourceBufferRelay;
-import org.cougaar.cpe.relay.TargetBufferRelay;
-import org.cougaar.cpe.util.StandardAlarm;
-import org.cougaar.cpe.util.CPUConsumer;
-import org.cougaar.cpe.util.ConfigParserUtils;
-import org.cougaar.cpe.planning.zplan.ZoneTask;
-import org.cougaar.cpe.planning.zplan.ZoneWorld;
-import org.cougaar.cpe.planning.zplan.BNAggregate;
-import org.cougaar.tools.techspecs.events.MessageEvent;
-import org.cougaar.tools.techspecs.events.TimerEvent;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.*;
 import java.util.*;
 
 public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
@@ -44,7 +41,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
     private OMCRangeList updateStateConditionList = new OMCRangeList( new int[] { 10000, 15000, 20000, 25000, 30000, 35000, 40000 } ) ;
 
-    private OMCRangeList planningDepthList = new OMCRangeList( new int[] { 3, 4, 5, 6, 7 } ) ;
+    private OMCRangeList planningDepthList = new OMCRangeList( new int[] { 3, 4, 5, 6, 7, 8, 9 } ) ;
 
     private OMCRangeList planningBreadthList = new OMCRangeList( new int[] { 10, 20, 30, 40, 50, 60, 70, 80 } ) ;
 
@@ -74,7 +71,9 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     private byte[] configBytes;
     private Plan zoneSchedule;
     private String UPDATE_WORLD_STATE_TIMER = "UpdateWorldStateTimer";
+    private String REPLAN_TIMER = "ReplanTimer";
     private LoggingService log;
+    private String outputFile ;
 
     public long getReplanPeriodInMillis() {
         if ( replanPeriodCondition != null ) {
@@ -367,12 +366,15 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
         // The first time replan immediately to generate an initial plan.
         System.out.println("Initial replanning at time " );
-        getAlarmService().addRealTimeAlarm( new ReplanAlarm( baseTime + 1000 ) ) ;
+        getAlarmService().addRealTimeAlarm( new ReplanAlarm( baseTime + getReplanPeriodInMillis() ) ) ;
+
+        // This is the new style which seems to work but then breaks.
+        //gmrt.setAlarm( "ProcessReplanTimer", REPLAN_TIMER, getReplanPeriodInMillis(), true );
+        targetWakeupTime = baseTime + getReplanPeriodInMillis() ;
 
         // Set the alarm for updating the world state.
         gmrt.setAlarm( "DoUpdateWorldStateTimer", UPDATE_WORLD_STATE_TIMER, getUpdateWorldStatePeriod(), true );
 
-        targetWakeupTime = baseTime + 1000 ;
     }
 
     public void DoUpdateWorldStateTimer( TimerEvent te ) {
@@ -398,6 +400,24 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
             mp.setMaxDepth( searchDepth );
             mp.setMaxBranchFactor( searchBreadth );
             mp.plan( perceivedWorldState, planDelay, zoneSchedule );
+
+            // DEBUG TODO REMOVE
+            if ( outputFile != null ) {
+                try {
+                    FileOutputStream fis = new FileOutputStream( outputFile + ( ( startTime / 1000 ) % 10000 ) + ".txt" ) ;
+                    PrintWriter pw = new PrintWriter( fis )  ;
+                    pw.println( "\n\n*********************************************\nDUMPING SEARCH RESULTS AT Time = "
+                            + perceivedWorldState.getTime() );
+                    mp.dump( pw );
+                    fis.flush();
+                    fis.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();  //To change body of catch statement use Options | File Templates.
+                }
+            }
+
             Object[][] plans = mp.getPlans() ;
             mp.release() ;
 
@@ -494,6 +514,9 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         //System.out.println("DEBUG:: MANUEVER PLAN MEASUREMENTS " + mpm.getMeasurements() );
     }
 
+    /**
+     * The timers seem to be broken.  This is the old style blocking timer.
+     */
     private void processReplanTimer() {
         // Replan.
         //getBlackboardService().openTransaction();
@@ -532,6 +555,57 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         if ( started ) {
             getAlarmService().addRealTimeAlarm( new ReplanAlarm( targetWakeupTime  ) ) ;
         }
+
+        // Execute for good measure.
+        // TODO Check to see if an execute is really called for here.
+        // execute() ;
+        if ( getBlackboardService().isTransactionOpen() && !wasOpen ) {
+            getBlackboardService().closeTransaction();
+        }
+    }
+
+    public void ProcessReplanTimer( TimerEvent e) {
+        // Replan.
+        //getBlackboardService().openTransaction();
+
+        // Lock the black board in this version to prevent messages from being fired!
+        boolean wasOpen = true ;
+        if ( !getBlackboardService().isTransactionOpen() ) {
+            wasOpen = false ;
+            getBlackboardService().openTransaction();
+        }
+
+        long startTime = System.currentTimeMillis() ;
+        replanTimerDelayMP.addMeasurement( new DelayMeasurement( "ReplanTimerFired", "ProcessReplan",
+                getAgentIdentifier(), targetWakeupTime, startTime ) ) ;
+        if ( targetWakeupTime > startTime ) {
+            log.warn( getAgentIdentifier() + " executing timer at " + startTime + " before target wakeup time was "  + targetWakeupTime);
+        }
+
+        // Calculate the current planning horizon and make sure it is okay.
+        long planningHorizon = (long) (getSearchDepth() * getNumDeltasPerTask() * perceivedWorldState.getDeltaTInMS() ) ;
+        if ( getReplanPeriodInMillis() > planningHorizon ) {
+            System.err.println("WARNING:: Planning horizon " + planningHorizon * VGWorldConstants.SECONDS_PER_MILLISECOND +
+                    " secs is less than replan time.");
+        }
+
+        if ( subordinateCombatOrganizations.size() > 0 ) {
+            // DEBUG
+            log.shout( getAgentIdentifier() + " PLANNING AT TIME " + ( startTime - baseTime ) /1000 + " secs." ) ;
+
+            // measureProcessReplanTimer() ;
+            planAndDistribute();
+        }
+
+        long endTime = System.currentTimeMillis() ;
+        replanTimeMP.addMeasurement( new DelayMeasurement( "ProcessReplan", null, getAgentIdentifier(), startTime, endTime ));
+
+        // Schedule replanning alarm.
+        targetWakeupTime = endTime + getReplanPeriodInMillis();
+
+//        if ( started ) {
+//            getAlarmService().addRealTimeAlarm( new ReplanAlarm( targetWakeupTime  ) ) ;
+//        }
 
         // Execute for good measure.
         // TODO Check to see if an execute is really called for here.
@@ -589,64 +663,106 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
             zoneSchedule = p ;
         }
         else {
-            // Just use the current time.
-            long currentTime = perceivedWorldState.getTime() ;
-            int firstNewTaskIndex = -1 ;
-            int firstOldTaskIndex = -1;
-            int lastOldTaskIndex = -1 ;
-            Task firstNewTask = null ;
-
-            ArrayList newTasks = new ArrayList();
-            for (int i=0;i<p.getNumTasks();i++) {
-                ZoneTask t = (ZoneTask) p.getTask(i) ;
-                if ( t.getStartTime() >= currentTime ) {
-                    firstNewTaskIndex = i ;
-                    firstNewTask = t ;
-                }
-            }
-
-            if ( firstNewTaskIndex == -1 ) {
-                // Whoa, we don't know what our task is anyways. Just keep the old schedule if it exists.
+            // Just copy over the plan elements on top of the current zone plan.
+            if ( p.getNumTasks() == 0 ) {
                 return ;
             }
 
+            System.out.println("Old zone schedule " + zoneSchedule );
+            long firstNewTask = p.getTask(0).getStartTime() ;
+            ZoneTask firstNew = (ZoneTask) p.getTask(0 ) ;
+            long lastOldTask = -1 ;
+            ArrayList newTasks = new ArrayList() ;
             for (int i=0;i<zoneSchedule.getNumTasks();i++) {
                 ZoneTask t = (ZoneTask) zoneSchedule.getTask(i) ;
-                if ( t.getEndTime() > currentTime ) {
-                    if ( firstOldTaskIndex == -1 ) {
-                        firstOldTaskIndex = i ;
-                    }
+                // Trim off old zone tasks.
+                if ( t.getEndTime() < perceivedWorldState.getTime() - 20000 ) {
+                    continue ;
+                }
 
-                    lastOldTaskIndex = i ;
-                    if ( t.getEndTime() >= firstNewTaskIndex ) {
-                        break ;
-                    }
+                if ( t.getEndTime() <= firstNewTask ) {
+                    newTasks.add( t.clone() ) ;
+                    lastOldTask = t.getEndTime() ;
+                }
+                else if ( t.getStartTime() < firstNewTask && t.getEndTime() > firstNewTask ) {
+                    ZoneTask tt = new ZoneTask( t.getStartTime(), firstNewTask, t.getStartZone(), firstNew.getStartZone() ) ;
+                    newTasks.add( tt ) ;
+                    lastOldTask = tt.getEndTime() ;
+                    break ;
                 }
             }
 
-            // Now, copy all the old indices.
-            if (firstOldTaskIndex != -1 && lastOldTaskIndex != -1)
-            {
-                for (int i = firstOldTaskIndex; i <= lastOldTaskIndex; i++)
-                {
-                    Task t = zoneSchedule.getTask(i) ;
-
-                    // Fix up the last old index and make it compliant with the first new task so that
-                    // there are no gaps.
-                    if ( i == lastOldTaskIndex && firstNewTask != null ) {
-                       t.setEndTime( firstNewTask.getStartTime() );
-                    }
-                    newTasks.add( t ) ;
-                }
+            if ( lastOldTask != -1 && newTasks.size() > 0 && lastOldTask < firstNewTask ) {
+                ZoneTask lastOld = (ZoneTask) newTasks.get( newTasks.size()-1 ) ;
+                ZoneTask t = new ZoneTask( lastOldTask, firstNewTask, lastOld.getEndZone(), firstNew.getStartZone() ) ;
+                newTasks.add( t ) ;
             }
 
-            if ( firstNewTaskIndex != -1 ) {
-                for (int i=firstNewTaskIndex;i<p.getNumTasks();i++) {
-                    newTasks.add( p.getTask(i) ) ;
-                }
+            for (int i=0;i<p.getNumTasks();i++) {
+                newTasks.add( p.getTask(i).clone() ) ;
             }
 
-            zoneSchedule = new Plan( newTasks ) ;
+            zoneSchedule = new Plan( newTasks );
+            System.out.println("Time= " + perceivedWorldState.getTime() + ", new Zone Schedule =" + zoneSchedule );
+
+            // This code doesn't work right.
+//            long currentTime = perceivedWorldState.getTime() ;
+//            int firstNewTaskIndex = -1 ;
+//            int firstOldTaskIndex = -1;
+//            int lastOldTaskIndex = -1 ;
+//            Task firstNewTask = null ;
+//
+//            ArrayList newTasks = new ArrayList();
+//            for (int i=0;i<p.getNumTasks();i++) {
+//                ZoneTask t = (ZoneTask) p.getTask(i) ;
+//                if ( t.getStartTime() >= currentTime ) {
+//                    firstNewTaskIndex = i ;
+//                    firstNewTask = t ;
+//                }
+//            }
+//
+//            if ( firstNewTaskIndex == -1 ) {
+//                // Whoa, we don't know what our task is anyways. Just keep the old schedule if it exists.
+//                return ;
+//            }
+//
+//            for (int i=0;i<zoneSchedule.getNumTasks();i++) {
+//                ZoneTask t = (ZoneTask) zoneSchedule.getTask(i) ;
+//                if ( t.getEndTime() > currentTime ) {
+//                    if ( firstOldTaskIndex == -1 ) {
+//                        firstOldTaskIndex = i ;
+//                    }
+//
+//                    lastOldTaskIndex = i ;
+//                    if ( t.getEndTime() >= firstNewTaskIndex ) {
+//                        break ;
+//                    }
+//                }
+//            }
+//
+//            // Now, copy all the old indices.
+//            if (firstOldTaskIndex != -1 && lastOldTaskIndex != -1)
+//            {
+//                for (int i = firstOldTaskIndex; i <= lastOldTaskIndex; i++)
+//                {
+//                    Task t = zoneSchedule.getTask(i) ;
+//
+//                    // Fix up the last old index and make it compliant with the first new task so that
+//                    // there are no gaps.
+//                    if ( i == lastOldTaskIndex && firstNewTask != null ) {
+//                       t.setEndTime( firstNewTask.getStartTime() );
+//                    }
+//                    newTasks.add( t ) ;
+//                }
+//            }
+//
+//            if ( firstNewTaskIndex != -1 ) {
+//                for (int i=firstNewTaskIndex;i<p.getNumTasks();i++) {
+//                    newTasks.add( p.getTask(i) ) ;
+//                }
+//            }
+//
+//            zoneSchedule = new Plan( newTasks ) ;
         }
 
         if ( perceivedWorldState instanceof ZoneWorld ) {
@@ -699,7 +815,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
             // Consider doing an initial replan.
             if ( manueverPlan == null && isPerceivedWorldStateComplete() ) {
-                System.out.println("\n" + getAgentIdentifier() + ":: CREATING INITIAL PLAN...");
+                log.shout("\n" + getAgentIdentifier() + " CREATING INITIAL MANUEVER PLAN...");
                 planAndDistribute();
             }
 
@@ -882,6 +998,10 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         String fileName = null ;
         if ( paramVector.size() > 0 ) {
             fileName = ( String ) paramVector.elementAt(0) ;
+        }
+
+        if ( paramVector.size() > 1 ) {
+            outputFile = ( String ) paramVector.elementAt(1) ;
         }
 
         try {

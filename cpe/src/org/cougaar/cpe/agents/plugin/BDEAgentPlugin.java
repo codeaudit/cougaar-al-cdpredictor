@@ -519,7 +519,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
         if ( event.getSource().getAddress().equals(Constants.WORLD_STATE_AGENT) ) {
             // Update the official time associated with the zone world.
             referenceZoneWorld.setTime( sensedWorldState );
-            logger.shout( "Agent " + getAgentIdentifier() + ":: Updating world state to time " + referenceZoneWorld.getTime() +
+            logger.shout( "Agent " + getAgentIdentifier() + ":: Updating world state to time " + referenceZoneWorld.getTimeInSeconds() +
                     ",measured elapsed time=" + ( System.currentTimeMillis() - baseTime ) );
 
         }
