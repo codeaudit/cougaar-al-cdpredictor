@@ -32,7 +32,7 @@
 	</target>
 
 	<target name="jar" depends="compile">
-		<jar jarfile="castellan.jar" baseDir="${buildDir}"/>
+		<jar jarfile="castellan.jar" baseDir="${build}"/>
 	</target>
 
 	<target name="create_cougaar_overlay">
