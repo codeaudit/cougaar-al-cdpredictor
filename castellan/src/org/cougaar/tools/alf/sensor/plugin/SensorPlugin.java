@@ -87,10 +87,16 @@ public class SensorPlugin extends ComponentPlugin
             return expTime;
         }
 
-        public void expire()
+		public void expire()
         {
             expired = true;
+			// Hong : Begin
+			getBlackboardService().openTransaction();
+			// Hong : End
             flushBuffer();
+			// Hong : Begin
+			getBlackboardService().closeTransaction();
+			// Hong : End
         }
 
         public boolean hasExpired()
@@ -317,8 +323,14 @@ public class SensorPlugin extends ComponentPlugin
 
     public void publishChange(InterAgentOperatingMode a) {
 
+
+		bs.openTransaction();  // July 13, 2002
+
 		bs.publishChange(a);
-    }
+
+		bs.closeTransaction(); // July 13, 2002
+    
+	}
 
     public UIDService getUIDService() {
 
