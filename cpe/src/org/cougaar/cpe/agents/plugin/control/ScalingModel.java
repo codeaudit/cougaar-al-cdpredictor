@@ -13,7 +13,7 @@ import org.cougaar.tools.techspecs.qos.ControlMeasurement;
  */
 public class ScalingModel {
 	public ScalingModel() {
-	//Linear scaling model
+		//Linear scaling model
 	}
 
 	int modes = 3;
@@ -30,9 +30,13 @@ public class ScalingModel {
 	//only for replan time, others dont change very much for now
 	public double estimateRtime(int mode1, int mode2, double ctime) {
 
-		//	   current mode, targeted mode, planning time using current mode
-		if ((ctime==-1)||(ctime==0)||(mode1==mode2)) return 0; //invbalid call
-		
+		//current mode, targeted mode, planning time using current mode
+		//if ((ctime==-1)||(ctime==0)||(mode1==mode2)) return 0; //invalid call
+		if ((ctime == -1) || (ctime == 0))
+			return 0; //invalid call
+		if (mode1 == mode2)
+			return ctime;
+
 		int i, index1 = 0, index2 = 0;
 		double estimatedrtime = 0;
 
@@ -68,10 +72,13 @@ public class ScalingModel {
 			//System.out.println("BN1: Depth= " + curr_depth + " time= " + curr_time + " target_depth= " + target_depth + " estimated_time= " + est_time);
 
 			HashMap t = setOpModeValue(temp, MessageAddress.getMessageAddress("BN1"), "ReplanTime", est_time);
-			if (t!=null) temp=t;
-			if (est_time!=0) ifEstimated =true;  //even if one guy gets estiamted then boolean is changed to true to see if it impacts anything
+			if (t != null)
+				temp = t;
+			if (est_time != 0)
+				ifEstimated = true; //even if one guy gets estiamted then boolean is changed to true to see if it impacts anything
 		} catch (Exception e) {
-			//System.out.println(e.getStackTrace());
+			//System.out.println("BN1: Scaling Model");
+			//e.printStackTrace();
 		}
 
 		//FOR BN2----------------------
@@ -84,11 +91,14 @@ public class ScalingModel {
 			est_time = estimateRtime(curr_depth, target_depth, curr_time);
 			//System.out.println("BN2: Depth= " + curr_depth + " time= " + curr_time + " target_depth= " + target_depth + " estimated_time= " + est_time);
 
-			HashMap t =   setOpModeValue(temp, MessageAddress.getMessageAddress("BN2"), "ReplanTime", est_time);
-			if (t!=null) temp=t;
-			if (est_time!=0) ifEstimated =true;
+			HashMap t = setOpModeValue(temp, MessageAddress.getMessageAddress("BN2"), "ReplanTime", est_time);
+			if (t != null)
+				temp = t;
+			if (est_time != 0)
+				ifEstimated = true;
 		} catch (Exception e) {
-			//System.out.println(e.getStackTrace());
+			//System.out.println("BN2: Scaling Model");
+			//e.printStackTrace();
 		}
 
 		//FOR BN3----------------------
@@ -102,10 +112,13 @@ public class ScalingModel {
 			//System.out.println("BN3: Depth= " + curr_depth + " time= " + curr_time + " target_depth= " + target_depth + " estimated_time= " + est_time);
 
 			HashMap t = setOpModeValue(temp, MessageAddress.getMessageAddress("BN3"), "ReplanTime", est_time);
-			if (t!=null) temp=t;
-			if (est_time!=0) ifEstimated =true; 
+			if (t != null)
+				temp = t;
+			if (est_time != 0)
+				ifEstimated = true;
 		} catch (Exception e) {
-			//System.out.println(e.getStackTrace());
+			//System.out.println("BN3: Scaling Model");
+			//e.printStackTrace();
 		}
 
 		return temp;
@@ -152,43 +165,42 @@ public class ScalingModel {
 		}
 		return null;
 	}
-	
+
 	public HashMap setOpModeValue(HashMap opModes, MessageAddress node, String opmodeName, double value) {
-			// this code involves a selective recreation of the original opmodes hashmap while fusing the needed changes 
+		// this code involves a selective recreation of the original opmodes hashmap while fusing the needed changes 
 
-			HashMap temp = new HashMap();
-			if ((opModes != null) && (opModes.containsKey((Object) node))) {
-				Collection c = opModes.keySet();
-				Iterator i = c.iterator();
-				while (i.hasNext()) {
-					Object o = i.next();
-					if (!((MessageAddress) o).equals(node)) {
-						temp.put(o, opModes.get(o));
-					} else {
-						HashMap h1 = (HashMap) opModes.get((Object) node);
-						HashMap tempHash = new HashMap();
-						Collection c1 = h1.keySet();
-						Iterator ii = c1.iterator();
-						while (ii.hasNext()) {
-							Object o1 = ii.next();
-							if (!((String) o1).equals(opmodeName)) {
-								tempHash.put(o1, h1.get(o1));
-							} else {
-								tempHash.put(opmodeName, new Double(value));
-							}
+		HashMap temp = new HashMap();
+		if ((opModes != null) && (opModes.containsKey((Object) node))) {
+			Collection c = opModes.keySet();
+			Iterator i = c.iterator();
+			while (i.hasNext()) {
+				Object o = i.next();
+				if (!((MessageAddress) o).equals(node)) {
+					temp.put(o, opModes.get(o));
+				} else {
+					HashMap h1 = (HashMap) opModes.get((Object) node);
+					HashMap tempHash = new HashMap();
+					Collection c1 = h1.keySet();
+					Iterator ii = c1.iterator();
+					while (ii.hasNext()) {
+						Object o1 = ii.next();
+						if (!((String) o1).equals(opmodeName)) {
+							tempHash.put(o1, h1.get(o1));
+						} else {
+							tempHash.put(opmodeName, new Double(value));
 						}
-						temp.put(node, tempHash);
 					}
+					temp.put(node, tempHash);
 				}
-				return temp;
 			}
-			return null;
+			return temp;
 		}
-		
-	public boolean getifEstimated(){
-			return ifEstimated;
-		}
-		private boolean ifEstimated = false;
+		return null;
+	}
 
-	
+	public boolean getifEstimated() {
+		return ifEstimated;
+	}
+	private boolean ifEstimated = false;
+
 }

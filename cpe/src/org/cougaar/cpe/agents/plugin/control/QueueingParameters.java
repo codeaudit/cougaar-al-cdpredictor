@@ -13,21 +13,19 @@ import org.cougaar.cpe.agents.messages.ControlMessage;
  */
 public class QueueingParameters extends ControlMeasurement {
 	public QueueingParameters(long ts, HashMap candidateOpmodes, double[][] estimatedtt, HashMap scores) {
+
 		super("SystemPurturbed", "Control", MessageAddress.getMessageAddress("BDE1"), ts, candidateOpmodes, estimatedtt);
 		this.cm = new ControlMessage("SystemPurturbed", "Control");
 		cm.putControlSet(candidateOpmodes);
-
-		getMG1Estimate();
-		computeScore(scores);
+		
 	}
 
 	public QueueingParameters(long ts, HashMap candidateOpmodes, HashMap estimatedtt, HashMap scores) {
+
 		super("SystemPurturbed", "Control", MessageAddress.getMessageAddress("BDE1"), ts, candidateOpmodes, estimatedtt);
 		this.cm = new ControlMessage("SystemPurturbed", "Control");
 		cm.putControlSet(candidateOpmodes);
-
-		getMG1Estimate();
-		computeScore(scores);
+		
 	}
 
 	public void getMG1Estimate() {
@@ -43,8 +41,8 @@ public class QueueingParameters extends ControlMeasurement {
 	}
 
 	public void computeScore(HashMap scores) {
-		if (modelMG1AverageMPF != null) {
-			Score s = new Score(modelMG1AverageMPF, this);
+		if ((modelMG1AverageMPF[0] != -1) || (modelMG1AverageMPF[1] != -1) || (modelMG1AverageMPF[2] != -1)) {
+			Score s = new Score(modelMG1AverageMPF, this.getOpmodes());
 			score = s.getParametersAndEstimateScore(scores);
 			//System.out.println("TOTAL SCORE: "+getTotalScore());
 		}
@@ -86,14 +84,60 @@ public class QueueingParameters extends ControlMeasurement {
 		else if (descriptor.equalsIgnoreCase("ACTUAL"))
 			return new Double(actualAverageMPF[index]);
 		else if (descriptor.equalsIgnoreCase("SCORE"))
-					return new Double(score[index]);
+			return new Double(score[index]);
 		else
 			return null;
 	}
 
+	public double[] getMG1() {
+		return modelMG1AverageMPF;
+	}
+
+	public double[] getWhitt() {
+		return modelWhittAverageMPF;
+	}
+
+	public double[] getArena() {
+		return modelArenaAverageMPF;
+	}
+
+	public double[] getScore() {
+		return score;
+	}
+
+	public double getScore(int zone) {
+		return score[zone - 1];
+	}
+
+	public HashMap getZoneControlParams(int zone) {
+		String[] zone1 = { "BN1", "CPY1", "CPY2", "CPY3" };
+		String[] zone2 = { "BN2", "CPY4", "CPY5", "CPY6" };
+		String[] zone3 = { "BN3", "CPY7", "CPY8", "CPY9" };
+		HashMap temp = new HashMap();
+		if (zone == 1) {
+
+			for (int i = 0; i < zone1.length; i++) {
+				temp.put(MessageAddress.getMessageAddress(zone1[i]), cm.getAgentControlParams(MessageAddress.getMessageAddress(zone1[i])));
+			}
+		} else if (zone == 2) {
+
+			for (int i = 0; i < zone2.length; i++) {
+				temp.put(MessageAddress.getMessageAddress(zone2[i]), cm.getAgentControlParams(MessageAddress.getMessageAddress(zone2[i])));
+			}
+		} else if (zone == 3) {
+			for (int i = 0; i < zone3.length; i++) {
+				temp.put(MessageAddress.getMessageAddress(zone3[i]), cm.getAgentControlParams(MessageAddress.getMessageAddress(zone3[i])));
+			}
+		}
+
+		return temp;
+	}
+	
+
 	private ControlMessage cm;
-	private double[] actualAverageMPF = {-1,-1,-1};
-	private double[] modelMG1AverageMPF = {-1,-1,-1};
-	private double[] modelWhittAverageMPF = {-1,-1,-1};
-	private double[] score = {-1,-1,-1}; //estimated
+	private double[] actualAverageMPF = { -1, -1, -1 };
+	private double[] modelMG1AverageMPF = { -1, -1, -1 };
+	private double[] modelWhittAverageMPF = { -1, -1, -1 };
+	private double[] modelArenaAverageMPF = { -1, -1, -1 };
+	private double[] score = { -1, -1, -1 }; //estimated
 }

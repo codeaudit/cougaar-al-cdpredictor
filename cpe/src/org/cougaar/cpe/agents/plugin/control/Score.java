@@ -26,12 +26,18 @@ public class Score {
 
 	//	   kills, attritions, violations, penalties, and fuel consumption
 
-	public Score(double[] estimated_mpf, QueueingParameters q) {
+	public Score(double[] estimated_mpf, HashMap opmodesForEstimate) {
 
 		int i, j, indexs, indexn;
 		String str = null;
 		String fname = "scoremodel.txt";
 		BufferedReader is = null;
+
+		if (estimated_mpf != null) {
+			this.m = estimated_mpf;
+		}
+		trialOpmodes = opmodesForEstimate;
+		readMAU();
 
 		try {
 
@@ -63,12 +69,46 @@ public class Score {
 
 			is.close();
 
-			this.m = estimated_mpf;
-			this.q = q;
-
-		} catch (IOException e) {
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
+	}
+
+	public void readMAU() {
+
+		int i, j, indexs, indexn;
+		String str = null;
+		String fname = "mau.txt";
+		BufferedReader is = null;
+
+		try {
+
+			is = new BufferedReader(new FileReader(fname));
+
+			str = is.readLine();
+			indexs = 0;
+			indexn = str.indexOf('\t', 0);
+			MAU[0] = Double.parseDouble(str.substring(indexs, indexn));
+			indexs = indexn + 1;
+			indexn = str.indexOf('\t', indexn + 1);
+			MAU[1] = Double.parseDouble(str.substring(indexs, indexn));
+			indexs = indexn + 1;
+			indexn = str.indexOf('\t', indexn + 1);
+			MAU[2] = Double.parseDouble(str.substring(indexs, indexn));
+			indexs = indexn + 1;
+			indexn = str.indexOf('\t', indexn + 1);
+			MAU[3] = Double.parseDouble(str.substring(indexs, indexn));
+			indexs = indexn + 1;
+			indexn = str.indexOf('\t', indexn + 1);
+			MAU[4] = Double.parseDouble(str.substring(indexs, indexn));
+			
+			is.close();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+		}
 	}
 
 	public double[] getParametersAndEstimateScore(HashMap scores) {
@@ -77,6 +117,7 @@ public class Score {
 		String[] things = { "EntryRate" };
 		int[] timer_bn = new int[3];
 		int[] plan_depth = new int[3];
+		System.out.println(trialOpmodes.toString());
 
 		//----revisit later
 		double[] entry_rate = new double[3];
@@ -98,33 +139,49 @@ public class Score {
 			else
 				entry_rate[2] = 0;
 		}
-		//TODO remove later
-		//double[] e_rate = { 0.6, 0.6, 0.6 };
-	
+
 		//double[] mau = { 42.14, 0.76, -106.88, -2.77, -1.09 };
-		double[] mau = { 15, 1, -50, -5, -0.2 };
+		//double[] mau = { 15, 1, -50, -5, -0.2 };
 		//---------------------------------
 
 		for (int i = 0; i < 3; i++) {
-			Object u = null;
+
 			//timer_bn
-			if ((u = q.getOpModeValue(MessageAddress.getMessageAddress(bns[i]), "ReplanPeriod")) != null) {
-				timer_bn[i] = ((Integer) u).intValue();
+			Integer tmp = null;
+			if (trialOpmodes != null)
+				tmp = (Integer) getOpModeValue(trialOpmodes, MessageAddress.getMessageAddress(bns[i]), "ReplanPeriod");
+
+			if (tmp != null) {
+				timer_bn[i] = tmp.intValue();
 			} else
 				timer_bn[i] = 0;
 
 			//replan_bn: time taken to plan in BNs
-			if ((u = q.getOpModeValue(MessageAddress.getMessageAddress(bns[i]), "PlanningDepth")) != null) {
-				plan_depth[i] = ((Integer) u).intValue();
+			Integer tmp2 = null;
+			if (trialOpmodes != null)
+				tmp2 = (Integer) getOpModeValue(trialOpmodes, MessageAddress.getMessageAddress(bns[i]), "PlanningDepth");
+
+			if (tmp2 != null) {
+				plan_depth[i] = tmp2.intValue();
 			} else
 				plan_depth[i] = 0;
+
 		}
 
 		//I dont know mau and entry rate at this point.Using what I got.
-		//				if (m != null)
-		//					System.out.println("["+
-		//						timer_bn[0] + "," + timer_bn[1] + "," + timer_bn[2] + "],[" + plan_depth[0] + "," + plan_depth[1] + "," + plan_depth[2] + "],[" + m[0] + "," + m[1] + "," + m[2]+ "],[" + entry_rate[0] + "," + entry_rate[1] + "," + entry_rate[2]+"]");
-		return estimateScore(entry_rate, timer_bn, plan_depth, m, mau);
+		System.out.println("RT=[" + timer_bn[0] + "," + timer_bn[1] + "," + timer_bn[2] + "],D=[" + plan_depth[0] + "," + plan_depth[1] + "," + plan_depth[2] + "],MPF=[" + m[0] + "," + m[1] + "," + m[2] + "],ER=[" + entry_rate[0] + "," + entry_rate[1] + "," + entry_rate[2] + "],MAU=[" + MAU[0] + "," + MAU[1] + "," + MAU[2] +"," + MAU[3] + "," + MAU[4]+"]");
+		try {
+			double[] e = estimateScore(entry_rate, timer_bn, plan_depth, m, MAU);
+			return e;
+		} catch (Exception sc) {
+			sc.printStackTrace();
+			double[] d = { -1, -1, -1 };
+			return d;
+		} finally {
+
+		}
+
+		//return estimateScore(entry_rate, timer_bn, plan_depth, m, MAU);
 		//double[] d = { 0, 0, 0 };
 		//return d;
 
@@ -194,6 +251,17 @@ public class Score {
 
 		return estimatedScore;
 	}
-	QueueingParameters q = null;
-	double[] m = null;
+
+	public Object getOpModeValue(HashMap opModes, MessageAddress node, String opmodeName) {
+		if (opModes.containsKey((Object) node)) {
+			HashMap h = (HashMap) opModes.get((Object) node);
+			if (h.containsKey((Object) opmodeName)) {
+				return ((Object) h.get((Object) opmodeName));
+			}
+		}
+		return null;
+	}
+	HashMap trialOpmodes = new HashMap();
+	double[] m = new double[3]; //MPF
+	double[] MAU = new double[5];
 }
