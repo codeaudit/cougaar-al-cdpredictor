@@ -25,6 +25,12 @@
 package org.cougaar.tools.alf.predictor.plugin;
 
 import org.cougaar.planning.ldm.asset.Asset;
+import org.cougaar.planning.ldm.plan.Task;
+import org.cougaar.planning.ldm.plan.AspectType;
+import org.cougaar.planning.ldm.plan.AspectRate;
+import org.cougaar.planning.ldm.measure.FlowRate;
+import org.cougaar.planning.ldm.measure.CountRate;
+import org.cougaar.glm.ldm.plan.AlpineAspectType;
 
 import java.io.BufferedWriter;
 import java.io.PrintWriter;
@@ -35,20 +41,109 @@ public class ProcessHashData {
 
 	private HashMap hashmap;
 	private String cluster;
+	private ArrayList taskList;
 
-	public ProcessHashData(String cluster, HashMap map){
+	public ProcessHashData(String cluster, HashMap map, ArrayList tasks){
 		this.cluster = cluster;
 		this.hashmap = map;
+		this.taskList = tasks;
+	}
+
+	public void processTasks(){
+		for(Iterator iterator = taskList.iterator();iterator.hasNext();) {
+			Task task = (Task)iterator.next();
+			String owner = task.getPrepositionalPhrase("For").getIndirectObject().toString();
+			String comp = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
+			if (comp!= null) {
+				Asset as = task.getDirectObject();
+				String item_name = as.getTypeIdentificationPG().getTypeIdentification();
+				CustomerRoleKey crk = new CustomerRoleKey(owner, comp);
+				HashMap inner_hashmap = (HashMap) hashmap.get(crk);
+				ArrayList valuesList = (ArrayList)inner_hashmap.get(item_name);
+				if(task.getVerb().equals("ProjectSupply")) {
+					long sTime = (long) task.getPreferredValue(AspectType.START_TIME);
+					long zTime = (long) task.getPreferredValue(AspectType.END_TIME);
+
+					for (long incTime = sTime; incTime <= zTime; incTime = incTime + 86400000) {
+						double rate = 0.0;
+						if (comp.compareToIgnoreCase("BulkPOL") == 0) {
+							AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
+							FlowRate flowrate = (FlowRate) aspectrate.rateValue();
+							rate = (flowrate.getGallonsPerDay());
+						}
+						else {
+							AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
+							CountRate flowrate = (CountRate) aspectrate.rateValue();
+							rate = (flowrate.getUnitsPerDay());
+						}
+							if(valuesList!= null) {
+								boolean foundEndTime = false;
+								for(Iterator it = valuesList.iterator();it.hasNext();){
+									Values value = (Values)it.next();
+									if(value.getEndTime()== incTime) {
+										double newQuantity = (value.getQuantity() + rate)/2;
+										value.setQuantity(newQuantity);
+										System.out.println("NewProjectSupplyQuantitySet "+new Date(incTime)+" "+newQuantity+
+														" "+owner+" "+comp+" "+item_name);
+										foundEndTime = true;
+									}
+								}
+								if(!foundEndTime) {
+									Values new_value = new Values(incTime, rate*4, as);
+									valuesList.add(new_value);
+								}
+							}
+							else
+							{
+								Values new_value = new Values(incTime, rate*4, as);
+								valuesList = new ArrayList();
+								valuesList.add(new_value);
+								inner_hashmap.put(item_name, valuesList);
+							}
+						}
+					}
+					else {
+						long endTime = (long) (task.getPreferredValue(AspectType.END_TIME));
+						double quantity = task.getPreferredValue(AspectType.QUANTITY);
+							if(valuesList!= null) {
+								boolean foundEndTime = false;
+								for(Iterator it = valuesList.iterator();it.hasNext();){
+									Values value = (Values)it.next();
+									if(value.getEndTime()== endTime) {
+										double newQuantity = (value.getQuantity() + quantity)/2;
+										value.setQuantity(newQuantity);
+										System.out.println("NewSupplyQuantitySet "+new Date(endTime)+" "+newQuantity+
+														" "+owner+" "+comp+" "+item_name);
+										foundEndTime = true;
+									}
+								}
+								if(!foundEndTime) {
+									Values newvalue = new Values(endTime, quantity, as);
+									valuesList.add(newvalue);
+								}
+							}
+							else
+							{
+								Values new_value = new Values(endTime, quantity, as);
+								valuesList = new ArrayList();
+								valuesList.add(new_value);
+								inner_hashmap.put(item_name, valuesList);
+							}
+						}
+				}
+		}
 	}
 
 	public HashMap iterateList() {
-		for(Iterator iterator = hashmap.values().iterator();iterator.hasNext();){
-			HashMap inner_hashmap = (HashMap)iterator.next();
+		processTasks();
+		for(Iterator iterator = hashmap.keySet().iterator();iterator.hasNext();){
+			CustomerRoleKey crk = (CustomerRoleKey)iterator.next();
+			HashMap inner_hashmap = (HashMap)hashmap.get(crk);
 			for(Iterator iter = inner_hashmap.keySet().iterator();iter.hasNext();){
 				String item_name = (String)iter.next();
 				ArrayList valuesList = (ArrayList)inner_hashmap.get(item_name);
 				demandPerDay(valuesList);
-				String formattedName = formatItemName(item_name);
+				String formattedName = formatItemName(item_name, crk.getCustomerName(), crk.getRoleName());
 				printList(formattedName, valuesList);
 			}
 		}
@@ -98,6 +193,11 @@ public class ProcessHashData {
 			double sum_var = 0;
 			int x = 0;
       int i = 0;
+			if(timeQtyArray.length == 1){
+				Values newValues = new Values((long)timeQtyArray[i][0], timeQtyArray[i][1], asset);
+				timeQtyValues.add(newValues);
+				return;
+			}
       for (int j = i + 1; j < timeQtyArray.length; j++) {
       	if (timeQtyArray[j][0] > timeQtyArray[i][0]) {
         	for (x = j - 1; x >= i; x--) {
@@ -138,7 +238,7 @@ public class ProcessHashData {
 		 }
 	}
 
-	public String formatItemName(String name){
+	public String formatItemName(String name, String customer, String role){
 
 		StringTokenizer st = new StringTokenizer(name);
 	  StringBuffer tempString = new StringBuffer();
@@ -161,7 +261,8 @@ public class ProcessHashData {
 						finalString.append(char_temp);
 				}
 		}
-    return finalString.toString();
+		String outString = customer+role+finalString.toString();
+    return outString;
 	}
 
 }

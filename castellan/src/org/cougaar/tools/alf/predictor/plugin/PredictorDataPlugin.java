@@ -41,6 +41,7 @@ import org.cougaar.planning.ldm.measure.FlowRate;
 import org.cougaar.planning.ldm.plan.*;
 
 import org.cougaar.util.UnaryPredicate;
+import org.cougaar.logistics.plugin.inventory.TaskUtils;
 
 import java.util.*;
 
@@ -62,6 +63,9 @@ public class PredictorDataPlugin extends ComponentPlugin {
 	private int count_alarm = 0;
 	private boolean rehydrate_flag = false;
 	private int tick = 0;
+	private boolean modelsPublished = false;
+
+	private ArrayList taskList = new ArrayList();
 
 	UnaryPredicate relationPredicate = new UnaryPredicate() {
 		public boolean execute(Object o) {
@@ -83,6 +87,13 @@ public class PredictorDataPlugin extends ComponentPlugin {
 				if (tempTask.getVerb().equals(Constants.Verb.PROJECTSUPPLY)) {
 					if (!tempTask.getPrepositionalPhrase("For").getIndirectObject().equals(cluster)) return true;
 					else return false;
+				}
+				if (tempTask.getVerb().equals(Constants.Verb.SUPPLY)) {
+					if (!tempTask.getPrepositionalPhrase("For").getIndirectObject().equals(cluster)) {
+						if (!TaskUtils.isMyRefillTask(tempTask, cluster)) {
+							return true;
+						}
+					}
 				}
 			}
 			return false;
@@ -114,13 +125,17 @@ public class PredictorDataPlugin extends ComponentPlugin {
 		if (alarm != null && alarm.hasExpired() == true) {
 			count_alarm++;
 			if (!rehydrate_flag) {
-				executeAlarm();
-				alarm.cancel();
+				if(!modelsPublished) {
+					executeAlarm();
+					alarm.cancel();
+				}
 			}
 		}
 		if (!rehydrate_flag) {
-			relationshipList();
-			getPlannedDemand();
+			if(!modelsPublished) {
+				relationshipList();
+				getPlannedDemand();
+			}
 		}
 	}
 
@@ -136,6 +151,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 					count_alarm = 0;
 				} else if (phm.size()!= 0) {
 					count_alarm = 1;
+					System.out.println("phmRehydrated");
 					if (alarm!= null) alarm.cancel();
 				}
 			}
@@ -175,7 +191,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 					if (org_name!= null && role!= null) {
 						tick++;
 						role = stringRevManipulation(role);
-						//myLoggingService.shout("Supplier : " + cluster + "| Customer: " + org_name + "| SupplyClass "+role);
+						myLoggingService.shout("Supplier : " + cluster + "| Customer: " + org_name + "| SupplyClass "+role);
 						phm.addHashMap(org_name, role);
 						if(tick == 1) phm.setUID(myUIDService.nextUID());
 					}
@@ -185,17 +201,48 @@ public class PredictorDataPlugin extends ComponentPlugin {
 	}
 
 	public void getPlannedDemand() {
-		//long startT = currentTimeMillis();
-		//myLoggingService.debug("getPlannedDemand() method start time " +  new Date(startT));
+		long startT = currentTimeMillis();
+		myLoggingService.debug("getPlannedDemand() method start time " +  new Date(startT));
 		Task task;
 		HashMap hashmap;
 		//boolean fireAlarm = true;
-		//int task_counter = 0;
+		int task_counter = 0;
 		if(phm.getMap()!= null || !phm.getMap().isEmpty()) hashmap = phm.getMap();	else return;
+
+		for (Enumeration e = taskSubscription.getChangedList(); e.hasMoreElements();) {
+			task = (Task) e.nextElement();
+			if(task.getVerb().equals("Supply")) {
+			System.out.println("PlanningModeChangedList "+" UID "+task.getUID()+" ParentTaskUID "
+										+task.getParentTaskUID()+" "+task.getPreferredValue(AspectType.QUANTITY)+" "+
+														new Date((long)(task.getPreferredValue(AspectType.END_TIME)))
+			+" "+task.getDirectObject().getTypeIdentificationPG().getTypeIdentification());
+			}
+		}
+
+		for (Enumeration e = taskSubscription.getRemovedList(); e.hasMoreElements();) {
+			task = (Task) e.nextElement();
+			if(task.getVerb().equals("Supply")) {
+			System.out.println("PlanningModeRemovedList "+" UID "+task.getUID()+" ParentTaskUID "
+										+task.getParentTaskUID()+" "+task.getPreferredValue(AspectType.QUANTITY)+" "+
+														new Date((long)(task.getPreferredValue(AspectType.END_TIME)))
+			+" "+task.getDirectObject().getTypeIdentificationPG().getTypeIdentification());
+			}
+		}
+
+		for (Iterator e = taskSubscription.getCollection().iterator(); e.hasNext();) {
+			task = (Task) e.next();
+			if(task.getVerb().equals("Supply")) {
+			System.out.println("PlanningModeWholeCollectionList "+" UID "+task.getUID()+" ParentTaskUID "
+										+task.getParentTaskUID()+" "+task.getPreferredValue(AspectType.QUANTITY)+" "+
+														new Date((long)(task.getPreferredValue(AspectType.END_TIME)))
+							+" "+task.getDirectObject().getTypeIdentificationPG().getTypeIdentification());
+			}
+		}
 
 		for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
 			task = (Task) e.nextElement();
-			//task_counter++;
+			task_counter++;
+
 			//fireAlarm = false;
 			String owner = task.getPrepositionalPhrase("For").getIndirectObject().toString();
 			String comp = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
@@ -203,7 +250,14 @@ public class PredictorDataPlugin extends ComponentPlugin {
 				if (alarm != null) alarm.cancel();
           alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
           as.addAlarm(alarm);
-					Asset as = task.getDirectObject();
+					taskList.add(task);
+					if(task.getVerb().equals("Supply")) {
+					System.out.println("PlanningModeAddedList "+" UID "+task.getUID()+" ParentTaskUID "
+												+task.getParentTaskUID()+" "+task.getPreferredValue(AspectType.QUANTITY)+" "+
+																new Date((long)(task.getPreferredValue(AspectType.END_TIME)))
+									+" "+task.getDirectObject().getTypeIdentificationPG().getTypeIdentification());
+					}
+				/*	Asset as = task.getDirectObject();
 					//String item_name = as.getTypeIdentificationPG().getNomenclature();
 					String item_name = as.getTypeIdentificationPG().getTypeIdentification();
 					CustomerRoleKey crk = new CustomerRoleKey(owner, comp);
@@ -233,7 +287,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 								valuesList.add(new_value);
 								inner_hashmap.put(item_name, valuesList);
 							}
-						}
+						}*/
 					//}
 					/*else {
 						long endTime = (long) (task.getPreferredValue(AspectType.END_TIME));
@@ -254,29 +308,30 @@ public class PredictorDataPlugin extends ComponentPlugin {
 			alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
 			as.addAlarm(alarm);
 		}*/
-			//long end = System.currentTimeMillis();
-			//myLoggingService.debug("getPlannedDemand() method end time " +  new Date(end)
-		 //	+ " in milliseconds" + (end - startT)+" Task Count "+task_counter);
+			long end = currentTimeMillis();
+			myLoggingService.debug("getPlannedDemand() method end time " +  new Date(end)
+		 	+ " in milliseconds" + (end - startT)+" Task Count "+task_counter);
 
 	}
 
 	public void executeAlarm() {
-	//	long startT = currentTimeMillis();
-		//myLoggingService.shout("executeAlarm() method start time " +  new Date(startT));
+		long startT = currentTimeMillis();
+		myLoggingService.shout("executeAlarm() method start time " +  new Date(startT));
 		HashMap processedMap = null;
 		myBlackBoardService.publishAdd(phm);
 		//phm.setUID(myUIDService.nextUID());
 		HashMap hashmap = phm.getMap();
-		ProcessHashData phd = new ProcessHashData(cluster, hashmap); //cluster added new
+		ProcessHashData phd = new ProcessHashData(cluster, hashmap, taskList); //cluster added new
 		if (phd!= null) processedMap = phd.iterateList();
 			if (processedMap!= null) {
-				//myLoggingService.shout("DemandModelPublished "+processedMap.size());
+				myLoggingService.shout("DemandModelPublished "+processedMap.size());
 				myBlackBoardService.publishChange(phm);
+				modelsPublished = true;
 				if(alarm!= null) alarm.cancel();
 			}
-	//	long end = System.currentTimeMillis();
-		//	myLoggingService.shout("executeAlarm() method end time " +  new Date(end)
-		// 	+ " in milliseconds" + (end - startT));
+		long end = System.currentTimeMillis();
+			myLoggingService.shout("executeAlarm() method end time " +  new Date(end)
+		 	+ " in milliseconds" + (end - startT));
 	}
 
 
