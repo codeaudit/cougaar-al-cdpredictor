@@ -24,6 +24,8 @@
 
 package org.cougaar.tools.alf.sensor.plugin;
 
+import org.cougaar.planning.ldm.plan.Task;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.PrintWriter;
@@ -164,19 +166,43 @@ public class ProcessHashData {
        return item_arraylist;
     }
 
-    public void sort(Object[][] ob) {
+
+  public void loraSort(Object[] ob) {
+    System.out.println("Collection Size: " + ob.length);
+    long start = System.currentTimeMillis();
+    System.out.println(" LORA SORT start of for loop in sort function " +  new Date(start));
+    Arrays.sort(ob, new Comparator () {
+      public int compare (Object a, Object b) {
+        Long end1 = (Long)((Object[]) a)[6];
+        Long end2 = (Long)((Object[]) b)[6];
+        if (end1.longValue() < end2.longValue()) return -1;
+        if (end1.longValue() > end2.longValue()) return +1;
+        return 0;
+      }});
+    long end = System.currentTimeMillis();
+    System.out.println("LORA SORT End of for loop in sort function " +  new Date(end)
+                       + " total time to sort in milliseconds" +
+                       (end - start));
+  }
+
+  public void sort(Object[][] ob) {
         int k = 6;
         int j = 0;
-        //System.out.println("Collection Size: " + ob.length);
+      System.out.println("Collection Size: " + ob.length);
+      long start = System.currentTimeMillis();
+      System.out.println(" start of for loop in sort function " +  new Date(start));
         for (int i = 0; i < ob.length; i++) {
             for (j = i + 1; j < ob.length; j++) {
                 if (new Long(ob[i][k].toString()).longValue() > new Long(ob[j][k].toString()).longValue()) {
+                  // pull this out of inner j loop, constant check
                     for (int x = 3; x <= 6; x++) {
                         if (x == 5) {
+                            // make this a Double or Object
                             double temp2 = new Double(ob[i][x].toString()).doubleValue();
                             ob[i][x] = ob[j][x];
                             ob[j][x] = new Double(temp2);
                         } else {
+                          // ditto here
                             long temp2 = new Long(ob[i][x].toString()).longValue();
                             ob[i][x] = ob[j][x];
                             ob[j][x] = new Long(temp2);
@@ -187,13 +213,17 @@ public class ProcessHashData {
                 }
             }
         }
+      long end = System.currentTimeMillis();
+      System.out.println(" End of for loop in sort function " +  new Date(end) + " total time to sort in minutes " +
+                         ((end - start)/60000));
     }
 
 
     public ArrayList demandPerDay(Object[][] ob) {
         ArrayList ret_arraylist = new ArrayList();
         if (ob != null) {
-             sort(ob);
+            // sort(ob);
+          loraSort(ob);
         /*    String name = null;
             for (int m = 1; m < 2; m++) {
                 String s = ob[m][0].toString();
@@ -253,25 +283,25 @@ public class ProcessHashData {
                     i = j;
 
                 } else {
-                    continue;
+                  continue;
                 }
             }
               ret_arraylist.add(m,newTable);
             }
-            }
+                }
             }
 
-            return ret_arraylist;
+          return ret_arraylist;
         }
 
-        return null;
+      return null;
     }
 
 
-    private PredictorArrayList hashTableList;
-    private ArrayList arrayList;
-    private Hashtable table;
-    private Hashtable newTable;
-    private Vector vec1;
-    PrintWriter pwr;
+  private PredictorArrayList hashTableList;
+  private ArrayList arrayList;
+  private Hashtable table;
+  private Hashtable newTable;
+  private Vector vec1;
+  PrintWriter pwr;
 }
