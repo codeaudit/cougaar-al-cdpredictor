@@ -47,16 +47,16 @@ public class CreateHashtable {
         this.Item = item;
     }
 
-    public CreateHashtable(String supplier, String customer, String supply_class,long exe_time, long time, double quantity, String item) {
+    public CreateHashtable(String supplier, String customer, String supply_class, String item, long exe_time, long comit_day, long time, double quantity) {
 
         this.Supplier = supplier;
         this.Customer = customer;
         this.Supply_Class = supply_class;
+        this.Item = item;
         this.Exe_time = exe_time;
+        this.Commit_day = comit_day;
         this.Time = time;
         this.Quantity = quantity;
-        this.Item = item;
-
     }
 
 
@@ -89,10 +89,12 @@ public class CreateHashtable {
         vec.insertElementAt(Supplier, 0);
         vec.insertElementAt(Customer, 1);
         vec.insertElementAt(Supply_Class, 2);
-        vec.insertElementAt(new Long(Exe_time), 3);
-        vec.insertElementAt(new Long(Time), 4);
-        vec.insertElementAt(new Double(Quantity), 5);
-        vec.insertElementAt(Item, 6);
+        vec.insertElementAt(Item, 3);
+        vec.insertElementAt(new Long(Exe_time), 4);
+        vec.insertElementAt(new Long(Commit_day), 5);
+        vec.insertElementAt(new Long(Time), 6);
+        vec.insertElementAt(new Double(Quantity), 7);
+
         hashtable.put(new Integer(1), vec);
 
         if (hashtable.containsKey(new Integer(1)) == true) {
@@ -139,10 +141,11 @@ public class CreateHashtable {
         vec1.insertElementAt(Supplier, 0);
         vec1.insertElementAt(Customer, 1);
         vec1.insertElementAt(Supply_Class, 2);
-        vec1.insertElementAt(new Long(Exe_time), 3);
-        vec1.insertElementAt(new Long(Time), 4);
-        vec1.insertElementAt(new Double(Quantity), 5);
-        vec1.insertElementAt(Item, 6);
+        vec1.insertElementAt(Item, 3);
+        vec1.insertElementAt(new Long(Exe_time), 4);
+        vec1.insertElementAt(new Long(Commit_day), 5);
+        vec1.insertElementAt(new Long(Time), 6);
+        vec1.insertElementAt(new Double(Quantity), 7);
         return vec1;
     }
 
@@ -162,5 +165,6 @@ public class CreateHashtable {
     protected long Time;
     protected double Quantity;
     protected String Item;
+    protected long Commit_day;
 }
 
