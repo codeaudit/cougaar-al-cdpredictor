@@ -144,16 +144,14 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
 		if (myTimestampService == null) {
             System.out.println("\n"+cluster+" ["+sensorname+"]: TimestampService is NOT available.\n");
         }
-			    as = getAlarmService() ;
-		alarm = new TriggerFlushAlarm( currentTimeMillis() + 200000 );
-        as.addAlarm(alarm) ;	
+		as = getAlarmService() ;
 	
     }
 
 
     public void execute()
     {
-		alarm.cancel();
+            if (alarm != null) alarm.cancel();
 		if (myTimestampService == null) {
             myTimestampService = (BlackboardTimestampService) getBindingSite().getServiceBroker().getService(this, BlackboardTimestampService.class, null);
             if (myTimestampService == null) {
@@ -230,7 +228,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         }
         
         System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = "+((int)(loadIndex*100))/100.0+" ["+status+"]");
-		alarm = new TriggerFlushAlarm( currentTimeMillis() + 200000 );
+	  alarm = new TriggerFlushAlarm( currentTimeMillis() + 200000 );
         as.addAlarm(alarm) ;	
     }
  
@@ -278,7 +276,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
     }  
 
     void setNormal () {
-                Iterator iter;
+        Iterator iter;
         String status = LoadIndicator.NORMAL_LOAD;
         for (iter = sensorSubscription.getCollection().iterator(); iter.hasNext();) {
             LoadIndicator loadIndicator = (LoadIndicator) iter.next();
@@ -290,7 +288,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         }
         
         System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = -1"+" ["+status+"]");
-		alarm.cancel();
+	  alarm.cancel();
     }
 
     IncrementalSubscription allocationSubscription;   
@@ -301,8 +299,8 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
     private BlackboardService myBlackboardService;
     private LoggingService myLoggingService;
     private UIDService myUIDService;
-	AlarmService as;
-	TriggerFlushAlarm alarm;
+    AlarmService as;
+    TriggerFlushAlarm alarm = null;
 
     
 }
