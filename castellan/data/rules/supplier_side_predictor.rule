@@ -1,7 +1,7 @@
 ####################################################
 # Rule to insert Supplier Side Predictor plugin
 
-predictor = "org.cougaar.tools.alf.sensor.plugin.PredictorPlugin"
+predictor = "org.cougaar.tools.alf.sensor.plugin.PSUPredictorPlugin"
 agentList = ["47-FSB", "123-MSB"]
 
 society.each_agent do |agent|
