@@ -44,6 +44,12 @@ import java.util.Iterator;
 import java.util.Collection;
 import java.util.Properties;
 
+/**
+ *
+ * @author  Yunho Hong
+ * @version
+ */
+
 public class SensorPlugin extends ComponentPlugin
 {
     class TriggerFlushAlarm implements PeriodicAlarm

@@ -42,7 +42,7 @@ import java.lang.Float;
 
 /**
  *
- * @author  wpeng
+ * @author  Yunho Hong
  * @version
  */
 public class TheSensor {
