@@ -16,6 +16,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.io.*;
 import java.util.Iterator;
+import java.util.Collection;
 
 public class CPESimulatorUIFrame extends JFrame {
     private CPESimulatorPlugin plugin;
@@ -107,6 +108,13 @@ public class CPESimulatorUIFrame extends JFrame {
                 dumpTimePeriodMeasurements( f, (TimePeriodMeasurementPoint) mwm.getPenalties() ) ;
                 dumpTimePeriodMeasurements( f, (TimePeriodMeasurementPoint) mwm.getViolations() ) ;
                 dumpTimePeriodMeasurements( f, (TimePeriodMeasurementPoint) mwm.getAttrition() ) ;
+                dumpTimePeriodMeasurements( f, mwm.getFuelConsumption() );
+                Collection c = mwm.getFuelConsumptionByUnit() ;
+                for (Iterator iterator = c.iterator(); iterator.hasNext();)
+                {
+                    TimePeriodMeasurementPoint measurementPoint = (TimePeriodMeasurementPoint) iterator.next();
+                    dumpTimePeriodMeasurements( f, measurementPoint );
+                }
             }
         }
     }

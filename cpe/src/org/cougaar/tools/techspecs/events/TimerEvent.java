@@ -3,9 +3,7 @@ package org.cougaar.tools.techspecs.events;
 import org.cougaar.tools.techspecs.ActionEventSpec;
 
 /**
- * User: wpeng
- * Date: Mar 11, 2004
- * Time: 6:35:10 PM
+ * A timer event specification.
  */
 public class TimerEvent extends ActionEvent
 {

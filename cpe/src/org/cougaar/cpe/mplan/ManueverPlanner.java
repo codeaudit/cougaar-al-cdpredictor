@@ -93,7 +93,21 @@ public class ManueverPlanner extends Planner {
     }
 
     public synchronized void plan( HashMap currentPlans, WorldState ws) {
-        s = new BoundedBranchSearch( vss ) ;
+        if ( boundPlanningTime ) {
+            System.out.println("Bounded planning time " + planningTimeLimit );
+            s = new BoundedBranchSearch( vss, System.currentTimeMillis() + planningTimeLimit ) ;
+        }
+        else {
+            s = new BoundedBranchSearch( vss ) ;
+        }
+        for (int i=0;i<subordinateUnits.size();i++) {
+            String id = (String) subordinateUnits.get(i) ;
+            EntityInfo info = ws.getEntityInfo( id  ) ;
+            if ( info == null ) {
+                System.err.println("\n\n**********************\nEntityInfo not found for subordinate " + id );
+            }
+        }
+
         s.setMaxDepth( maxDepth );
         s.setMaxBranchingFactorPerPly( maxBranchFactor );
         WorldStateNode wsn = new WorldStateNode( null, new WorldStateModel( ws, true) ) ;
@@ -101,6 +115,9 @@ public class ManueverPlanner extends Planner {
         s.run();
 //        System.out.println("\nDUMPING PLANNER NODES at " + ws.getTime() );
 //        s.dump();
+        if ( s.getState() == BoundedBranchSearch.TIME_LIMIT_REACHED ) {
+            System.out.println("Time limit reached.");
+        }
         System.out.println("\nFinished one planning cycle...");
         System.out.println("#Number of open nodes=" + s.getNumExpandedOpenNodes() );
         System.out.println("#Number of closed nodes=" + s.getNumClosedNodes() );
@@ -266,9 +283,27 @@ public class ManueverPlanner extends Planner {
             }
         }
 
-
     }
 
+    public boolean isBoundPlanningTime()
+    {
+        return boundPlanningTime;
+    }
+
+    public void setBoundPlanningTime(boolean boundPlanningTime)
+    {
+        this.boundPlanningTime = boundPlanningTime;
+    }
+
+    public long getPlanningTimeLimit()
+    {
+        return planningTimeLimit;
+    }
+
+    public void setPlanningTimeLimit(int planningTimeLimit)
+    {
+        this.planningTimeLimit = planningTimeLimit;
+    }
 
     Interval initialZone ;
     BoundedBranchSearch s ;
@@ -276,6 +311,8 @@ public class ManueverPlanner extends Planner {
     ArrayList subordinateUnits = new ArrayList() ;
     int maxDepth = 2 ;
     int maxBranchFactor = 60 ;
+    boolean boundPlanningTime = false ;
+    int planningTimeLimit = -1;
 
     public void setZonePlan(Plan plan)
     {

@@ -2,13 +2,6 @@ package org.cougaar.tools.techspecs.measurement;
 
 import org.cougaar.tools.techspecs.ActionSpec;
 
-/**
- * Created by IntelliJ IDEA.
- * User: wpeng
- * Date: Apr 5, 2004
- * Time: 1:25:54 AM
- * To change this template use Options | File Templates.
- */
 public class TimestampMeasurementSpec extends MeasurementSpec {
 
     public TimestampMeasurementSpec(String name, ActionSpec parent, int type, int layer) {

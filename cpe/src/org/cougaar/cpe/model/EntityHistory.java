@@ -1,6 +1,6 @@
 /*
  * <copyright>
- *  Copyright 2004 Intelligent Automation, Inc.
+ *  Copyright 2003-2004 Intelligent Automation, Inc.
  *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA).
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -18,39 +18,38 @@
  *  PERFORMANCE OF THE COUGAAR SOFTWARE.
  * </copyright>
  */
+package org.cougaar.cpe.model;
 
-package org.cougaar.cpe.agents.messages;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 
-import org.cougaar.tools.techspecs.events.MessageEvent;
-import org.cougaar.cpe.model.WorldStateModel;
+public class EntityHistory implements Serializable
+{
+    public static final class TrajectoryRecord {
 
-public class ConfigureMessage extends MessageEvent {
+        public TrajectoryRecord(long time, double x, double y, double dx, double dy, double strength )
+        {
+            this.x = x;
+            this.y = y;
+            this.dx = dx;
+            this.dy = dy;
+        }
 
-    public ConfigureMessage(WorldStateModel wsm) {
-        this.wsm = wsm;
-        setPriority( MessageEvent.PRIORITY_HIGH );
+        long time ;
+        double x, y, dx, dy ;
+        double ex, ey, edx, edy ;
+        boolean isSuppressed ;
+        double strength ;
     }
 
-    public ConfigureMessage(WorldStateModel wsm, byte[] paramConfigurationDocument)
-    {
-        this.wsm = wsm;
-        this.paramConfigurationDocument = paramConfigurationDocument;
-        setPriority( MessageEvent.PRIORITY_HIGH );
+    public ArrayList getTrajectory() {
+        return trajectory ;
     }
 
-    public WorldStateModel getWorldStateModel() {
-        return wsm;
+    public void addTrajectoryRecord( long time, double x, double y, double dx, double dy, double strength ) {
+        trajectory.add( new TargetContact( null, time, x, y, dx, dy, 0, 0, strength ) ) ;
     }
 
-    public byte[] getParamConfigurationDocument()
-    {
-        return paramConfigurationDocument;
-    }
-
-    /**
-     * The parameter configuration document.
-     */
-    byte[] paramConfigurationDocument ;
-
-    WorldStateModel wsm ;
+    ArrayList trajectory = new ArrayList() ;
 }

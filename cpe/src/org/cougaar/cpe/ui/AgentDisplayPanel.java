@@ -39,7 +39,7 @@ public class AgentDisplayPanel extends JFrame {
 
     static class RelayTableModel implements TableModel {
 
-        final static String[] COLUMN_NAMES = { "Type", "Destination", "Queries", "Sent", "Received", "Buffered" } ;
+        final static String[] COLUMN_NAMES = { "Type", "Destination", "Queries", "Sent", "Received", "Buffered", "Max. Seq." } ;
 
         public int getRowCount() {
             return relays.size() ;
@@ -92,6 +92,8 @@ public class AgentDisplayPanel extends JFrame {
                          return Integer.toString( sb.getNumReceived() ) ;
                     case 5 :
                          return Integer.toString( sb.getBufferSize() ) ;
+                    case 6 :
+                         return Integer.toString( sb.getMaxSequenceNumber()) ;
                     default :
                         return "?";
                 }
@@ -111,6 +113,8 @@ public class AgentDisplayPanel extends JFrame {
                         return Integer.toString( tr.getNumReceived() ) ;
                    case 5 :
                         return Integer.toString( tr.getBufferSize() ) ;
+                   case 6 :
+                        return Integer.toString( tr.getMaxSequenceNumber() ) ;
                    default :
                         return "?" ;
                 }

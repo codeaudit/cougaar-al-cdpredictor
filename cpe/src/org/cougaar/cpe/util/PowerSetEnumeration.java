@@ -1,5 +1,7 @@
 package org.cougaar.cpe.util;
 
+import com.axiom.lib.util.ArrayMath;
+
 import java.util.ArrayList;
 
 /**
@@ -69,8 +71,10 @@ public class PowerSetEnumeration {
         //Object res = matrix.getArray()[lindex];
 
         // Throw exception if no next element exists.
-        if ( index[0] > upper[0] )
+        if ( index[0] > upper[0] ) {
+            System.err.println("Index=" + ArrayMath.toString( index ) + ",upper=" + ArrayMath.toString( upper ) );
            throw new java.util.NoSuchElementException() ;
+        }
 
         try {
             if ( index[0] < upper[0] ) {

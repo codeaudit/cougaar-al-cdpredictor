@@ -9,6 +9,7 @@ import org.cougaar.cpe.util.PowerSetEnumeration;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public class VGSearchStrategy implements Strategy {
 
@@ -295,7 +296,7 @@ public class VGSearchStrategy implements Strategy {
 
             // Generate a task for move to different positions for each entity
             // independently, i.e. create tasks that move to 0, x + dx, x + 2dx, etc.
-            float maxDistanceMovedPerDeltaT = ( float ) ( VGWorldConstants.UNIT_NORMAL_MOVEMENT_RATE *
+            float maxDistanceMovedPerDeltaT = ( float ) ( VGWorldConstants.getUnitNormalMovementRate() *
                     ws.getDeltaT() ) ;
 
             // Consider all possible movements less than the max distance moved.
@@ -333,7 +334,7 @@ public class VGSearchStrategy implements Strategy {
 //                    }
                 }
 
-                double fuelConsumption = j * maxDistanceMovedPerDeltaT * VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE ;
+                double fuelConsumption = j * maxDistanceMovedPerDeltaT * VGWorldConstants.getUnitFuelConsumptionRate() ;
 
                 // If fuel falls below 0, can't move this task unless there is a resupply
                 // but we search anyway, under the presumption that resupply might
@@ -390,20 +391,26 @@ public class VGSearchStrategy implements Strategy {
         // Now find all combinations of actions by enumerating each and evey tuple.
         PowerSetEnumeration pe = new PowerSetEnumeration( listOfVirtualUnitLists ) ;
         int tupleCount = 0 ;
-        while ( pe.hasMoreElements() ) {
-            pe.nextElement();
-            Object[] tuple = null ;
-            // Reuse these arrays to avoid generating garbage.
-            if ( tupleCount  < tuples.size() ) {
-                tuple = (Object[]) tuples.get( tupleCount ) ;
-                // Just copy into the current tuple.
-                pe.getTuple( tuple ) ;
+        try {
+            while ( pe.hasMoreElements() ) {
+                pe.nextElement();
+                Object[] tuple = null ;
+                // Reuse these arrays to avoid generating garbage.
+                if ( tupleCount  < tuples.size() ) {
+                    tuple = (Object[]) tuples.get( tupleCount ) ;
+                    // Just copy into the current tuple.
+                    pe.getTuple( tuple ) ;
+                }
+                else {
+                    tuple = pe.getTuple() ;
+                    tuples.add( tuple ) ;
+                }
+                tupleCount ++ ;
             }
-            else {
-                tuple = pe.getTuple() ;
-                tuples.add( tuple ) ;
-            }
-            tupleCount ++ ;
+        }
+        catch ( NoSuchElementException e ) {
+            e.printStackTrace();
+            System.out.println("ListOfVirtualUnitLists=" + listOfVirtualUnitLists );
         }
 
         // Now, execute simulated combinations of tasks (e.g. enumerate each set of tasks)

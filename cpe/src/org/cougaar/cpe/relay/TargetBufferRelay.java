@@ -27,6 +27,7 @@ package org.cougaar.cpe.relay;
 import org.cougaar.core.relay.Relay;
 import org.cougaar.core.util.UID;
 import org.cougaar.core.mts.MessageAddress;
+import org.cougaar.tools.techspecs.events.MessageEvent;
 
 import java.util.Set;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import java.io.Serializable;
  */
 public class TargetBufferRelay implements Relay.Target, Serializable {
     private GenericRelayMessageTransport gmrt;
+    private int maxSequenceNumber;
 
     public TargetBufferRelay(UID uid, MessageAddress source, Object c ) {
         this.uid = uid;
@@ -107,6 +109,11 @@ public class TargetBufferRelay implements Relay.Target, Serializable {
         return numReceived;
     }
 
+    public int getMaxSequenceNumber()
+    {
+        return maxSequenceNumber;
+    }
+
     /**
      * Handles groups of incoming data.
      * @param ics
@@ -115,12 +122,24 @@ public class TargetBufferRelay implements Relay.Target, Serializable {
         if ( gmrt != null ) {
             for ( int i=0;i<ics.length;i++) {
                 gmrt.addMessage( ics[i], getSource() );
+                if ( ics[i] instanceof MessageEvent ) {
+                    MessageEvent event = (MessageEvent) ics[i] ;
+                    if ( event.getSeqId() > maxSequenceNumber ) {
+                        maxSequenceNumber = event.getSeqId();
+                    }
+                }
                 numReceived ++ ;
             }
         }
         else {
             for ( int i=0;i<ics.length;i++) {
                 content.add( ics[i] ) ;
+                if ( ics[i] instanceof MessageEvent ) {
+                    MessageEvent event = (MessageEvent) ics[i] ;
+                    if ( event.getSeqId() > maxSequenceNumber ) {
+                        maxSequenceNumber = event.getSeqId();
+                    }
+                }
                 numReceived ++ ;
             }
         }
@@ -139,8 +158,12 @@ public class TargetBufferRelay implements Relay.Target, Serializable {
      * Called by plug-ins to return one or more responses to the buffer.
      */
     public synchronized void addResponse( Serializable o ) {
+        if ( o instanceof MessageEvent ) {
+            MessageEvent event = (MessageEvent) o ;
+            event.setSeqId( numSent );
+        }
         responses.add( o ) ;
-        numReceived ++ ;
+        numSent ++ ;
 
         // Toggle the respond changed.
         if ( !responseChanged ) {

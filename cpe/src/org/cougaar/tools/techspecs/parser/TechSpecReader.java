@@ -11,11 +11,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
-/**
- * User: wpeng
- * Date: May 5, 2004
- * Time: 3:54:20 PM
- */
 public class TechSpecReader
 {
 

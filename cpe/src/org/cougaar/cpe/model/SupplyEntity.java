@@ -21,7 +21,7 @@ public class SupplyEntity extends Entity
     }
 
     public double getCapacity() {
-        return VGWorldConstants.MAX_SUPPLY_UNIT_LOAD - totalUnits ;
+        return VGWorldConstants.getMaxSupplyUnitLoad() - totalUnits ;
     }
 
     public int getAmmoQuantity() {
@@ -43,8 +43,8 @@ public class SupplyEntity extends Entity
     public void addAmmoQuantity( int quantity ) {
         int newAmmoQuantity = ammoQuantity + quantity ;
         float newTotalQuantity = fuelQuantity + newAmmoQuantity ;
-        if ( newTotalQuantity > VGWorldConstants.MAX_SUPPLY_UNIT_LOAD ) {
-            throw new RuntimeException( "Quantity " + quantity + " exceeds space capacity " + ( VGWorldConstants.MAX_SUPPLY_UNIT_LOAD - totalUnits ) ) ;
+        if ( newTotalQuantity > VGWorldConstants.getMaxSupplyUnitLoad() ) {
+            throw new RuntimeException( "Quantity " + quantity + " exceeds space capacity " + ( VGWorldConstants.getMaxSupplyUnitLoad() - totalUnits ) ) ;
         }
         ammoQuantity = newAmmoQuantity ;
         totalUnits = newTotalQuantity ;
@@ -53,8 +53,8 @@ public class SupplyEntity extends Entity
     public void addFuelQuantity( float quantity ) {
         float newFuelQuantity = fuelQuantity + quantity ;
         float newTotalQuantity = ammoQuantity + newFuelQuantity ;
-        if ( newTotalQuantity > VGWorldConstants.MAX_SUPPLY_UNIT_LOAD ) {
-            throw new RuntimeException( "Quantity " + quantity + " exceeds space capacity " + ( VGWorldConstants.MAX_SUPPLY_UNIT_LOAD - totalUnits ) ) ;
+        if ( newTotalQuantity > VGWorldConstants.getMaxSupplyUnitLoad() ) {
+            throw new RuntimeException( "Quantity " + quantity + " exceeds space capacity " + ( VGWorldConstants.getMaxSupplyUnitLoad() - totalUnits ) ) ;
         }
         fuelQuantity = newFuelQuantity ;
         totalUnits = newTotalQuantity ;

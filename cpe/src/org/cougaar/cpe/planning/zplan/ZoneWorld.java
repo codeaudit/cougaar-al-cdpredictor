@@ -142,7 +142,7 @@ public class ZoneWorld extends WorldStateModel
             fuelConsumption += Math.abs( startXCoords[i] - endXCoords[i] ) ;
         }
 
-        fuelConsumption *= VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE  ;
+        fuelConsumption *= VGWorldConstants.getUnitFuelConsumptionRate()  ;
         return fuelConsumption ;
     }
 

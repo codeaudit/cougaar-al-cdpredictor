@@ -38,18 +38,16 @@ public class CPESimulator
      * Number of deltaTs per plan element.
      */
     protected int numIncrementsPerPlan = 2 ;
-    protected int searchDepth = 7 ;
-    protected int maxBranchFactor = 80 ;
+    protected int searchDepth = 5 ;
+    protected int maxBranchFactor = 60 ;
 
     protected int zoneSearchDepth = 7 ;
     protected int zoneBranchFactor = 60 ;
 
-    // Pretend it takes this long to plan.  Hence all planning at time t is for
-    // elements t + delay in the future.
-    public static final int ASSUMED_BN_PLANNING_DELAY = 10000 ;
+    protected int ASSUMED_BN_PLANNING_DELAY = 10000 ;
 
     // Pretend it tasks this long to generate the supply plan.
-    public static final int ASSUMED_SUPPLY_PLANNING_DELAY = ASSUMED_BN_PLANNING_DELAY + 5000 ;
+    protected int ASSUMED_SUPPLY_PLANNING_DELAY = ASSUMED_BN_PLANNING_DELAY + 5000 ;
 
     private ArrayList allSupplyEntities = new ArrayList();
     private boolean verbose = false ;
@@ -82,7 +80,7 @@ public class CPESimulator
     private boolean doZonePlanning = true ;
 
     public CPESimulator() {
-        configureDefaultScenario();
+        // configureDefaultScenario();
 
         runThread.start() ;
     }
@@ -211,8 +209,8 @@ public class CPESimulator
         int upperZoneIndex = (int ) Math.floor( currentZoneIndex ) - 1 ;
 
         IndexedZone zone = new IndexedZone( lowerZoneIndex, upperZoneIndex ) ;
-        float lower = zoneWorld.getZoneLower( zone ) ;
-        float upper = zoneWorld.getZoneUpper( zone ) ;
+        float lower = zoneWorld.getZoneLower( zone ) - 3 ;
+        float upper = zoneWorld.getZoneUpper( zone ) + 3 ;
 
         /*
          * Space the CPY entities evenly within the zone.
@@ -246,6 +244,7 @@ public class CPESimulator
         ZoneTask t1 = new ZoneTask( 0, numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS(), zone,
                 new IndexedZone( zone.getStartIndex() + 1, zone.getEndIndex() - 1 ) ) ;
         zoneTasks.add( t1 ) ;
+
         ZoneTask t2 = new ZoneTask( numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS(),
                                     2 * numTimeDeltasPerZoneSchedule * ws.getDeltaTInMS(),
                                     new IndexedZone( zone.getStartIndex() + 1, zone.getEndIndex() - 1 ),
@@ -609,6 +608,9 @@ public class CPESimulator
     }
 
     protected void doPopulateTargets() {
+        if ( ws == null ) {
+            return ;
+        }
         // Populate the board with targets
         WorldStateModel temp = new WorldStateModel( ws, false, false, false ) ;
         for (int i=0;i<numInitialTargetGenerationDeltas;i++) {
@@ -622,7 +624,7 @@ public class CPESimulator
         while (iter.hasNext())
         {
             TargetEntity entity = (TargetEntity) iter.next();
-            ws.addEntity( ( Entity ) entity.clone() );
+            ws.addEntity( entity );
         }
         // Now, reset back to the beginning.
         targetGeneratorModel.resetTime( ws.getTime() );
@@ -630,7 +632,9 @@ public class CPESimulator
 
     protected void generateNewTargets() {
         // Generate any new targets
-        targetGeneratorModel.execute();
+        if ( targetGeneratorModel != null ) {
+            targetGeneratorModel.execute();
+        }
     }
 
     public long getTotalPlanningTime()

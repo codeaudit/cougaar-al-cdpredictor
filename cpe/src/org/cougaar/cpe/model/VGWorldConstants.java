@@ -4,17 +4,19 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.lang.reflect.Field;
-import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
 
 /**
  * These are some constants to be used corresponding primarily to simulation
- * rules.
- *
+ * rules.  Also, it includes auxiliary methods to read in settings from an XML document.
  *
  */
 public class VGWorldConstants {
+    public static final String TAG_CPE_WORLD = "CPEWorld";
 
     private static String getNodeValueForTag(Document doc, String tagName, String namedItem ) {
         NodeList nodes = doc.getElementsByTagName( tagName );
@@ -27,22 +29,102 @@ public class VGWorldConstants {
         return value;
     }
 
+    public static void printParameters( PrintWriter w ) {
+        Class c = VGWorldConstants.class ;
+
+        Field[] f = c.getDeclaredFields() ;
+
+        w.println( "\n----------------------------------------------------------");
+        w.println( "CPE Parameter Values");
+        for (int i = 0; i < f.length; i++)
+        {
+            Field field = f[i];
+            if ( !Modifier.isFinal( field.getModifiers() ) && Modifier.isStatic( field.getModifiers() ) &&
+                 ( field.getType().isPrimitive() || field.getType() == String.class ) )
+            {
+                String name = field.getName() ;
+                try
+                {
+                    w.println( name + "\t\t\t" + field.get(null) );
+                }
+                catch (IllegalArgumentException e)
+                {
+                    e.printStackTrace();
+                }
+                catch (IllegalAccessException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+        w.println( "----------------------------------------------------------");
+        w.flush();
+    }
+
+    public static void saveParameterValues( OutputStream os  ) {
+        PrintWriter pw = new PrintWriter( os ) ;
+
+        Class c = VGWorldConstants.class ;
+//        ReflectPermission perm = new ReflectPermission( "suppressAccessChecks" ) ;
+
+        Field[] f = c.getDeclaredFields() ;
+        pw.println( "<" + TAG_CPE_WORLD + ">");
+        pw.flush();
+
+        for (int i = 0; i < f.length; i++) {
+            Field field = f[i];
+            if ( !Modifier.isFinal( field.getModifiers() ) && Modifier.isStatic( field.getModifiers() ) &&
+                 ( field.getType().isPrimitive() || field.getType() == String.class ) )
+            {
+                String name = field.getName() ;
+                if ( Character.isUpperCase( name.charAt(0) ) ) {
+                    // Remove underscores.
+                    name = convertFromAllCaps( name ) ;
+                }
+                else {
+                    StringBuffer newName = new StringBuffer() ;
+                    newName.append( Character.toUpperCase( name.charAt(0) ) ) ;
+                    newName.append( name.substring(1) ) ;
+                    name = newName.toString() ;
+                }
+                try
+                {
+                    pw.println( "    <" + name + " value=\"" + field.get(null) + "\" />" );
+                    pw.flush();
+                }
+                catch (IllegalArgumentException e)
+                {
+                    e.printStackTrace();
+                }
+                catch (IllegalAccessException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+
+        }
+        pw.println("</" + TAG_CPE_WORLD + ">");
+        pw.close();
+
+    }
+
     /**
      * Load world constants configuration from the document.
      * Search by the name of the local static variable (with the initial caps.)
      *
      * @param doc
      */
-    public static void loadValues( Document doc ) {
+    public static void setParameterValues( Document doc ) {
 
         Node root = doc.getDocumentElement() ;
         if( root.getNodeName().equals( "CPEWorld" ) ) {
 
             Class c = VGWorldConstants.class ;
-            Field[] f = c.getFields() ;
+            Field[] f = c.getDeclaredFields() ;
             for (int i = 0; i < f.length; i++) {
                 Field field = f[i];
-                if ( !Modifier.isFinal( field.getModifiers() ) && Modifier.isStatic( field.getModifiers() )) {
+                if ( !Modifier.isFinal( field.getModifiers() ) && Modifier.isStatic( field.getModifiers() )
+                     && ( field.getType().isPrimitive() || field.getType() == String.class ) ) {
                     String name = field.getName() ;
                     if ( Character.isUpperCase( name.charAt(0) ) ) {
                         // Remove underscores.
@@ -54,8 +136,93 @@ public class VGWorldConstants {
                         newName.append( name.substring(1) ) ;
                         name = newName.toString() ;
                     }
+                    String svalue = getNodeValueForTag( doc, name, "value" ) ;
+                    if (svalue != null)
+                    {
+                        // Now, look at the type of field and parse accordingly.
+                        if (field.getType().equals( Float.TYPE ) )
+                        {
+                            try
+                            {
+                                float fvalue = Float.parseFloat(svalue);
+                                field.setFloat(null, fvalue);
+                            }
+                            catch (NumberFormatException e)
+                            {
+                                System.err.println("Exception " + e + " parsing " + svalue);
+                            }
+                            catch (IllegalAccessException e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                        else if (field.getType() == Double.TYPE )
+                        {
+                            try
+                            {
+                                double fvalue = Double.parseDouble(svalue);
+                                field.setDouble(null, fvalue);
+                            }
+                            catch (NumberFormatException e)
+                            {
+                                System.err.println("Exception " + e + " parsing " + svalue);
+                            }
+                            catch (IllegalAccessException e)
+                            {
+                                e.printStackTrace();
+                            }
 
-                    // Now, look at the type of field and parse accordingly.
+                        }
+                        else if (field.getType() == Integer.TYPE )
+                        {
+                            try
+                            {
+                                int value = Integer.parseInt(svalue);
+                                field.setInt(null, value);
+                            }
+                            catch (NumberFormatException e)
+                            {
+                                System.err.println("Exception " + e + " parsing " + svalue);
+                            }
+                            catch (IllegalAccessException e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                        else if (field.getType() == Long.TYPE)
+                        {
+                            try
+                            {
+                                long value = Long.parseLong(svalue);
+                                field.setLong(null, value);
+                            }
+                            catch (NumberFormatException e)
+                            {
+                                System.err.println("Exception " + e + " parsing " + svalue);
+                            }
+                            catch (IllegalAccessException e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                        else if ( field.getType() == String.class ) {
+                            try
+                            {
+                                field.set( null, svalue ) ;
+                            }
+                            catch (IllegalArgumentException e)
+                            {
+                                e.printStackTrace();
+                            }
+                            catch (IllegalAccessException e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                        else {
+                            System.err.println("Unexpected condition: Could not process field " + field );
+                        }
+                    }
                 }
             }
         }
@@ -122,9 +289,11 @@ public class VGWorldConstants {
 
 
     /**
-     * The target move rate in coordinate units per second.
+     * The target move rate along the y axis. in coordinate units per second.
      */
     private static double TARGET_MOVE_RATE = 0.04 ;
+
+    private static double targetXMoveRate = 0.00 ;
 
     /**
      * Suppressed movement is multipled by this factor.
@@ -153,53 +322,58 @@ public class VGWorldConstants {
     /**
      * Standard damage inflicted by a target.
      */
-    public static final double TARGET_STANDARD_ATTRITION = 1 ;
+    private static double TARGET_STANDARD_ATTRITION = 1 ;
 
     /**
      * Consumption rate in fuel units/ coordinate unit traveled.
      */
-    public static final double UNIT_FUEL_CONSUMPTION_RATE = 10.0 ;
+    private static double UNIT_FUEL_CONSUMPTION_RATE = 10.0 ;
 
-    public static final double UNIT_STANDARD_ATTRITION_RATE = 5.0 ;
+    private static double UNIT_STANDARD_ATTRITION_RATE = 5.0 ;
 
-    public static final double UNIT_STANDARD_HIT_PROBABILITY = 0.65 ;
+    private static double UNIT_STANDARD_HIT_PROBABILITY = 0.65 ;
 
-    public static final double UNIT_MULTI_HIT_PROBABILITY = 0.85 ;
+    private static double UNIT_MULTI_HIT_PROBABILITY = 0.85 ;
 
-    public static final double UNIT_STANDARD_ATTRITION = 5 ;
+    private static double UNIT_STANDARD_ATTRITION = 5 ;
 
     /**
      * Movement rate in units/second.
      */
-    public static final double UNIT_NORMAL_MOVEMENT_RATE = 0.04 ;
+    private static double UNIT_NORMAL_MOVEMENT_RATE = 0.04 ;
 
     /**
      * The grid size in coordinate units.
      */
     public static final double WORLD_GRID_SIZE = 0.02 ;
 
-    private static final double SUPPLY_VEHICLE_MOVEMENT_RATE = UNIT_NORMAL_MOVEMENT_RATE * 2 ;
+    private static double SUPPLY_VEHICLE_MOVEMENT_RATE = 0.08 ;
 
     /**
      * Increase speed by a factor but at a increased fuel
      * consumption rate.
      */
-    public static final double UNIT_MAXIMUM_MOVEMENT_FACTOR = 1.25 ;
+    private static final double UNIT_MAXIMUM_MOVEMENT_FACTOR = 1.25 ;
 
     /**
      * Fuel consumption multiplier at increased speed.  When moving at max speed,
      * fuel consumption is increased by a factor of 3.
      */
-    public static final double MAXIMUM_FUEL_CONSUMPTION_FACTOR = 2.5 ;
+    private static final double MAXIMUM_FUEL_CONSUMPTION_FACTOR = 2.5 ;
 
     /**
      * The maximum number of supply units held by a supply vehicle.
      */
-    public static final int MAX_SUPPLY_UNIT_LOAD = 20 ;
+    private static int MAX_SUPPLY_UNIT_LOAD = 20 ;
 
 
     public static double getTargetMoveRate() {
         return TARGET_MOVE_RATE;
+    }
+
+    public static double getTargetXMoveRate()
+    {
+        return targetXMoveRate;
     }
 
     public static double getUnitRangeWidth() {
@@ -271,6 +445,56 @@ public class VGWorldConstants {
     public static double getTargetFullStrength()
     {
         return targetFullStrength;
+    }
+
+    public static double getUnitFuelConsumptionRate()
+    {
+        return UNIT_FUEL_CONSUMPTION_RATE;
+    }
+
+    public static double getUnitStandardAttritionRate()
+    {
+        return UNIT_STANDARD_ATTRITION_RATE;
+    }
+
+    public static double getUnitStandardHitProbability()
+    {
+        return UNIT_STANDARD_HIT_PROBABILITY;
+    }
+
+    public static double getUnitMultiHitProbability()
+    {
+        return UNIT_MULTI_HIT_PROBABILITY;
+    }
+
+    public static double getUnitStandardAttrition()
+    {
+        return UNIT_STANDARD_ATTRITION;
+    }
+
+    public static double getUnitNormalMovementRate()
+    {
+        return UNIT_NORMAL_MOVEMENT_RATE;
+    }
+
+    public static double getTargetStandardAttrition()
+    {
+        return TARGET_STANDARD_ATTRITION;
+    }
+
+    public static int getMaxSupplyUnitLoad()
+    {
+        return MAX_SUPPLY_UNIT_LOAD;
+    }
+
+    public static double getUnitMaximumMovementFactor()
+    {
+        return UNIT_MAXIMUM_MOVEMENT_FACTOR;
+    }
+
+    public static double getMaximumFuelConsumptionFactor()
+    {
+        return MAXIMUM_FUEL_CONSUMPTION_FACTOR;
     }
 
 }

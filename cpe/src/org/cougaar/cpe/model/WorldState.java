@@ -65,7 +65,7 @@ public abstract class WorldState implements java.io.Serializable {
     }
 
     public boolean isModel() {
-        return false ;
+        return true ;
     }
 
     public WorldMetrics getDefaultMetric() {
@@ -141,9 +141,9 @@ public abstract class WorldState implements java.io.Serializable {
         UnitEntity entity = new UnitEntity( id, getGridPositionForPosition(x), y ) ;
         units.add( entity ) ;
         idToInfoMap.put( id, new EntityInfo( entity,
-                new BinaryEngageByFireModel( VGWorldConstants.UNIT_STANDARD_HIT_PROBABILITY,
-                        VGWorldConstants.UNIT_MULTI_HIT_PROBABILITY,
-                        VGWorldConstants.UNIT_STANDARD_ATTRITION,
+                new BinaryEngageByFireModel( VGWorldConstants.getUnitStandardHitProbability(),
+                        VGWorldConstants.getUnitMultiHitProbability(),
+                        VGWorldConstants.getUnitStandardAttrition(),
                         entity.getId().hashCode() ) )  ) ;
         return entity ;
     }
@@ -178,7 +178,8 @@ public abstract class WorldState implements java.io.Serializable {
      * @return
      */
     public TargetEntity addTarget( double x, double y, double dx, double dy ) {
-        TargetEntity result = new TargetEntity( getNextTargetId(), getGridPositionForPosition(x), y, dx, dy, VGWorldConstants.getTargetFullStrength() ) ;
+        TargetEntity result = new SmartTargetEntity( getNextTargetId(), getGridPositionForPosition(x),
+                y, dx, dy, VGWorldConstants.getTargetFullStrength() ) ;
         targets.add( result ) ;
         idToInfoMap.put( result.getId(), new EntityInfo( result, null ) ) ;
 
@@ -329,7 +330,8 @@ public abstract class WorldState implements java.io.Serializable {
         for (int i = 0; i < targets.size(); i++) {
            TargetEntity targetEntity = (TargetEntity)targets.get(i);
             // Fire an event for each penalty which is detected.
-           if ( targetEntity.isActive() && targetEntity.getY() < getPenaltyHeight() && targetEntity.getY() > 0 ) {
+           if ( targetEntity.isActive() && targetEntity.getY() < getPenaltyHeight() && targetEntity.getY() > 0 &&
+                targetEntity.getX() >= getLowerX() && targetEntity.getX() <= getUpperX() ) {
                PenaltyEvent pe = new PenaltyEvent( getTime(), targetEntity.getId(), targetEntity.getX(), targetEntity.getY() ) ;
                fireEvent( pe );
                accumulatedPenalties++ ;
@@ -525,34 +527,40 @@ public abstract class WorldState implements java.io.Serializable {
     public MoveResult moveUnit( UnitEntity entity, double x, double y ) {
         double startX = entity.getX(), startY = entity.getY();
         double distance = Point2D.distance( startX, startY, x, y ) ;
-        double maxDistance = VGWorldConstants.UNIT_NORMAL_MOVEMENT_RATE * getDeltaT() + 1E-5 ;
-        double maxDistanceByFuel = entity.getFuelQuantity() / VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE ;
+        double maxDistance = VGWorldConstants.getUnitNormalMovementRate() * getDeltaT() + 1E-5 ;
+        double maxDistanceByFuel = entity.getFuelQuantity() / VGWorldConstants.getUnitFuelConsumptionRate() ;
         if ( maxDistance > maxDistanceByFuel ) {
             maxDistance = maxDistanceByFuel ;
         }
 
         // Calculate the fuel shortfall and transmit an event to any interested parties.
         double mvt ;
-        if ( ( mvt = Math.min( VGWorldConstants.UNIT_NORMAL_MOVEMENT_RATE * getDeltaT(), distance) ) > maxDistanceByFuel ) {
-            double shortFall = ( mvt - maxDistanceByFuel ) * VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE ;
+        if ( ( mvt = Math.min( VGWorldConstants.getUnitNormalMovementRate() * getDeltaT(), distance) ) > maxDistanceByFuel ) {
+            double shortFall = ( mvt - maxDistanceByFuel ) * VGWorldConstants.getUnitFuelConsumptionRate() ;
             FuelShortfallEvent fse = new FuelShortfallEvent( getTime(), entity.getId(), ( float ) shortFall ) ;
             fireEvent( fse );
         }
 
+        double fuelConsumption = 0 ;
         if ( distance <= maxDistance ) {
             entity.setPosition( x, y );
-            double fuelConsumption = VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE * distance ;
+            fuelConsumption = VGWorldConstants.getUnitFuelConsumptionRate() * distance ;
             entity.setFuelQuantity( entity.getFuelQuantity() - fuelConsumption );
-            return new MoveResult( startX, startY, entity.getX(), entity.getY(), fuelConsumption ) ;
         }
         // Move towards the dest as far as possible.
         else {
             double ratio = maxDistance / distance ;
-            double fuelConsumption = VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE * maxDistance ;
+            fuelConsumption = VGWorldConstants.getUnitFuelConsumptionRate() * maxDistance ;
             entity.setPosition( entity.getX() + ratio *( x - entity.getX()), entity.getY() + ratio * ( y-entity.getY() ) );
             entity.setFuelQuantity( entity.getFuelQuantity() - fuelConsumption );
-            return new MoveResult( startX, startY, entity.getX(), entity.getY(), fuelConsumption ) ;
+//            return new MoveResult( startX, startY, entity.getX(), entity.getY(), fuelConsumption ) ;
         }
+
+        // Signal for fuel consumption.
+        if ( fuelConsumption > 0 ) {
+            fireEvent( new FuelConsumptionEvent( getTime(), entity.getId(), fuelConsumption ));
+        }
+        return new MoveResult( startX, startY, entity.getX(), entity.getY(), fuelConsumption ) ;
     }
 
     /**
@@ -585,7 +593,7 @@ public abstract class WorldState implements java.io.Serializable {
     public void moveTarget( TargetEntity entity, double x, double y ) {
         if ( entity.isActive() ) {
             // Target has moved off the bottom of the board!
-            if ( y < 0 ) {
+            if ( y < 0 && x > getLowerX() && x < getUpperX() ) {
                 accumulatedViolations ++ ;
                 entity.setActive( false );
                 if ( hasEventListeners() ) {
@@ -928,9 +936,9 @@ public abstract class WorldState implements java.io.Serializable {
 
     protected transient WorldMetrics defaultMetric ;
 
-    protected BinaryEngageByFireModel defaultEngageByFireModel = new BinaryEngageByFireModel( VGWorldConstants.UNIT_STANDARD_HIT_PROBABILITY,
-                        VGWorldConstants.UNIT_MULTI_HIT_PROBABILITY,
-                        VGWorldConstants.UNIT_STANDARD_ATTRITION,
+    protected BinaryEngageByFireModel defaultEngageByFireModel = new BinaryEngageByFireModel( VGWorldConstants.getUnitStandardHitProbability(),
+            VGWorldConstants.getUnitMultiHitProbability(),
+            VGWorldConstants.getUnitStandardAttrition(),
                         0 ) ;
 
 

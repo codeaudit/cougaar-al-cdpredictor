@@ -24,7 +24,7 @@ public class ZonePlanner
         strategy = new AggUnitSearchStrategy( subordinateUnits, numDeltaTPerPhase, reference ) ;
 
         // Estimated minimum time to transit between zones.
-        double transitionTime = reference.getZoneGridSize() / (float) VGWorldConstants.UNIT_NORMAL_MOVEMENT_RATE ;
+        double transitionTime = reference.getZoneGridSize() / (float) VGWorldConstants.getUnitNormalMovementRate() ;
 
         /**
          * Check if the number of delta t elements per planning cycle is less than the transition Time

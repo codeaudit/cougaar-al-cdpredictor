@@ -265,18 +265,18 @@ public class WorldStateModel extends WorldState {
 
         Point2D start = entity.getPosition();
         double distance = entity.getPosition().distance(dest);
-        double maxDistance = VGWorldConstants.UNIT_NORMAL_MOVEMENT_RATE * getDeltaT() + 1E-5;
+        double maxDistance = VGWorldConstants.getUnitNormalMovementRate() * getDeltaT() + 1E-5;
 
         if (distance <= maxDistance) {
             entity.setPosition(dest.getX(), dest.getY());
-            double fuelConsumption = VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE * distance;
+            double fuelConsumption = VGWorldConstants.getUnitFuelConsumptionRate() * distance;
             entity.setFuelQuantity(entity.getFuelQuantity() - fuelConsumption);
             return new MoveResult(start.getX(), start.getY(), entity.getX(), entity.getY(), fuelConsumption);
         }
         // Move towards the dest as far as possible.
         else {
             double ratio = maxDistance / distance;
-            double fuelConsumption = VGWorldConstants.UNIT_FUEL_CONSUMPTION_RATE * maxDistance;
+            double fuelConsumption = VGWorldConstants.getUnitFuelConsumptionRate() * maxDistance;
             entity.setPosition(entity.getX() + ratio * dest.getX(), entity.getY() + ratio * dest.getY());
             entity.setFuelQuantity(entity.getFuelQuantity() - fuelConsumption);
             return new MoveResult(start.getX(), start.getY(), entity.getX(), entity.getY(), fuelConsumption);

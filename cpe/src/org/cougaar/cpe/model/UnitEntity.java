@@ -87,10 +87,19 @@ public class UnitEntity extends Entity {
     }
 
     public Shape getRangeShape() {
+        if ( rbox == null ) {
+            rbox = new Rectangle2D.Double( -VGWorldConstants.getUnitRangeWidth()/2,0,
+                    VGWorldConstants.getUnitRangeWidth(), VGWorldConstants.getUnitRangeHeight() );
+        }
+
         return rbox ;
     }
 
     public Shape getSensorShape() {
+        if ( sbox == null ) {
+            new Rectangle2D.Double( -VGWorldConstants.getUnitSensorWidth()/2, 0,
+                    VGWorldConstants.getUnitSensorWidth(), VGWorldConstants.getUnitSensorHeight() ) ;
+        }
         return sbox ;
     }
 
@@ -174,13 +183,9 @@ public class UnitEntity extends Entity {
     /**
      * This is the default range shape.
      */
-    protected static final Rectangle2D rbox =
-            new Rectangle2D.Double( -VGWorldConstants.getUnitRangeWidth()/2,0,
-                    VGWorldConstants.getUnitRangeWidth(), VGWorldConstants.getUnitRangeHeight() );
+    protected static Rectangle2D rbox ;
 
-    protected static final Rectangle2D sbox =
-            new Rectangle2D.Double( -VGWorldConstants.getUnitSensorWidth()/2, 0,
-                    VGWorldConstants.getUnitSensorWidth(), VGWorldConstants.getUnitSensorHeight() ) ;
+    protected static Rectangle2D sbox ;
 
     /**
      * Critical threshold in ammo units.

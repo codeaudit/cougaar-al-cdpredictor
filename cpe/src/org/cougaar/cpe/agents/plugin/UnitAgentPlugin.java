@@ -51,14 +51,16 @@ import org.cougaar.tools.techspecs.qos.*;
 import org.cougaar.cpe.util.CPUConsumer;
 import org.cougaar.tools.techspecs.events.MessageEvent;
 import org.cougaar.tools.techspecs.events.TimerEvent;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Vector;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.Serializable;
+import java.io.*;
 
 public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
 
@@ -90,7 +92,7 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
 	private DelayMeasurementPoint manueverPlanFreshnessMP;
 	private OMCRangeList worldStateUpdateList =
 		new OMCRangeList(
-			new int[] { 10000, 15000, 20000, 25000, 30000, 35000, 40000 });
+			new int[] { 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000 });
 	private long updateStatusNIU;
 	private long updateManueverNIU;
 	private boolean started;
@@ -414,6 +416,26 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
 			mt.sendMessage(msg.getSource(), bmm);
 
 		}
+        else if ( msg instanceof ConfigureMessage ) {
+            ConfigureMessage cm = (ConfigureMessage) msg ;
+            byte[] paramDoc = cm.getParamConfigurationDocument() ;
+            if ( paramDoc != null ) {
+                ls.shout( "CONFIGURING FROM DOCUMENT ") ;
+                ByteArrayInputStream bis = new ByteArrayInputStream( paramDoc ) ;
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance() ;
+                try {
+                    DocumentBuilder builder = factory.newDocumentBuilder() ;
+                    Document doc =builder.parse( bis ) ;
+                    VGWorldConstants.setParameterValues( doc );
+                }
+                catch ( Exception e )
+                {
+                    e.printStackTrace();
+                }
+            }
+
+            refToWorldState.setState( cm.getWorldStateModel() );
+        }
 	}
 
 	protected void processUnitStatusUpdateTimer() {

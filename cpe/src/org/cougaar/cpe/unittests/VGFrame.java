@@ -5,15 +5,19 @@ import org.cougaar.cpe.model.WorldState;
 import org.cougaar.cpe.model.VGWorldConstants;
 import org.cougaar.cpe.model.ReferenceWorldState;
 import org.cougaar.cpe.mplan.ManueverPlanner;
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
+import org.xml.sax.Parser;
+import org.xml.sax.SAXException;
 
 import javax.swing.*;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.DocumentBuilder;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 
 public class VGFrame extends JFrame {
     private RefreshThread refreshThread;
@@ -33,8 +37,35 @@ public class VGFrame extends JFrame {
 
         JMenu fileMenu = new JMenu( "File" ) ;
         menuBar.add( fileMenu );
-        JMenuItem miConfigureTargets = new JMenuItem( "Configure Targets" ) ;
+        JMenuItem miConfigureScenario = new JMenuItem( "Configure scenario" ) ;
+        fileMenu.add( miConfigureScenario ) ;
+        miConfigureScenario.addActionListener( new ActionListener() {
+            public void actionPerformed(ActionEvent e)
+            {
+                doConfigureScenario() ;
+            }
+        });
+
+        JMenuItem miConfigureTargets = new JMenuItem( "Configure targets" ) ;
         fileMenu.add( miConfigureTargets ) ;
+
+        JMenuItem miLoadModelParameters = new JMenuItem( "Load model parameters..." ) ;
+        fileMenu.add( miLoadModelParameters ) ;
+        miLoadModelParameters.addActionListener( new ActionListener() {
+            public void actionPerformed(ActionEvent e)
+            {
+                doLoadModelParameters();
+            }
+        });
+
+        JMenuItem miSaveModelParameters = new JMenuItem( "Save model parameters..." ) ;
+        fileMenu.add( miSaveModelParameters ) ;
+        miSaveModelParameters.addActionListener( new ActionListener() {
+            public void actionPerformed(ActionEvent e)
+            {
+                doSaveModelParameters( e ) ;
+            }
+        });
 
         JMenu runMenu = new JMenu( "Run" ) ;
         menuBar.add( runMenu ) ;
@@ -104,8 +135,93 @@ public class VGFrame extends JFrame {
         mainTabbedPane.addTab( "Inspector", searchPanel = new SearchInspectorPanel( this ) );
         mainTabbedPane.addTab( "Metrics", metricsPanel = new MetricsPanel( ws ) );
 
-        refreshThread = new RefreshThread();
-        refreshThread.start();
+        Timer timer = new Timer( 2000, refreshTitleBar);
+        timer.setRepeats( true );
+        timer.start(); ;
+    }
+
+    ActionListener refreshTitleBar = new ActionListener() {
+        public void actionPerformed(ActionEvent e)
+        {
+            if ( displayPanel != null) {
+                displayPanel.repaint();
+                WorldState ws = simulator.getWorldState() ;
+                if ( ws != null ) {
+                    setTitle( "CPE Society Display [time=" +
+                        ( displayPanel.getWorldState().getTime() *
+                        VGWorldConstants.SECONDS_PER_MILLISECOND ) +
+                        ", score=" + ws.getScore() + "]" );
+                }
+            }
+
+        }
+    } ;
+
+
+    private void doConfigureScenario()
+    {
+        simulator.configureDefaultScenario();
+        displayPanel.setWorldState( simulator.getWorldState() );
+        metricsPanel.setWorldState( simulator.getWorldState() );
+        zoneDisplayPanel.setWorldState( simulator.getZoneWorld() );
+    }
+
+    private void doSaveModelParameters(ActionEvent e)
+    {
+        JFileChooser fc = new JFileChooser() ;
+        fc.showSaveDialog( this ) ;
+        File f = fc.getSelectedFile() ;
+        if ( f != null ) {
+            FileOutputStream fos = null ;
+            try
+            {
+                fos = new FileOutputStream(f);
+            }
+            catch (FileNotFoundException e1)
+            {
+                e1.printStackTrace();
+            }
+            VGWorldConstants.saveParameterValues( fos );
+        }
+    }
+
+    private void doLoadModelParameters() {
+        JFileChooser fc = new JFileChooser() ;
+        fc.showOpenDialog( this ) ;
+        File f = fc.getSelectedFile() ;
+        if ( f != null ) {
+            FileInputStream fis = null ;
+            try
+            {
+                fis = new FileInputStream(f);
+            }
+            catch (FileNotFoundException e1)
+            {
+                e1.printStackTrace();
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance() ;
+            try
+            {
+                DocumentBuilder builder = factory.newDocumentBuilder() ;
+                Document doc =builder.parse( fis ) ;
+                VGWorldConstants.setParameterValues( doc );
+            }
+            catch (ParserConfigurationException e)
+            {
+                e.printStackTrace();
+            }
+            catch (SAXException e)
+            {
+                e.printStackTrace();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        VGWorldConstants.printParameters( new PrintWriter( System.out ) );
     }
 
     private void doConfigureZoneTest()

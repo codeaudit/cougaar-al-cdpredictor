@@ -48,9 +48,15 @@ import org.cougaar.util.UnaryPredicate;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.cougaar.tools.techspecs.qos.*;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.*;
 
 public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
@@ -500,6 +506,32 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 				+ subordinateCombatOrganizations);
 		referenceZoneWorld = (ZoneWorld) cm.getWorldStateModel();
 
+        byte[] paramDoc = cm.getParamConfigurationDocument() ;
+
+        if ( paramDoc != null ) {
+            logger.shout( "CONFIGURING FROM DOCUMENT ") ;
+            ByteArrayInputStream bis = new ByteArrayInputStream( paramDoc ) ;
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance() ;
+            try
+            {
+                DocumentBuilder builder = factory.newDocumentBuilder() ;
+                Document doc =builder.parse( bis ) ;
+                VGWorldConstants.setParameterValues( doc );
+            }
+            catch (ParserConfigurationException e)
+            {
+                e.printStackTrace();
+            }
+            catch (SAXException e)
+            {
+                e.printStackTrace();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
 		worldStateRef =
 			new WorldStateReference("ZoneWorld", referenceZoneWorld);
 		getBlackboardService().publishAdd(worldStateRef);
@@ -560,7 +592,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 
 				gmrt.sendMessage(
 					MessageAddress.getMessageAddress(agg.getId()),
-					new ConfigureMessage(zw));
+					new ConfigureMessage(zw,cm.getParamConfigurationDocument()));
 			}
 		}
 

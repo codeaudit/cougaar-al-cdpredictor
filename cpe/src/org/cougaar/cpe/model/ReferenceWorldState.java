@@ -1,3 +1,24 @@
+/*
+ * <copyright>
+ *  Copyright 2003-2004 Intelligent Automation, Inc.
+ *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA).
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the Cougaar Open Source License as published by
+ *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
+ *
+ *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
+ *  PROVIDED 'AS IS' WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
+ *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
+ *  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, AND WITHOUT
+ *  ANY WARRANTIES AS TO NON-INFRINGEMENT.  IN NO EVENT SHALL COPYRIGHT
+ *  HOLDER BE LIABLE FOR ANY DIRECT, SPECIAL, INDIRECT OR CONSEQUENTIAL
+ *  DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE OF DATA OR PROFITS,
+ *  TORTIOUS CONDUCT, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ *  PERFORMANCE OF THE COUGAAR SOFTWARE.
+ * </copyright>
+ */
+
 package org.cougaar.cpe.model;
 
 import org.cougaar.cpe.model.events.*;
@@ -6,11 +27,19 @@ import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.util.*;
 
+/**
+ * Represents the reference external world used in simulation and the WorldState agent.
+ */
+
 public class ReferenceWorldState extends WorldState
 {
-    private StandardSensor longRangeSensor;
-    private StandardSensor mediumRangeSensor;
-    private StandardSensor shortRangeSensor ;
+    public static final int SENSOR_DEFAULT = 0 ;
+    public static final int SENSOR_ACTIVE = 1 ;
+
+    private int sensorModelType = SENSOR_DEFAULT ;
+    private SensorModel longRangeSensor;
+    private SensorModel mediumRangeSensor;
+    private SensorModel shortRangeSensor ;
     private int defaultIntegrationPeriod = 20000 ;
 
     /**
@@ -31,13 +60,159 @@ public class ReferenceWorldState extends WorldState
         setDefaultMetric( new MeasuredWorldMetrics( WorldState.DEFAULT_METRIC, this, defaultIntegrationPeriod ) ) ;
     }
 
+    public ReferenceWorldState(double boardWidth, double boardHeight, double penaltyHeight, double recoveryLine,
+                               double deltaT, int sensorType)
+    {
+        super(boardWidth, boardHeight, penaltyHeight, recoveryLine, deltaT);
+        setSensorModelType( sensorType );
+        initSensors();
+        regions.add( new Region(new Rectangle2D.Double(0,0,boardWidth,VGWorldConstants.getUnitRangeHeight()), REGION_OP_TEMPO ) ) ;
+        setDefaultMetric( new MeasuredWorldMetrics( WorldState.DEFAULT_METRIC, this, defaultIntegrationPeriod ) ) ;
+    }
+
+    protected void initSensors() {
+        longRangeSensor = makeSensor( VGWorldConstants.getLongSensorMaxError(), 0, ( float ) getBoardHeight() ) ;
+        mediumRangeSensor = makeSensor( VGWorldConstants.getMediumSensorMaxError(), 0, VGWorldConstants.getMediumSensorRange() ) ;
+        shortRangeSensor = makeSensor( 0, 0, VGWorldConstants.getUnitSensorHeight() ) ;
+        sensors.add( longRangeSensor ) ;
+        sensors.add( mediumRangeSensor ) ;
+        sensors.add( shortRangeSensor ) ;
+    }
+
+    public SensorModel makeSensor( float maxXError, float maxYError, float sensorRange ) {
+        switch ( sensorModelType ) {
+            case SENSOR_DEFAULT :
+                return new StandardSensor( maxXError, maxYError, sensorRange ) ;
+            case SENSOR_ACTIVE :
+                return new ActiveSensor( maxXError, maxYError, 0, 0, sensorRange ) ;
+            default :
+                throw new RuntimeException( "Unrecognized sensor type " + sensorModelType ) ;
+        }
+    }
+
+    public void setSensorModelType( int type ) {
+        switch ( type ) {
+            case SENSOR_DEFAULT :
+            case SENSOR_ACTIVE :
+                sensorModelType = type ;
+            default :
+                throw new IllegalArgumentException( " Type " + type + " not recognized." ) ;
+        }
+    }
+
+    /**
+     * A sensor model that generators target contacts.
+     */
     static abstract class SensorModel {
         public abstract boolean isVisible( WorldState ws, TargetEntity entity ) ;
 
         public abstract void updateVisible( WorldState ws ) ;
 
+        /**
+         * @return A list of target contacts.  These are reference contacts and do not have the
+         *  sensor error added yet.
+         */
         public abstract Iterator getVisibleContacts() ;
 
+        public abstract TargetContact makeSensedContact( TargetContact contact ) ;
+    }
+
+    public class ActiveSensor extends SensorModel{
+        private float dxError, dyError ;
+
+        /**
+         * These error parameters are all the variances of the errors for each component.
+         * @param xMaxError
+         * @param yMaxError
+         * @param dxError
+         * @param dyError
+         * @param yHorizon
+         */
+        public ActiveSensor(float xMaxError, float yMaxError, float dxError, float dyError, float yHorizon)
+        {
+            this.xMaxError = xMaxError ; this.yMaxError = yMaxError ;
+            this.dxError = dxError ;
+            this.dyError = dyError ;
+            this.yHorizon = yHorizon ;
+        }
+
+        public boolean isVisible(WorldState ws, TargetEntity entity)
+        {
+            if ( !entity.isActive() ) {
+                return false ;
+            }
+            return entity.getY() <= yHorizon && entity.getY() > 0  ;
+        }
+
+        /**
+         * Update what is visible from this sensor.
+         *
+         * @param ws
+         */
+        public void updateVisible(WorldState ws)
+        {
+            for ( Iterator iter = ws.getTargets();iter.hasNext();) {
+                TargetEntity entity = (TargetEntity) iter.next() ;
+                if ( isVisible( ws, entity ) ) {
+                    TargetContact tc = (TargetContact) contactsByIdMap.get( entity.getId() ) ;
+                    if ( tc == null ) {
+                        tc = new TargetContact( entity.getId(), ws.getTime(), entity.getX(),
+                                entity.getY(), entity.getDx(), entity.getDy(), 0, 0, entity.getStrength() ) ;
+                        contactsByIdMap.put( entity.getId(), tc ) ;
+                    }
+                    else {
+                        tc.setPosition( entity.getX() + tc.getXError(),
+                                entity.getY() + tc.getYError() );
+                    }
+                }
+                else { // We can't see this anymore, remove it from the contacts list
+                    TargetContact tc = (TargetContact) contactsByIdMap.get( entity.getId() ) ;
+                    if ( tc != null ) {
+                        contactsByIdMap.remove( entity.getId() ) ;
+                    }
+                }
+            }
+
+            //
+            // Remove all non-visible targets
+            //
+            for (Iterator iterator = contactsByIdMap.values().iterator(); iterator.hasNext();)
+            {
+                TargetContact targetContact = (TargetContact) iterator.next();
+                TargetEntity entity = (TargetEntity) ws.getEntity( targetContact.getId() ) ;
+                if ( entity == null || entity.isActive() == false || !isVisible( ws, entity ) ) {
+                    iterator.remove();
+                }
+            }
+
+        }
+
+        /**
+         * Make a sensor contact from the current reference contact list.
+         * A Gaussian error is applied to all velocity and position estimates.
+         *
+         * @return
+         */
+
+        public TargetContact makeSensedContact(TargetContact entity)
+        {
+            return new TargetContact( entity.getId(), getTime(),
+                    entity.getX() + ( float ) random.nextGaussian() * xMaxError ,
+                    entity.getY() + ( float ) random.nextGaussian() * yMaxError ,
+                    entity.getDx() + ( float ) random.nextGaussian() * dxError,
+                    entity.getDy() + ( float ) random.nextGaussian() * dyError ,
+                    xMaxError,
+                    yMaxError,
+                    entity.getStrength() );
+        }
+
+        public Iterator getVisibleContacts()
+        {
+            return contactsByIdMap.values().iterator() ;
+        }
+
+        float yHorizon ;
+        float xMaxError, yMaxError ;
         protected HashMap contactsByIdMap = new HashMap();
     }
 
@@ -132,6 +307,8 @@ public class ReferenceWorldState extends WorldState
                     xMaxError, yMaxError, contact.getStrength() ) ;
         }
 
+        protected HashMap contactsByIdMap = new HashMap();
+
         Shape s ;
         float yHorizon ;
         float xMaxError, yMaxError ;
@@ -152,7 +329,7 @@ public class ReferenceWorldState extends WorldState
      * @return
      */
     public WorldStateModel filter( int sensorType, boolean cloneUnits, boolean cloneSupplyEntities, Shape sensorShape ) {
-        StandardSensor sensor = null ;
+        SensorModel sensor = null ;
 
         // Substitute contact information back if necessary.
         switch ( sensorType ) {
@@ -201,8 +378,25 @@ public class ReferenceWorldState extends WorldState
 
         moveInactiveTargets();
 
+        // Update trajectories.
+        updateTrajectories() ;
+
         // Update sensors on every cycle.  This is inefficient but okay for now.
         updateSensors();
+    }
+
+    private void updateTrajectories()
+    {
+        for (int i = 0; i < targets.size(); i++) {
+            TargetEntity targetEntity = (TargetEntity)targets.get(i);
+            EntityInfo info = getEntityInfo( targetEntity.getId() ) ;
+            EntityHistory entityHistory = info.getHistory() ;
+            if ( info.getHistory() == null ) {
+                info.setHistory( entityHistory = new EntityHistory() );
+            }
+            entityHistory.addTrajectoryRecord( getTime(), targetEntity.getX(), targetEntity.getY(),
+                    targetEntity.getDx(), targetEntity.getDy(), targetEntity.getStrength() );
+        }
     }
 
     public void updateSensors()
@@ -235,6 +429,11 @@ public class ReferenceWorldState extends WorldState
 
         metrics.setZoneSchedule( zs );
         addEventListener( metrics );
+    }
+
+    public boolean isModel()
+    {
+        return false ;
     }
 
     /**

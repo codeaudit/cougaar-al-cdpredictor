@@ -9,7 +9,14 @@ import java.util.*;
 import java.io.Writer;
 import java.io.PrintWriter;
 
+/**
+ * This is a "dumb" planner which simply expands a fixed number of nodes for each level of depth.
+ * It also supported time limited operation.
+ */
+
 public class BoundedBranchSearch extends AbstractSearch {
+    private int samplingRate = 3 ;
+    private boolean timeLimitReached = false ;
 
     class ComparatorPred implements Comparator {
         ComparatorPred( Comparator c ) {
@@ -26,7 +33,48 @@ public class BoundedBranchSearch extends AbstractSearch {
     public BoundedBranchSearch(Strategy s) {
         super(s);
         // openListByDepth.clear();
-        closedList = new ArrayList();
+        //closedList = new ArrayList();
+    }
+
+    public int getSamplingRate()
+    {
+        return samplingRate;
+    }
+
+    public void setSamplingRate(int samplingRate)
+    {
+        this.samplingRate = samplingRate;
+    }
+
+    /**
+     * @param s
+     * @param maximumTime  The target time not to be exceeded.
+     */
+    public BoundedBranchSearch(Strategy s, long maximumTime)
+    {
+        super(s);
+        boundByTime = true ;
+        this.maximumTime = maximumTime;
+    }
+
+    public boolean isBoundByTime()
+    {
+        return boundByTime;
+    }
+
+    public void setBoundByTime(boolean boundByTime)
+    {
+        this.boundByTime = boundByTime;
+    }
+
+    public long getMaximumTime()
+    {
+        return maximumTime;
+    }
+
+    public void setMaximumTime(long maximumTime)
+    {
+        this.maximumTime = maximumTime;
     }
 
     public int getMaxBranchingFactorPerPly() {
@@ -208,6 +256,14 @@ public class BoundedBranchSearch extends AbstractSearch {
         return best ;
     }
 
+    public void run()
+    {
+        if ( boundByTime ) {
+            startTime = System.currentTimeMillis() ;
+        }
+        super.run();
+    }
+
     public int getNumExpandedOpenNodes() {
         int result = 0 ;
         for (int i = 0; i < openListByDepth.size(); i++) {
@@ -217,12 +273,26 @@ public class BoundedBranchSearch extends AbstractSearch {
         return result ;
     }
 
+    public boolean isTimeLimitReached()
+    {
+        return timeLimitReached;
+    }
+
     /**
      * This returns the number of open nodes that can be expanded. (This may
-     * be zero if there are no more nodes which can be expanded.)
-     * @return
+     * be -1 if there are no more nodes which can be expanded.)
+     * @return 0 for no more node, -1 for time limit reached.
      */
     public int getNumOpenNodes() {
+        if ( boundByTime && ( timeLimitSamples % samplingRate ) == 0 ) {
+            if ( System.currentTimeMillis() >= maximumTime ) {
+                timeLimitReached = true ;
+                return -1 ;
+            }
+        }
+        // Sample time count.
+        timeLimitSamples ++ ;
+
         int result = 0 ;
         for (int i = 0; i < openListByDepth.size(); i++) {
             int branchesAtDepth = getBranchesAtDepth( i ) ;
@@ -277,8 +347,17 @@ public class BoundedBranchSearch extends AbstractSearch {
 
     protected HashMap map = new HashMap() ;
 
+    protected long startTime = -1 ;
+    protected long maximumTime = Long.MAX_VALUE ;
+    protected int timeLimitSamples = 0 ;
+
+    /**
+     * Whether or not to bound the run by time.
+     */
+    protected boolean boundByTime ;
+
     protected int maxClosedDepth = 0 ;
-    protected ArrayList closedList ;
+    protected ArrayList closedList = new ArrayList(1000);
 
     protected int maxBranchingFactorPerPly = 500 ;
 
@@ -297,6 +376,6 @@ public class BoundedBranchSearch extends AbstractSearch {
     /**
      * A preallocated set of wsn and WorldStateModel instances.
      */
-    protected ArrayList nodeAndWorldStatePool = new ArrayList( 100000 ) ;
+    //protected ArrayList nodeAndWorldStatePool = new ArrayList( 100000 ) ;
 
 }

@@ -57,6 +57,8 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     private CPEEventListener worldEventListener;
     private ArrayList worldEvents = new ArrayList();
     private WorldStateReference refToWorldState;
+    private String worldParamConfigFileName;
+    private byte[] worldParamBytes;
 
     protected void execute() {
         // First, check to see if there are any new client relays.
@@ -442,6 +444,14 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
         try {
             getBlackboardService().openTransaction();
 
+            if ( worldParamConfigFileName != null ) {
+                log.shout( "-------------------------------");
+                log.shout( "CONFIGURING WORLD STATE from " + worldParamConfigFileName);
+                Document doc = getConfigFinder().parseXMLConfigFile( worldParamConfigFileName ) ;
+                VGWorldConstants.setParameterValues( doc );
+                VGWorldConstants.printParameters( new PrintWriter( System.out ));
+            }
+
             System.out.println( getAgentIdentifier() + ":: CONFIGURING AND CREATING WORLD STATE...");
 
             // Now, actually make the reference world state.
@@ -583,7 +593,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
 //            System.out.println( getAgentIdentifier() + ":: ZONE WORLD STATE " + initialZoneWorld );
 
             sendConfigureMessages();
-            sendWorldStateToClients();
+            // sendWorldStateToClients();
 
             isConfigured = true ;
         }
@@ -638,7 +648,8 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     }
 
     /**
-     * Send initial configuration messages to all clients.
+     * Send initial configuration messages to all clients.  This version also sends the world parameter
+     * document.
      */
     protected void sendConfigureMessages() {
         for (Iterator iterator = clientRelays.values().iterator(); iterator.hasNext();) {
@@ -646,7 +657,17 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             String agentId = o.getSource().getAddress() ;
             if ( agentId.startsWith( "BDE") ) {
                 // Send this data.
-                mt.sendMessage( o.getSource(), new ConfigureMessage( initialZoneWorld ) );
+                mt.sendMessage( o.getSource(), new ConfigureMessage( initialZoneWorld, worldParamBytes ) );
+            }
+            else if ( agentId.startsWith( "CPY") ) {
+                WorldStateModel model = referenceWorldState.filter( WorldStateModel.SENSOR_SHORT, false, false, null ) ;
+                // Add only the entity corresponding to this entity.
+                EntityInfo info = referenceWorldState.getEntityInfo( agentId ) ;
+                if ( info != null ) {
+                    UnitEntity entity = (UnitEntity) info.getEntity().clone() ;
+                    model.addEntity( entity );
+                    mt.sendMessage( o.getSource(), new ConfigureMessage( model, worldParamBytes ) );
+                }
             }
         }
     }
@@ -745,7 +766,40 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
         // Load the target generator.
         if ( paramVector.size() >= 3 ) {
             targetGeneratorClassName = (String) paramVector.elementAt(1) ;
+            if ( targetGeneratorClassName != null && targetGeneratorClassName.equals( "null") ) {
+                targetGeneratorClassName = null ;
+            }
             targetGeneratorConfigFile = (String) paramVector.elementAt(2) ;
+        }
+
+        // Load the world configuration static parameters.
+        if ( paramVector.size() >= 4 ) {
+            worldParamConfigFileName = (String) paramVector.elementAt( 3 ) ;
+            if ( worldParamConfigFileName != null && worldParamConfigFileName.equals("null") ) {
+               worldParamConfigFileName = null ;
+            }
+
+            // Try and load the world configuration file.
+            if ( worldParamConfigFileName != null ) {
+                File f = getConfigFinder().locateFile( worldParamConfigFileName ) ;
+                if ( f.exists() && f.canRead() ) {
+                    try
+                    {
+                        FileInputStream fis = new FileInputStream( f ) ;
+                        byte[] buf = new byte[ fis.available() ] ;
+                        int len = fis.read( buf ) ;
+                        worldParamBytes = buf ;
+                    }
+                    catch (FileNotFoundException e)
+                    {
+                        e.printStackTrace();
+                    }
+                    catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
     }
 

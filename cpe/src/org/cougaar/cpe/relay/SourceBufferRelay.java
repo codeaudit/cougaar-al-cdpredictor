@@ -27,6 +27,7 @@ package org.cougaar.cpe.relay;
 import org.cougaar.core.relay.Relay;
 import org.cougaar.core.util.UID;
 import org.cougaar.core.mts.MessageAddress;
+import org.cougaar.tools.techspecs.events.MessageEvent;
 
 import java.io.Serializable;
 import java.util.Set;
@@ -39,6 +40,7 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
     private int numResponses = 0 ;
     private int numSent;
     private int numReceived;
+    private int maxSequenceNumber ;
 
     /**
      * Signifies queries from the LP to empty relay content.
@@ -62,6 +64,15 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
 
     public String getTag() {
         return tag;
+    }
+
+    /**
+     * The maximum sequence number received.
+     * @return
+     */
+    public int getMaxSequenceNumber()
+    {
+        return maxSequenceNumber;
     }
 
     public int getBufferSize() {
@@ -156,7 +167,12 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
 
     public void addOutgoing( Serializable o ) {
         outgoing.add( o ) ;
+        if (o instanceof MessageEvent) {
+            MessageEvent cmsg = (MessageEvent) o;
+            cmsg.setSeqId( numSent ) ;
+        }
         numSent ++ ;
+
         isOutgoingChanged = true ;
     }
 
@@ -165,12 +181,24 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
             for (int i = 0 ; i < resp.length ; i++) {
                 gmrt.addMessage( resp[i], getTarget() ) ;
                 numReceived ++ ;
+                if ( resp[i] instanceof MessageEvent ) {
+                    MessageEvent event = (MessageEvent) resp[i] ;
+                    if ( event.getSeqId() > maxSequenceNumber ) {
+                        maxSequenceNumber = event.getSeqId();
+                    }
+                }
             }
         }
         else {
             for (int i = 0 ; i < resp.length ; i++) {
                 responses.add(resp[i]);
                 numReceived ++ ;
+                if ( resp[i] instanceof MessageEvent ) {
+                    MessageEvent event = (MessageEvent) resp[i] ;
+                    if ( event.getSeqId() > maxSequenceNumber ) {
+                        maxSequenceNumber = event.getSeqId();
+                    }
+                }
             }
         }
     }

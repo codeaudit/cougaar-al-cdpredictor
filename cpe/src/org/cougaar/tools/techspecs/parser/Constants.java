@@ -1,10 +1,5 @@
 package org.cougaar.tools.techspecs.parser;
 
-/**
- * User: wpeng
- * Date: May 5, 2004
- * Time: 4:13:26 PM
- */
 public class Constants
 {
 

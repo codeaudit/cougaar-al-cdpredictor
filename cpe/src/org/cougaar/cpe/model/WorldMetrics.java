@@ -7,6 +7,8 @@ import org.cougaar.cpe.model.events.*;
 import org.cougaar.cpe.planning.zplan.ZoneTask;
 import org.cougaar.cpe.planning.zplan.ZoneWorld;
 
+import java.util.HashMap;
+
 /**
  * This is a general way to measure score.
  */
@@ -61,6 +63,15 @@ public class WorldMetrics implements CPEEventListener
         else if ( e instanceof KillEvent ) {
             processKillEvent( ( KillEvent ) e );
         }
+        else if ( e instanceof FuelConsumptionEvent ) {
+            processFuelConsumptionEvent( ( FuelConsumptionEvent ) e ) ;
+        }
+    }
+
+    protected void processFuelConsumptionEvent( FuelConsumptionEvent e)
+    {
+        accumFuelConsumption += e.getAmount() ;
+        totalFuelConsumption += e.getAmount() ;
     }
 
     protected void initTime( long time ) {
@@ -140,6 +151,7 @@ public class WorldMetrics implements CPEEventListener
             accumKills = 0 ;
             accumViolations = 0 ;
             accumEntries = 0 ;
+            accumFuelConsumption = 0 ;
         }
         lastTime = ev.getNewTime() ;
     }
@@ -177,10 +189,12 @@ public class WorldMetrics implements CPEEventListener
     protected int accumKills ;
     protected double accumAttrition ;
     protected int accumEntries ;
+    protected double accumFuelConsumption ;
 
     protected int totalViolations ;
     protected int totalPenalties ;
     protected int totalKills ;
     protected double totalAttrition ;
+    protected double totalFuelConsumption ;
 
 }

@@ -124,7 +124,7 @@ public class AgentDisplayPlugin extends ComponentPlugin {
         if ( !measurementPointSubscription.getAddedCollection().isEmpty() || !measurementPointSubscription.getRemovedCollection().isEmpty() ) {
             measurementPoints.clear();
             measurementPoints.addAll( measurementPointSubscription.getCollection() ) ;
-            Collections.sort( worldStates, new Comparator() {
+            Collections.sort( measurementPoints, new Comparator() {
                 public int compare(Object o1, Object o2) {
                    MeasurementPoint w1 = (MeasurementPoint) o1, w2 = (MeasurementPoint) o2 ;
                     return w1.getName().compareTo( w2.getName() ) ;

@@ -28,19 +28,17 @@ public class EntityInfo implements Serializable {
         return entity;
     }
 
-    public long getEntityStateTimestamp() {
-        return entityStateTimestamp;
+    public EntityHistory getHistory()
+    {
+        return history;
     }
 
-    /**
-     * When this was last updated.
-     * @param entityStateTimestamp
-     */
-    public void setEntityStateTimestamp(long entityStateTimestamp) {
-        this.entityStateTimestamp = entityStateTimestamp;
+    public void setHistory(EntityHistory history)
+    {
+        this.history = history;
     }
 
     protected EngageByFireModel model ;
     protected Entity entity ;
-    protected long entityStateTimestamp ;
+    protected EntityHistory history ;
 }

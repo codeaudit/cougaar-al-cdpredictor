@@ -38,6 +38,15 @@ public class TargetEntity extends Entity {
         return isRouted;
     }
 
+    public static Rectangle2D.Double getRangeShape()
+    {
+        if ( rangeShape == null ) {
+            new Rectangle2D.Double( - VGWorldConstants.TARGET_RANGE_WIDTH/2, -VGWorldConstants.TARGET_RANGE_HEIGHT, VGWorldConstants.TARGET_RANGE_WIDTH,
+                                    VGWorldConstants.TARGET_RANGE_HEIGHT ) ;
+        }
+        return rangeShape;
+    }
+
     static ArrayList results = new ArrayList() ;
 
     public void update(WorldState ws) {
@@ -99,8 +108,7 @@ public class TargetEntity extends Entity {
     protected long suppressionTime = 0 ;
     protected boolean isSuppressed = false ;
     protected boolean isRouted = false ;
+    protected int scoreMultiplier = 1 ;
 
-    protected static Rectangle2D.Double rangeShape =
-            new Rectangle2D.Double( - VGWorldConstants.TARGET_RANGE_WIDTH/2, -VGWorldConstants.TARGET_RANGE_HEIGHT, VGWorldConstants.TARGET_RANGE_WIDTH,
-                                    VGWorldConstants.TARGET_RANGE_HEIGHT ) ;
+    protected static Rectangle2D.Double rangeShape ;
 }

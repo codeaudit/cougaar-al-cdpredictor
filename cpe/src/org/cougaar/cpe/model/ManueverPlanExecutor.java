@@ -45,14 +45,14 @@ public class ManueverPlanExecutor {
         // Compute the actual error.
         if ( t != null ) {
             if ( Math.abs( t.getDestination() - entity.getX() )
-                 > ( t.getEndTime() - state.getTime() ) * VGWorldConstants.UNIT_NORMAL_MOVEMENT_RATE )
+                 > ( t.getEndTime() - state.getTime() ) * VGWorldConstants.getUnitNormalMovementRate() )
             {
                 double dx = t.getDestination() - entity.getX() ;
                 if ( dx < 0 ) {
-                    return dx + VGWorldConstants.UNIT_NORMAL_MOVEMENT_RATE * ( t.getEndTime() - state.getTime() ) ;
+                    return dx + VGWorldConstants.getUnitNormalMovementRate() * ( t.getEndTime() - state.getTime() ) ;
                 }
                 else if ( dx > 0 ) {
-                    return dx - VGWorldConstants.UNIT_NORMAL_MOVEMENT_RATE * ( t.getEndTime() - state.getTime() ) ;
+                    return dx - VGWorldConstants.getUnitNormalMovementRate() * ( t.getEndTime() - state.getTime() ) ;
                 }
             }
             else {
@@ -111,7 +111,7 @@ public class ManueverPlanExecutor {
                         t.setExecutionResult( new ExecutionResult( entity.getX(), entity.getY(), entity.getX(), entity.getY() ));
                     }
                     double distToTarget = t.getDestX() - entity.getX() ;
-                    double maxDistanceMoved = VGWorldConstants.UNIT_NORMAL_MOVEMENT_RATE * state.getDeltaT() ;
+                    double maxDistanceMoved = VGWorldConstants.getUnitNormalMovementRate() * state.getDeltaT() ;
                     double targetX = 0 ;
                     if ( distToTarget < -1E-5 ) {
                         targetX = entity.getX() - Math.min( -distToTarget, maxDistanceMoved ) ;

@@ -1,10 +1,7 @@
 package org.cougaar.cpe.util;
 
-/**
- * User: wpeng
- * Date: Sep 14, 2003
- * Time: 5:50:12 PM
- */
+
+
 public class CPUConsumer
 {
     static private long[] values ;

@@ -126,6 +126,7 @@ public class WorldDisplayPanel extends JPanel
             while (targets.hasNext())
             {
                 org.cougaar.cpe.model.Entity e = (org.cougaar.cpe.model.Entity) targets.next();
+                EntityInfo info = ws.getEntityInfo( e.getId() ) ;
                 GeneralPath path = new GeneralPath();
                 if (e.isActive())
                 {
@@ -143,6 +144,21 @@ public class WorldDisplayPanel extends JPanel
                 }
                 path.lineTo((float) (targetPoints[0][0] / scale + e.getX()), (float) (targetPoints[0][1] / scale + e.getY()));
                 g2.draw(path);
+
+                if ( info != null && info.getHistory() != null ) {
+                    ArrayList records = info.getHistory().getTrajectory() ;
+                    GeneralPath tpath = new GeneralPath() ;
+                    if ( records.size() > 1 ) {
+                        TargetContact tc = (TargetContact) records.get(0) ;
+                        tpath.moveTo( tc.getX(), tc.getY() );
+                        for (int i = 1; i < records.size(); i++) {
+                            TargetContact targetContact = (TargetContact)records.get(i);
+                            tpath.lineTo( targetContact.getX(), targetContact.getY() );
+                        }
+                    }
+                    g2.setColor( Color.BLUE );
+                    g2.draw( tpath );
+                }
             }
 
             g2.setColor(Color.YELLOW);

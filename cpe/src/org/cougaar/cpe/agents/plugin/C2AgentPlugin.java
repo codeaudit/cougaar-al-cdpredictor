@@ -53,28 +53,32 @@ import org.cougaar.util.UnaryPredicate;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.util.*;
 
 public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     private IncrementalSubscription operatingModeSubscription;
 
-    private OMCRangeList updateStateConditionList = new OMCRangeList( new int[] { 10000, 15000, 20000, 25000, 30000, 35000, 40000 } ) ;
+    private OMCRangeList updateStateConditionList = new OMCRangeList( new int[] { 1000, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000 } ) ;
 
-    private OMCRangeList planningDepthList = new OMCRangeList( new int[] { 3, 4, 5, 6, 7, 8, 9 } ) ;
+    private OMCRangeList planningDepthList = new OMCRangeList( new int[] { 2, 3, 4, 5, 6, 7, 8, 9 } ) ;
 
-    private OMCRangeList planningBreadthList = new OMCRangeList( new int[] { 10, 20, 30, 40, 50, 60, 70, 80 } ) ;
+    private OMCRangeList planningBreadthList = new OMCRangeList( new int[] { 10, 20, 30, 40, 50, 60, 70, 80, 100, 120, 140, 160, 200 } ) ;
 
     /**
      * Replanning periods, given in ms. Generally, the replanning time must be greater than the planning horizon.
      */
-    private OMCRangeList replanPeriodList = new OMCRangeList( new int[] { 20000, 30000, 40000, 50000, 60000, 70000, 80000 } );
+    private OMCRangeList replanPeriodList = new OMCRangeList( new int[] { 2000, 5000, 10000, 15000, 20000, 30000, 40000, 50000, 60000, 70000, 80000 } );
 
     /**
      * These are integrative values of deltaT.
      */
-    private OMCRangeList planningDelayList = new OMCRangeList( new int[] { 0, 5000, 10000, 15000, 20000, 25000, 30000 } ) ;
+    private OMCRangeList planningDelayList = new OMCRangeList( new int[] { 0, 1000, 2000, 3000, 4000, 5000, 10000, 15000, 20000, 25000, 30000 } ) ;
 
     private long targetWakeupTime;
     private DelayMeasurementPoint replanTimerDelayMP;
@@ -100,6 +104,11 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     private String REPLAN_TIMER = "ReplanTimer";
     private LoggingService log;
     private String outputFile ;
+    private OMCRangeList booleanList = new OMCRangeList( new int[] { 0, 1 } );
+    private OMCRangeList planningTimeLimit = new OMCRangeList( new int[] { 5000, 7500, 10000, 12500, 15000, 17500,
+                                                                           20000, 22500, 25000 } ) ;
+    private OperatingModeCondition planningTimeLimitActiveCondition;
+    private OperatingModeCondition planningTimeLimitCondition;
 
     public long getReplanPeriodInMillis() {
         if ( replanPeriodCondition != null ) {
@@ -399,14 +408,27 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         targetWakeupTime = baseTime + getReplanPeriodInMillis() ;
 
         // Set the alarm for updating the world state.
-        gmrt.setAlarm( "DoUpdateWorldStateTimer", UPDATE_WORLD_STATE_TIMER, getUpdateWorldStatePeriod(), true );
+        // gmrt.setAlarm( "DoUpdateWorldStateTimer", UPDATE_WORLD_STATE_TIMER, getUpdateWorldStatePeriod(), true );
 
+        getAlarmService().addRealTimeAlarm( new UpdateAlarm( baseTime + getUpdateWorldStatePeriod() ) );
     }
 
     public void DoUpdateWorldStateTimer( TimerEvent te ) {
         log.shout( getAgentIdentifier() + " updating world state to superior.");
         gmrt.sendMessage( superior.getMessageAddress(),
                 new BNStatusUpdateMessage( getAgentIdentifier().getAddress(), ( WorldStateModel ) perceivedWorldState.clone()) ) ;
+    }
+
+    public void doUpdateWorldState( ) {
+        try {
+        log.shout( getAgentIdentifier() + " updating world state to superior.");
+        gmrt.sendMessage( superior.getMessageAddress(),
+                new BNStatusUpdateMessage( getAgentIdentifier().getAddress(), ( WorldStateModel ) perceivedWorldState.clone()) ) ;
+        }
+        catch ( Exception e ) {
+            e.printStackTrace();
+        }
+        getAlarmService().addRealTimeAlarm( new UpdateAlarm( System.currentTimeMillis() + getUpdateWorldStatePeriod() ) );
     }
 
     public void planAndDistribute() {
@@ -423,26 +445,35 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
             int searchDepth = getSearchDepth(), searchBreadth = getMaxBreadth(), planDelay = getPlanningDelay() ;
             System.out.println( getAgentIdentifier() + ":: PLANNING WITH SearchDepth="
                     + searchDepth + ", SearchBreadth=" + searchBreadth );
+            if ( planningTimeLimitActiveCondition.getValue().equals( new Integer(1) ) ) {
+                mp.setBoundPlanningTime( true );
+                Integer value = (Integer) planningTimeLimitCondition.getValue() ;
+                mp.setPlanningTimeLimit( value.intValue() );
+            }
+            else {
+                mp.setBoundPlanningTime( false );
+            }
+
             mp.setMaxDepth( searchDepth );
             mp.setMaxBranchFactor( searchBreadth );
             mp.plan( perceivedWorldState, planDelay, zoneSchedule );
 
             // DEBUG TODO REMOVE
-            if ( outputFile != null ) {
-                try {
-                    FileOutputStream fis = new FileOutputStream( outputFile + ( ( startTime / 1000 ) % 10000 ) + ".txt" ) ;
-                    PrintWriter pw = new PrintWriter( fis )  ;
-                    pw.println( "\n\n*********************************************\nDUMPING SEARCH RESULTS AT Time = "
-                            + perceivedWorldState.getTime() );
-                    mp.dump( pw );
-                    fis.flush();
-                    fis.close();
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();  //To change body of catch statement use Options | File Templates.
-                }
-            }
+//            if ( outputFile != null ) {
+//                try {
+//                    FileOutputStream fis = new FileOutputStream( outputFile + ( ( startTime / 1000 ) % 10000 ) + ".txt" ) ;
+//                    PrintWriter pw = new PrintWriter( fis )  ;
+//                    pw.println( "\n\n*********************************************\nDUMPING SEARCH RESULTS AT Time = "
+//                            + perceivedWorldState.getTime() );
+//                    mp.dump( pw );
+//                    fis.flush();
+//                    fis.close();
+//                } catch (FileNotFoundException e) {
+//                    e.printStackTrace();
+//                } catch (IOException e) {
+//                    e.printStackTrace();  //To change body of catch statement use Options | File Templates.
+//                }
+//            }
 
             Object[][] plans = mp.getPlans() ;
             mp.release() ;
@@ -547,32 +578,38 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         // Replan.
         //getBlackboardService().openTransaction();
 
-        // Lock the black board in this version to prevent messages from being fired!
-//		TODO NG: Need PBT (replan)
-		long startTime = System.currentTimeMillis() ;
+        long startTime = System.currentTimeMillis() ;
         boolean wasOpen = true ;
         if ( !getBlackboardService().isTransactionOpen() ) {
             wasOpen = false ;
             getBlackboardService().openTransaction();
         }
 
-        long lastWakeupTime = targetWakeupTime ;
-        replanTimerDelayMP.addMeasurement( new DelayMeasurement( "ReplanTimerFired", "ProcessReplan",
-                getAgentIdentifier(), lastWakeupTime, startTime ) ) ;
+        try {
+            // Lock the black board in this version to prevent messages from being fired!
+    //		TODO NG: Need PBT (replan)
 
-        // Calculate the current planning horizon and make sure it is okay.
-        long planningHorizon = (long) (getSearchDepth() * getNumDeltasPerTask() * perceivedWorldState.getDeltaTInMS() ) ;
-        if ( getReplanPeriodInMillis() > planningHorizon ) {
-            System.err.println("WARNING:: Planning horizon " + planningHorizon * VGWorldConstants.SECONDS_PER_MILLISECOND +
-                    " secs is less than replan time.");
+            long lastWakeupTime = targetWakeupTime ;
+            replanTimerDelayMP.addMeasurement( new DelayMeasurement( "ReplanTimerFired", "ProcessReplan",
+                    getAgentIdentifier(), lastWakeupTime, startTime ) ) ;
+
+            // Calculate the current planning horizon and make sure it is okay.
+            long planningHorizon = (long) (getSearchDepth() * getNumDeltasPerTask() * perceivedWorldState.getDeltaTInMS() ) ;
+            if ( getReplanPeriodInMillis() > planningHorizon ) {
+                System.err.println("WARNING:: Planning horizon " + planningHorizon * VGWorldConstants.SECONDS_PER_MILLISECOND +
+                        " secs is less than replan time.");
+            }
+
+            if ( subordinateCombatOrganizations.size() > 0 ) {
+                // DEBUG
+                log.shout( getAgentIdentifier() + " PLANNING AT TIME " + ( startTime - baseTime ) /1000 + " secs." ) ;
+
+                // measureProcessReplanTimer() ;
+                planAndDistribute();
+            }
         }
-
-        if ( subordinateCombatOrganizations.size() > 0 ) {
-            // DEBUG
-            log.shout( getAgentIdentifier() + " PLANNING AT TIME " + ( startTime - baseTime ) /1000 + " secs." ) ;
-
-            // measureProcessReplanTimer() ;
-            planAndDistribute();
+        catch (Exception e ) {
+            e.printStackTrace( );
         }
 
         // Schedule replanning alarm.
@@ -685,6 +722,32 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
     private void doConfigure(ConfigureMessage message)
     {
+
+        byte[] paramDoc = message.getParamConfigurationDocument() ;
+        if ( paramDoc != null ) {
+            log.shout( "CONFIGURING FROM DOCUMENT ") ;
+            ByteArrayInputStream bis = new ByteArrayInputStream( paramDoc ) ;
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance() ;
+            try
+            {
+                DocumentBuilder builder = factory.newDocumentBuilder() ;
+                Document doc =builder.parse( bis ) ;
+                VGWorldConstants.setParameterValues( doc );
+            }
+            catch (ParserConfigurationException e)
+            {
+                e.printStackTrace();
+            }
+            catch (SAXException e)
+            {
+                e.printStackTrace();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
         perceivedWorldState = (ZoneWorld) message.getWorldStateModel() ;
         System.out.println("Configuring with " + perceivedWorldState );
 
@@ -997,6 +1060,11 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     private void makeOperatingModeConditions()
     {
         // Expose the adaptive OperatingModeConditions
+        planningTimeLimitActiveCondition = new OperatingModeCondition( "BoundPlanningByTime", booleanList ) ;
+        planningTimeLimitActiveCondition.setValue( new Integer(0) );
+
+        planningTimeLimitCondition = new OperatingModeCondition( "PlanningTimeLimit", planningTimeLimit ) ;
+        planningTimeLimitCondition.setValue( new Integer( 10000 ) );
 
         planningDepthCondition = new OperatingModeCondition( "PlanningDepth", planningDepthList ) ;
         planningDepthCondition.setValue( new Integer(5) ) ;
@@ -1012,12 +1080,14 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         planningDelayCondition = new OperatingModeCondition( "PlanStartDelay", planningDelayList ) ;
         planningDelayCondition.setValue( planningDelayList.getAllowedValues()[0].getMin() );
 
+        getBlackboardService().publishAdd( planningTimeLimitActiveCondition );
+        getBlackboardService().publishAdd( planningTimeLimitCondition );
         getBlackboardService().publishAdd( planningDepthCondition ) ;
         getBlackboardService().publishAdd( planningBreadthCondition ) ;
         getBlackboardService().publishAdd( replanPeriodCondition );
 
         updateStatePeriodCondition = new OperatingModeCondition( "UpdateStatePeriod", updateStateConditionList  ) ;
-        updateStatePeriodCondition.setValue( updateStateConditionList.getAllowedValues()[0].getMin() );
+        updateStatePeriodCondition.setValue( new Integer( 10000 ) );
         getBlackboardService().publishAdd( updateStatePeriodCondition );
 
         // Look for changed operating modes.
@@ -1231,6 +1301,18 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
         protected void processExpire() {
             processReplanTimer();
+        }
+    }
+
+    public class UpdateAlarm extends StandardAlarm {
+        public UpdateAlarm(long expirationTime)
+        {
+            super(expirationTime);
+        }
+
+        protected void processExpire()
+        {
+            doUpdateWorldState();
         }
     }
 
