@@ -92,7 +92,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             Plan p = mpm.getPlan() ;
             EntityInfo info = referenceWorldState.getEntityInfo( mpm.getSource().getAddress() ) ;
             if ( info == null ) {
-                System.err.println( getAgentIdentifier() + ":: WARNING No entity found for incoming message from " + mpm.getSource() );
+                log.warn( getAgentIdentifier() + ":: WARNING No entity found for incoming message from " + mpm.getSource() );
             }
             else {
                 UnitEntity ue = (UnitEntity) info.getEntity() ;
@@ -108,11 +108,11 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                 Map.Entry entry = (Map.Entry) iterator.next();
                 SupplyVehicleEntity sentity = (SupplyVehicleEntity)
                         referenceWorldState.getEntity( ( String ) entry.getKey() ) ;
-                System.out.println("UPDATING " + sentity.getId() );
-                System.out.println("OLD PLAN " + sentity.getSupplyPlan()  ) ;
-                System.out.println("NEW PLAN " + entry.getValue() );
+                log.debug( "UPDATING " + sentity.getId() );
+                log.debug("OLD PLAN " + sentity.getSupplyPlan()  ) ;
+                log.debug("NEW PLAN " + entry.getValue() );
                 sentity.updateSupplyPlan( (Plan) entry.getValue() );
-                System.out.println("MERGED PLAN " + sentity.getSupplyPlan() );
+                log.debug("MERGED PLAN " + sentity.getSupplyPlan() );
             }
         }
         else if ( msg instanceof BundledMPMessage ) {
@@ -375,6 +375,9 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                 getBlackboardService().publishChange( relay );
             }
         }
+
+        // Clear the world events
+        worldEvents.clear();
     }
 
     protected void generateNewTargets() {
