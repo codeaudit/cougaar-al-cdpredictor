@@ -106,11 +106,21 @@ public class PSUFBSensor1Plugin extends ComponentPlugin
             }
 		}
 		myBlackboardService.setShouldBePersisted(false);
+		
+		if (myTimestampService == null) {
+            System.out.println("\n"+cluster+" ["+sensorname+"]: TimestampService is not available.\n");
+        }
+		
     }
 
 
     public void execute()
     {
+
+		if (myTimestampService == null) {
+            return;
+        }
+        
         Iterator iter;
         Task task;
         Allocation allocation;
