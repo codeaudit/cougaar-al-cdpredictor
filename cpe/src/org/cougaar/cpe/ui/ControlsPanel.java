@@ -9,18 +9,12 @@ import org.cougaar.core.blackboard.IncrementalSubscription;
 
 import javax.swing.*;
 import javax.swing.event.ListDataListener;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.*;
 import java.awt.*;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.ItemEvent;
+import java.awt.event.*;
 
 public class ControlsPanel extends JPanel {
 
-    ArrayList mpAndControlsList = new ArrayList() ;
     HashMap conditionNameToControlMap = new HashMap() ;
 
     /**
@@ -32,11 +26,21 @@ public class ControlsPanel extends JPanel {
         // Just refresh with the current op mode condition values based on BB changes.
         for (Iterator iterator = conditionNameToControlMap.values().iterator();
              iterator.hasNext();) {
-            JComboBox control = (JComboBox) iterator.next();
-            OperatingModeCondition operatingModeCondition =
+            Component component = (Component) iterator.next();
+            if ( component instanceof JComboBox ) {
+                JComboBox control = (JComboBox) component ;
+                OperatingModeCondition operatingModeCondition =
                     ( ( OpModeConditionListModel )
                     control.getModel() ).getOmc();
-            control.setSelectedItem( operatingModeCondition.getValue() );
+                control.setSelectedItem( operatingModeCondition.getValue() );
+            }
+            else if ( component instanceof MyTextField ) {
+                MyTextField textField = (MyTextField) component ;
+                if ( !textField.hasFocus() ) {
+                    OperatingModeCondition condition = textField.condition ;
+                    textField.setText( condition.getValue().toString() );
+                }
+            }
         }
     }
 
@@ -62,8 +66,6 @@ public class ControlsPanel extends JPanel {
         }
 
         public void setSelectedItem(Object anItem) {
-            System.out.println("Set selected item " + anItem + ", class=" + anItem.getClass()  );
-
             if ( anItem instanceof OMCPoint ) {
                 OMCPoint pt = (OMCPoint) anItem ;
                 omc.setValue( pt.getMin() );
@@ -72,18 +74,6 @@ public class ControlsPanel extends JPanel {
                 Comparable c = (Comparable) anItem ;
                 omc.setValue( c );
             }
-
-//            if ( bs != null ) {
-//                boolean wasOpen = true ;
-//                if ( !bs.isTransactionOpen() ) {
-//                    wasOpen = false;
-//                    bs.openTransaction();
-//                }
-//                bs.publishChange( omc );
-//                if ( !wasOpen) {
-//                    bs.closeTransaction();
-//                }
-//            }
         }
 
         public OpModeConditionListModel(OperatingModeCondition omc) {
@@ -112,17 +102,59 @@ public class ControlsPanel extends JPanel {
         ArrayList listeners = new ArrayList() ;
     }
 
+    public ControlsPanel(BlackboardService bs) {
+        this.bs = bs;
+    }
+
+    public void updateOperatingModes( ArrayList opModes ) {
+         // For each control, update the display with the correct value.
+        for (int i = 0; i < opModes.size(); i++) {
+            OperatingModeCondition condition = (OperatingModeCondition)opModes.get(i);
+            JComponent component = (JComponent) conditionNameToControlMap.get( condition.getName() ) ;
+            if ( component instanceof JComboBox ) {
+                JComboBox box = (JComboBox) component ;
+                box.getModel().setSelectedItem( condition.getValue() );
+            }
+            else if ( component instanceof JTextField ) {
+                JTextField field = (JTextField) component ;
+                field.setText( condition.getValue().toString() );
+            }
+        }
+    }
+
+    class MyTextField extends JTextField {
+
+        public MyTextField(OperatingModeCondition condition) {
+            this.condition = condition;
+        }
+
+        public OperatingModeCondition getCondition() {
+            return condition;
+        }
+
+        OperatingModeCondition condition ;
+    }
+
+
     public void setOperatingModes( ArrayList opModes ) {
         removeAll();
+        Collections.sort( opModes , new Comparator() {
+            public int compare(Object o1, Object o2) {
+                OperatingModeCondition omc1 = (OperatingModeCondition) o1, omc2 = (OperatingModeCondition) o2 ;
+                return omc1.getName().compareTo( omc2.getName() ) ;
+            }
+        }) ;
+
         GridBagLayout layout = new GridBagLayout() ;
         setLayout( layout );
 
         GridBagConstraints gbc = new GridBagConstraints() ;
         gbc.fill = GridBagConstraints.HORIZONTAL ;
         gbc.weightx = 100 ; gbc.weighty = 1 ;
+        conditionNameToControlMap.clear();
 
         for (int i = 0; i < opModes.size(); i++) {
-            OperatingModeCondition condition = (OperatingModeCondition)opModes.get(i);
+            final OperatingModeCondition condition = (OperatingModeCondition)opModes.get(i);
             OMCRangeList values = condition.getAllowedValues() ;
             OMCRange[] allowed = values.getAllowedValues() ;
             boolean found = false ;
@@ -139,7 +171,7 @@ public class ControlsPanel extends JPanel {
                 gbc.gridy ++ ; // Move y index.
                 JLabel label = new JLabel( condition.getName() ) ;
                 gbc.anchor = GridBagConstraints.WEST ;
-                gbc.fill = GridBagConstraints.HORIZONTAL ;
+                gbc.fill = GridBagConstraints.NONE ;
                 gbc.weightx = 1 ; gbc.gridx = 0 ;
                 gbc.insets = new Insets( 5, 10, 5, 5 ) ;
                 layout.setConstraints( label, gbc );
@@ -161,13 +193,45 @@ public class ControlsPanel extends JPanel {
                         OperatingModeCondition omc = model.getOmc() ;
                         OMCPoint point = (OMCPoint) box.getSelectedItem() ;
                         omc.setValue( point.getMin() );
+                        publishChange( omc );
                     }
                 } ) ;
                 box.setSelectedItem( condition.getValue() );
                 add( box ) ;
             }
             else {
-                System.err.println("Cannot edit condition " + condition );
+                gbc.gridy ++ ; // Move y index.
+                gbc.anchor = GridBagConstraints.WEST ;
+                gbc.fill = GridBagConstraints.NONE ;
+                gbc.weightx = 1 ; gbc.gridx = 0 ;
+                gbc.insets = new Insets( 5, 10, 5, 5 ) ;
+
+                JLabel label = new JLabel( condition.getName() ) ;
+                layout.setConstraints( label, gbc );
+                add( label ) ;
+
+                gbc.fill = GridBagConstraints.HORIZONTAL ;
+                gbc.gridx = 1;  gbc.weightx = 500 ;
+                gbc.insets = new Insets( 5, 5, 5, 10 ) ;
+                gbc.anchor = GridBagConstraints.CENTER ;
+                final JTextField field = new MyTextField( condition );
+                conditionNameToControlMap.put( condition.getName(), field ) ;
+                field.addKeyListener( new KeyListener() {
+                    public void keyPressed(KeyEvent e) {
+                        if ( e.getKeyCode() == KeyEvent.VK_ENTER ) {
+                            doEnter( condition, field ) ;
+                        }
+                    }
+
+                    public void keyReleased(KeyEvent e) {
+                    }
+
+                    public void keyTyped(KeyEvent e) {
+                    }
+                });
+                field.setText( condition.getValue().toString() );
+                layout.setConstraints( field, gbc );
+                add( field ) ;
             }
         }
 
@@ -175,6 +239,55 @@ public class ControlsPanel extends JPanel {
         JPanel dummyPanel = new JPanel() ;
         layout.setConstraints( dummyPanel, gbc );
         add( dummyPanel ) ;
+    }
+
+    private void doEnter(OperatingModeCondition condition, JTextField field) {
+
+//        System.out.println("Enter pressed for condition " + condition.getName() );
+        OMCRangeList omcRangeList = condition.getAllowedValues() ;
+        OMCRange[] ranges = omcRangeList.getAllowedValues() ;
+        for (int i = 0; i < ranges.length; i++) {
+            OMCRange range = ranges[i];
+            if ( range.getMin() instanceof Integer ) {
+                Integer intValue = Integer.valueOf( field.getText() ) ;
+                if ( condition.getAllowedValues().isAllowed( intValue ) ) {
+                    condition.setValue( intValue );
+                    publishChange( condition );
+                }
+                else {
+                    JOptionPane.showMessageDialog( this, "\"" + field.getText() + "\" is not valid for OperatingMode " +
+                            condition.getAllowedValues() );
+                }
+            }
+            else if ( range.getMin() instanceof Long ) {
+                Long longValue = Long.valueOf( field.getText() ) ;
+                if ( condition.getAllowedValues().isAllowed( longValue ) ) {
+                    condition.setValue( longValue );
+                    publishChange( condition );
+                }
+                else {
+                    JOptionPane.showMessageDialog( this, "\"" + field.getText() + "\" is not valid for OperatingMode " +
+                            condition.getAllowedValues() );
+                }
+            }
+            else if ( range.getMin() instanceof Double ) {
+                Double doubleValue = Double.valueOf( field.getText() ) ;
+                if ( condition.getAllowedValues().isAllowed( doubleValue ) ) {
+                    condition.setValue( doubleValue );
+                    publishChange( condition );
+                }
+                else {
+                    JOptionPane.showMessageDialog( this, "\"" + field.getText() + "\" is not valid for OperatingMode " +
+                            condition.getAllowedValues() );
+                }
+            }
+        }
+    }
+
+    protected void publishChange( Object o ) {
+        bs.openTransaction();
+        bs.publishChange( o );
+        bs.closeTransaction();
     }
 
 
