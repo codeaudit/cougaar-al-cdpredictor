@@ -40,37 +40,37 @@ public class KalmanFilter implements java.io.Serializable {
   }
 
 	public void timeUpdate() {
-		System.out.println("aposteriorEstimateMap size "+aposteriorEstimateMap.size());
+		//System.out.println("aposteriorEstimateMap size "+aposteriorEstimateMap.size());
 		for(Iterator iterator = aposteriorEstimateMap.keySet().iterator();iterator.hasNext();) {
 			CustomerRoleKey crk = (CustomerRoleKey)iterator.next();
 			HashMap aposteriorInnerMap = (HashMap)aposteriorEstimateMap.get(crk);
-			System.out.println("aposteriorInnerMap size "+aposteriorInnerMap.size());
+			//System.out.println("aposteriorInnerMap size "+aposteriorInnerMap.size());
 			HashMap apriorInnerMap = new HashMap();
 			for(Iterator iterator1 = aposteriorInnerMap.keySet().iterator();iterator1.hasNext();) {
 				String item_name = (String)iterator1.next();
-				if(item_name.equalsIgnoreCase("JP8")) System.out.println("timeUpdate JP8");
+				//if(item_name.equalsIgnoreCase("JP8")) System.out.println("timeUpdate JP8");
 				ArrayList apostEstList = (ArrayList)aposteriorInnerMap.get(item_name);
-				if(item_name.equalsIgnoreCase("JP8")) System.out.println("apostEstListJP8 size "+apostEstList.size());
+				//if(item_name.equalsIgnoreCase("JP8")) System.out.println("apostEstListJP8 size "+apostEstList.size());
 				ArrayList apriorList = new ArrayList();
 				int aPostListSize = apostEstList.size();
 				if(aPostListSize!= 0) {
 					double control_input = 0.0;
 					KFValues apostValue = (KFValues)apostEstList.get(apostEstList.size()-1);
-					if(item_name.equalsIgnoreCase("JP8")) System.out.println("apostValueJP8 "+apostValue.getEndTime()+
-									" "+apostValue.getQuantity());
+					//if(item_name.equalsIgnoreCase("JP8")) System.out.println("apostValueJP8 "+apostValue.getEndTime()+
+						//			" "+apostValue.getQuantity());
 					long endTime = apostValue.getEndTime();  //represents k
 					double quantity = apostValue.getQuantity(); //represents z(k)
 					ArrayList storedList = getElementDataList(crk, item_name);
-					if(item_name.equalsIgnoreCase("JP8")) System.out.println("storedListJP8 size "+storedList.size());
+					//if(item_name.equalsIgnoreCase("JP8")) System.out.println("storedListJP8 size "+storedList.size());
 					for(int j= 0; j < storedList.size();j++) {
 						Values storedValue = (Values)storedList.get(j);
-						if(item_name.equalsIgnoreCase("JP8")) System.out.println("storedValueJP8 End time "+new Date(storedValue.getEndTime())+
-										" Required End Time "+new Date(endTime));
+						//if(item_name.equalsIgnoreCase("JP8")) System.out.println("storedValueJP8 End time "+new Date(storedValue.getEndTime())+
+						//				" Required End Time "+new Date(endTime));
 						if(storedValue.getEndTime() == endTime) {
-							if(item_name.equalsIgnoreCase("JP8")) System.out.println("TimeUpdate Entered storeList1");
+							//if(item_name.equalsIgnoreCase("JP8")) System.out.println("TimeUpdate Entered storeList1");
 							double originalQuantity = storedValue.getQuantity();
 							control_input = quantity - originalQuantity; //represents u(k)
-							if(item_name.equalsIgnoreCase("JP8")) System.out.println("control_inputJP8 "+control_input);
+							//if(item_name.equalsIgnoreCase("JP8")) System.out.println("control_inputJP8 "+control_input);
 							//storedList.remove(storedValue);
 							//storedList.add(new Values(endTime, quantity));
 							storedValue.setQuantity(quantity);
@@ -81,16 +81,16 @@ public class KalmanFilter implements java.io.Serializable {
 					for(int k= 0; k < storedList.size();k++) {
 						Values storedValue = (Values)storedList.get(k);
 						if(storedValue.getEndTime() == (endTime+(4*86400000))) {
-							if(item_name.equalsIgnoreCase("JP8")) System.out.println("TimeUpdate Entered storeList2");
+						//	if(item_name.equalsIgnoreCase("JP8")) System.out.println("TimeUpdate Entered storeList2");
 							double futQuantity = storedValue.getQuantity();
 							apriorEstimate = futQuantity + control_input; //represents x(k+1)
 							apriorList.add(new KFValues(storedValue.getEndTime(), apriorEstimate,-1,-1));
-							if(item_name.equalsIgnoreCase("JP8")) System.out.println("futQuantityJP8 "+futQuantity);
+							//if(item_name.equalsIgnoreCase("JP8")) System.out.println("futQuantityJP8 "+futQuantity);
 							storedValue.setQuantity(apriorEstimate);
-							if(item_name.equalsIgnoreCase("JP8")) {
-								System.out.println("KFApriorEst: "+" Item "+item_name+" "
-								+new java.util.Date(storedValue.getEndTime())+" "+apriorEstimate);
-							}
+							//if(item_name.equalsIgnoreCase("JP8")) {
+						//		System.out.println("KFApriorEst: "+" Item "+item_name+" "
+						//		+new java.util.Date(storedValue.getEndTime())+" "+apriorEstimate);
+						//	}
 							break;
 						}
 					}
@@ -140,31 +140,32 @@ public class KalmanFilter implements java.io.Serializable {
 		aposteriorEstimateMap.clear();
 	}
 
-	public void measurementUpdate(PredictorSupplyArrayList psal) {
+	//public void measurementUpdate(PredictorSupplyArrayList psal) {
+	public void measurementUpdate(ArrayList psal) {
 	HashMap CRMap = (HashMap)psal.get(0); 		//There is only one hashmap in the arraylist
-	System.out.println("CRMapsize "+CRMap.size());
+	//System.out.println("CRMapsize "+CRMap.size());
 	for(Iterator iterator = CRMap.keySet().iterator();iterator.hasNext();) {
 		CustomerRoleKey crk = (CustomerRoleKey)iterator.next();
 		HashMap valuesMap = (HashMap)CRMap.get(crk);
-		System.out.println("valuesMapSize "+valuesMap.size());
+		//System.out.println("valuesMapSize "+valuesMap.size());
 		HashMap aposteriorEstimateInnerMap = new HashMap();
 		for(Iterator iter = valuesMap.keySet().iterator();iter.hasNext();) {
 			String itemName = (String)iter.next();
-			if(itemName.equalsIgnoreCase("JP8")) System.out.println("JP8Item In");
+			//if(itemName.equalsIgnoreCase("JP8")) System.out.println("JP8Item In");
 			ArrayList valuesList = (ArrayList)valuesMap.get(itemName);
-			if(itemName.equalsIgnoreCase("JP8")) System.out.println("valuesListSize "+valuesList.size());
+			//if(itemName.equalsIgnoreCase("JP8")) System.out.println("valuesListSize "+valuesList.size());
 			ArrayList aPostEstList = new ArrayList();
 			for(Iterator iter1 = valuesList.iterator();iter1.hasNext();) {
 				Values value = (Values)iter1.next();
 				long endTime = value.getEndTime();
 				double quantity = value.getQuantity();
-				if(itemName.equalsIgnoreCase("JP8")) System.out.println("endTimeJP8 "+endTime+" QuantityJP8 "+quantity);
+				//if(itemName.equalsIgnoreCase("JP8")) System.out.println("endTimeJP8 "+endTime+" QuantityJP8 "+quantity);
 				if(!apriorEstimateMap.containsKey(crk)) {
 					aPostEstList.add(new KFValues(endTime, quantity, -1, -1));
-					if(itemName.equalsIgnoreCase("JP8")) {
-						System.out.println("KFApostEst: "+" Item "+itemName+" "
-						+new java.util.Date(endTime)+" "+quantity+" 0 Error");
-					}
+					//if(itemName.equalsIgnoreCase("JP8")) {
+				//		System.out.println("KFApostEst: "+" Item "+itemName+" "
+					//	+new java.util.Date(endTime)+" "+quantity+" 0 Error");
+				//	}
 				} else {
 					HashMap apriorEstimateInnerMap = (HashMap)apriorEstimateMap.get(crk);
 					if(apriorEstimateInnerMap!= null) {
@@ -177,10 +178,10 @@ public class KalmanFilter implements java.io.Serializable {
 									double error = aPriorValue.getQuantity() - quantity;
 									double aPostEstimate = aPriorValue.getQuantity() + 0.5 * error;
 									aPostEstList.add(new KFValues(endTime, aPostEstimate, error, 0.5));
-									if(itemName.equalsIgnoreCase("JP8")){
+									/*if(itemName.equalsIgnoreCase("JP8")) {
 										System.out.println("KFApostEst: "+" Item JP8 "+" "
 												+new java.util.Date(endTime)+" "+quantity+" "+error);
-									}
+									}*/
 									endTimeFound = true;
 									break;
 								}
@@ -188,17 +189,17 @@ public class KalmanFilter implements java.io.Serializable {
 						}
 						if(!endTimeFound) {
 							aPostEstList.add(new KFValues(endTime, quantity, -1, -1));
-							if(itemName.equalsIgnoreCase("JP8")){
-									System.out.println("KFApostEst: "+" Item JP8 "+" "
-											+new java.util.Date(endTime)+" "+quantity+" No end time found");
-							}
+							//if(itemName.equalsIgnoreCase("JP8")){
+									//System.out.println("KFApostEst: "+" Item JP8 "+" "
+									//		+new java.util.Date(endTime)+" "+quantity+" No end time found");
+							//}
 						}
 					} else {
 						aPostEstList.add(new KFValues(endTime, quantity, -1, -1));
-						if(itemName.equalsIgnoreCase("JP8")) {
+						/*if(itemName.equalsIgnoreCase("JP8")) {
 							System.out.println("KFApostEst: "+" Item "+itemName+" "
 							+new java.util.Date(endTime)+" "+quantity+" 0 Error");
-						}
+						}*/
 					}
 				}
 			}

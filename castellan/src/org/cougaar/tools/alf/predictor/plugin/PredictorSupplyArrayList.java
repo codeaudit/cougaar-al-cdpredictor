@@ -4,23 +4,37 @@ package org.cougaar.tools.alf.predictor.plugin;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 
-public class PredictorSupplyArrayList extends ArrayList implements java.io.Serializable,java.lang.Cloneable {
+public class PredictorSupplyArrayList implements java.io.Serializable {
 
-    public PredictorSupplyArrayList(){
-      super();
+		private ArrayList list;
+
+    public PredictorSupplyArrayList(ArrayList list){
+      this.list = list;
     }
+  //  public PredictorSupplyArrayList(int capacity){
+  //    super(capacity);
+  //  }
 
-    public PredictorSupplyArrayList(int capacity){
-      super(capacity);
-    }
-    public PredictorSupplyArrayList(Collection capacity1){
-        super(capacity1);
-    }
+  //  public PredictorSupplyArrayList(Collection capacity1){
+  //      super(capacity1);
+  //  }
 
-	public Object clone() {
-		return super.clone();
+	//	public Object clone() {
+	//		return super.clone();
+	//	}
+
+    //ArrayList capacity1;
+	public ArrayList getList(){
+			return list;
+		}
+
+	public void add(HashMap map){
+		this.list.add(map);
 	}
 
-    ArrayList capacity1;
+	public void addAll(Collection c){
+		this.list.addAll(c);
+	}
 }

@@ -44,38 +44,38 @@ public class ExecutionDemandUpdate {
 			ArrayList valuesList = new ArrayList();
 			valuesList.add(values);
 			innerItemMap.put(item, valuesList);
-			if(item.equalsIgnoreCase("JP8")) {
+			/*if(item.equalsIgnoreCase("JP8")) {
 				for (Iterator iterator = valuesList.iterator(); iterator.hasNext();) {
 					Values values1 = (Values) iterator.next();
 					System.out.println("FirstEntry addDemandData: "+" Item "+item+" "+new Date(values1.getCommitmentTime())+" "
 														+new Date(values1.getEndTime())+" "+values1.getQuantity()+" "+new Date(values1.getPublishTime()));
 				}
-			}
+			}*/
 		}
 		else {
 			HashMap innerItemMap = (HashMap)CRMap.get(crk);
 			ArrayList valuesList = (ArrayList)innerItemMap.get(item);
 			if(valuesList!= null) {
 				valuesList.add(values);
-				if(item.equalsIgnoreCase("JP8")){
+				/*if(item.equalsIgnoreCase("JP8")) {
 					for (Iterator iterator = valuesList.iterator(); iterator.hasNext();) {
 						Values values1 = (Values) iterator.next();
 						System.out.println("valuesList!=null addDemandData: "+" Item "+item+" "+new Date(values1.getCommitmentTime())+" "
 															+new Date(values1.getEndTime())+" "+values1.getQuantity()+" "+new Date(values1.getPublishTime()));
 					}
-				}
+				}*/
 			}
 			else {
 				valuesList = new ArrayList();
 				valuesList.add(values);
 				innerItemMap.put(item, valuesList);
-				if(item.equalsIgnoreCase("JP8")){
+				/*if(item.equalsIgnoreCase("JP8")) {
 					for (Iterator iterator = valuesList.iterator(); iterator.hasNext();) {
 						Values values1 = (Values) iterator.next();
 						System.out.println("valuesList==null addDemandData: "+" Item "+item+" "+new Date(values1.getCommitmentTime())+" "
 															+new Date(values1.getEndTime())+" "+values1.getQuantity()+" "+new Date(values1.getPublishTime()));
 					}
-				}
+				}*/
 			}
 		}
 	}
@@ -96,8 +96,10 @@ public class ExecutionDemandUpdate {
       }});
   }
 
-  public PredictorSupplyArrayList getExecutionDemandPerDay(){
-		PredictorSupplyArrayList psal = new PredictorSupplyArrayList();
+ // public PredictorSupplyArrayList getExecutionDemandPerDay(){
+	public ArrayList getExecutionDemandPerDay(){
+		//PredictorSupplyArrayList psal = new PredictorSupplyArrayList(new ArrayList());
+		ArrayList psal = new ArrayList();
 		if(!CRMap.isEmpty()) {
 			for(Iterator iterator = CRMap.keySet().iterator();iterator.hasNext();) {
 				CustomerRoleKey crk = (CustomerRoleKey)iterator.next();
@@ -107,7 +109,7 @@ public class ExecutionDemandUpdate {
 					ArrayList valueList = (ArrayList)itemMap.get(itemName);
 					if((valueList!= null) && (!valueList.isEmpty())) {
 						TimeSort(valueList);
-						if(itemName.equalsIgnoreCase("JP8")) {
+						/*if(itemName.equalsIgnoreCase("JP8")) {
 							for (Iterator iterator1 = valueList.iterator(); iterator1.hasNext();) {
 								Values values1 = (Values) iterator1.next();
 								System.out.println("After TSort ArrayList-Values-Size getExecutionDemandPerDay: "+" Item "
@@ -121,7 +123,7 @@ public class ExecutionDemandUpdate {
 								System.out.println("After DemandPerDay ArrayList-Values-Size getExecutionDemandPerDay: "+" Item "
 												+itemName+" "+new Date(values1.getCommitmentTime())+" "+new Date(values1.getEndTime())+" "+values1.getQuantity()+" "+new Date(values1.getPublishTime()));
 							}
-						}
+						}*/
 						if(valueList.size()>0) {Values value = (Values)valueList.get(valueList.size()-1); //Incorrect
 							setLastDemandValueForItem(crk, itemName, value);
 						}
@@ -196,7 +198,7 @@ public class ExecutionDemandUpdate {
 		} else {
 			HashMap innerMap = (HashMap)lastDateMap.get(crk);
 			Values valueObject = (Values)innerMap.get(item);
-			if(valueObject == null) System.out.println("ValueObject is null for item: "+item);
+			//if(valueObject == null) System.out.println("ValueObject is null for item: "+item);
 			if(valueObject!= null){
 				if(valueObject.getEndTime() < value.getEndTime()){
 					innerMap.remove(item);

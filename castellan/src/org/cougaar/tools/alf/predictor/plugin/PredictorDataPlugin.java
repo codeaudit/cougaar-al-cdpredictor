@@ -175,7 +175,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 					if (org_name!= null && role!= null) {
 						tick++;
 						role = stringRevManipulation(role);
-						myLoggingService.shout("Supplier : " + cluster + "| Customer: " + org_name + "| SupplyClass "+role);
+						//myLoggingService.shout("Supplier : " + cluster + "| Customer: " + org_name + "| SupplyClass "+role);
 						phm.addHashMap(org_name, role);
 						if(tick == 1) phm.setUID(myUIDService.nextUID());
 					}
@@ -185,17 +185,17 @@ public class PredictorDataPlugin extends ComponentPlugin {
 	}
 
 	public void getPlannedDemand() {
-		long startT = currentTimeMillis();
-		myLoggingService.debug("getPlannedDemand() method start time " +  new Date(startT));
+		//long startT = currentTimeMillis();
+		//myLoggingService.debug("getPlannedDemand() method start time " +  new Date(startT));
 		Task task;
 		HashMap hashmap;
 		//boolean fireAlarm = true;
-		int task_counter = 0;
+		//int task_counter = 0;
 		if(phm.getMap()!= null || !phm.getMap().isEmpty()) hashmap = phm.getMap();	else return;
 
 		for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
 			task = (Task) e.nextElement();
-			task_counter++;
+			//task_counter++;
 			//fireAlarm = false;
 			String owner = task.getPrepositionalPhrase("For").getIndirectObject().toString();
 			String comp = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
@@ -254,15 +254,15 @@ public class PredictorDataPlugin extends ComponentPlugin {
 			alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
 			as.addAlarm(alarm);
 		}*/
-			long end = System.currentTimeMillis();
-			myLoggingService.debug("getPlannedDemand() method end time " +  new Date(end)
-		 	+ " in milliseconds" + (end - startT)+" Task Count "+task_counter);
+			//long end = System.currentTimeMillis();
+			//myLoggingService.debug("getPlannedDemand() method end time " +  new Date(end)
+		 //	+ " in milliseconds" + (end - startT)+" Task Count "+task_counter);
 
 	}
 
 	public void executeAlarm() {
-		long startT = currentTimeMillis();
-		myLoggingService.shout("executeAlarm() method start time " +  new Date(startT));
+	//	long startT = currentTimeMillis();
+		//myLoggingService.shout("executeAlarm() method start time " +  new Date(startT));
 		HashMap processedMap = null;
 		myBlackBoardService.publishAdd(phm);
 		//phm.setUID(myUIDService.nextUID());
@@ -270,13 +270,13 @@ public class PredictorDataPlugin extends ComponentPlugin {
 		ProcessHashData phd = new ProcessHashData(cluster, hashmap); //cluster added new
 		if (phd!= null) processedMap = phd.iterateList();
 			if (processedMap!= null) {
-				myLoggingService.shout("DemandModelPublished "+processedMap.size());
+				//myLoggingService.shout("DemandModelPublished "+processedMap.size());
 				myBlackBoardService.publishChange(phm);
 				if(alarm!= null) alarm.cancel();
 			}
-		long end = System.currentTimeMillis();
-			myLoggingService.shout("executeAlarm() method end time " +  new Date(end)
-		 	+ " in milliseconds" + (end - startT));
+	//	long end = System.currentTimeMillis();
+		//	myLoggingService.shout("executeAlarm() method end time " +  new Date(end)
+		// 	+ " in milliseconds" + (end - startT));
 	}
 
 
