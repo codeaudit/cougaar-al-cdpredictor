@@ -1,0 +1,16 @@
+<!ELEMENT cycles (#PCDATA)>
+<!ELEMENT field (#PCDATA)>
+<!ELEMENT object_type (#PCDATA)>
+<!ELEMENT item_id (#PCDATA)>
+<!ELEMENT periodicity (#PCDATA)>
+<!ELEMENT perturbation (object_type,uic,item_id,start,type,cycles,periodicity,property,field,value,value_type,available_schedule)>
+<!ELEMENT perturbations (perturbation+)>
+<!ELEMENT property (#PCDATA)>
+<!ELEMENT start (#PCDATA)>
+<!ELEMENT type (#PCDATA)>
+<!ELEMENT uic (#PCDATA)>
+<!ELEMENT value (#PCDATA)>
+<!ELEMENT value_type (#PCDATA)>
+<!ELEMENT available_schedule (start_date,end_date)>
+<!ELEMENT start_date (#PCDATA)>
+<!ELEMENT end_date (#PCDATA)>

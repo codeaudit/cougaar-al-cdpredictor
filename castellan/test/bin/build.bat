@@ -8,14 +8,24 @@ set LIBPATHS=%LIBPATHS%;%COUGAARPATH%/lib/build.jar
 set LIBPATHS=%LIBPATHS%;%COUGAARPATH%/sys/xerces.jar
 set LIBPATHS=%LIBPATHS%;%COUGAARPATH%/lib/glm.jar
 set LIBPATHS=%LIBPATHS%;%COUGAARPATH%/sys/jgl3.1.0.jar
-set LIBPATHS=%LIBPATHS%;%COUGAARPATH%/sys/grappa1_2_bbn.jar
-set LIBPATHS=%LIBPATHS%;%COUGAAR_INSTALL_PATH%/sys/mm-mysql-2.jar
+set LIBPATHS=%LIBPATHS%;%COUGAARPATH%/sys/grappa1_2.jar
+set LIBPATHS=%LIBPATHS%;%COUGAARPATH%/sys/matlib.jar
+set LIBPATHS=%LIBPATHS%;%COUGAARPATH%/sys/mm-mysql-2.jar
 
-set SOURCEFILES=%CASTELLANSRC%/org/hydra/server/*.java %CASTELLANSRC%/org/hydra/server/ui/*.java %CASTELLANSRC%/org/hydra/metrics/*.java 
-set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/hydra/pdu/*.java %CASTELLANSRC%/org/hydra/libui/*.java %CASTELLANSRC%/org/hydra/util/*.java
-set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/hydra/planlog/*.java %CASTELLANSRC%/org/dbinterface/*.java %CASTELLANSRC%/org/hydra/plugin/*.java %CASTELLANSRC%/org/hydra/pspace/search/*.java
-
+echo off
+set SOURCEFILES=%CASTELLANSRC%/org/cougaar/tools/castellan/server/*.java 
+set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/ldm/*.java
+set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/server/ui/*.java 
+set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/server/plugin/*.java 
+set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/analysis/*.java 
+set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/pdu/*.java 
+set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/util/libui/*.java 
+set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/util/*.java
+set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/planlog/*.java 
+set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/plugin/*.java 
+set SOURCEFILES=%SOURCEFILES% %CASTELLANSRC%/org/cougaar/tools/castellan/pspace/search/*.java
+echo on
 javac -classpath %LIBPATHS% -d %CASTELLANHOME% %SOURCEFILES%
-mkdir %CASTELLANHOME%\org\dbinterface\defs
-copy %CASTELLANROOT%\data\defs\*.xml %CASTELLANHOME%\org\dbinterface\defs
-jar cvf %COUGAARPATH%\lib\castellan.jar %CASTELLANHOME%\org
+REM mkdir %CASTELLANHOME%\org\dbinterface\defs
+REM copy %CASTELLANROOT%\data\defs\*.xml %CASTELLANHOME%\org\dbinterface\defs
+jar cvf %COUGAARPATH%\lib\castellan.jar -C %CASTELLANHOME% org
