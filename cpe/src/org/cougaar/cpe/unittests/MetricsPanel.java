@@ -14,23 +14,31 @@ import java.util.ArrayList;
  * Create a metrics panel.
  */
 public class MetricsPanel extends  JPanel {
-    private ReferenceWorldState ws;
+    private WorldState ws;
     private GridBagLayout gbl;
     private int numPanelsPerRow = 4 ;
     private Dimension minimumSize = new Dimension(320,240) ;
     private ArrayList measurementPoints;
     private ArrayList panels = new ArrayList();
 
-    public MetricsPanel(ReferenceWorldState ws) {
+    public MetricsPanel(WorldState ws) {
         this.ws = ws;
         makePanels(ws);
 
         thread.start();
     }
 
-    private void makePanels(ReferenceWorldState ws)
+    private void makePanels(WorldState ws)
     {
+        if ( ws == null ) {
+            return ;
+        }
+
         MeasuredWorldMetrics wm = (MeasuredWorldMetrics) ws.getDefaultMetric() ;
+        if ( wm == null ) {
+            return ;
+        }
+
         measurementPoints = new ArrayList() ;
 
         measurementPoints.add( wm.getEntryRate() ) ;
@@ -61,7 +69,7 @@ public class MetricsPanel extends  JPanel {
         }
     }
 
-    public void setWorldState(ReferenceWorldState ws)
+    public void setWorldState(WorldState ws)
     {
         this.ws = ws;
         removeAll();
