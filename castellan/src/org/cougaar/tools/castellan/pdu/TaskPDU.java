@@ -48,6 +48,9 @@ public class TaskPDU extends UniqueObjectPDU {
         this.parentTaskUID = parentTaskUID ;
     }
 
+    public UIDPDU getDirectObject() {
+        return directObject;
+    }
 
     public SymbolPDU getTaskVerb() { return taskVerbSym ; }
 

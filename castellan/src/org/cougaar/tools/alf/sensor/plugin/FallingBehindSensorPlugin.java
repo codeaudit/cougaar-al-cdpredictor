@@ -138,7 +138,7 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
                 if (buffer.getSize() > 0)
                 {
                     PDU pdu;
-                    for (Iterator iter = buffer.iterator() ; iter.hasNext() ;)
+                    for (Iterator iter = buffer.getIncoming() ; iter.hasNext() ;)
                     {
                          pdu = (PDU)iter.next();
                          // Add PDU to Falling Behind Sensor.  
@@ -147,7 +147,7 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
                     // Update sensor status after PDUs in buffer are all added.
                     fbsensor.update();
                 }
-                buffer.clear();
+                buffer.clearIncoming();
             }
         }
     }
