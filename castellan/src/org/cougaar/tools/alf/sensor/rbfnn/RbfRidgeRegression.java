@@ -8,6 +8,7 @@ package org.cougaar.tools.alf.sensor.rbfnn;
 
 import java.lang.*;
 import java.io.*;
+import java.util.*;
 import com.axiom.lib.util.* ;
 import com.axiom.lib.mat.* ;
 
@@ -86,6 +87,31 @@ public class RbfRidgeRegression implements java.io.Serializable {
 			System.err.println ("RbfRidgeRegression constructor");
 	    }
 		
+	}
+
+	public void readParam(File paramFile) {
+
+		String s;
+
+		try
+		{
+			java.io.BufferedReader paramReader = new java.io.BufferedReader ( new java.io.FileReader(paramFile));
+
+			if((s=paramReader.readLine())!=null)
+			{
+				StringTokenizer st = new StringTokenizer(s,",",false);
+				num_hidden = Integer.valueOf(st.nextToken().trim()).intValue();
+				lamda = Double.valueOf(st.nextToken().trim()).doubleValue();
+				increment = Double.valueOf(st.nextToken().trim()).doubleValue();
+				count_limit = Integer.valueOf(st.nextToken().trim()).intValue();
+				dimension = Integer.valueOf(st.nextToken().trim()).intValue();
+			}
+		}
+		catch (java.io.IOException ioexc)
+	    {
+		    System.err.println ("can't read or write file, io error" );
+			System.err.println ("RbfRidgeRegression constructor");
+	    }
 	}
 
 	public void readModel(File inputFile) {
