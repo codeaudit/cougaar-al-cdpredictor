@@ -312,9 +312,9 @@ public class PredictorPlugin extends ComponentPlugin {
                 commRestoreTime = cs.getCommRestoreTime();
                 long time_gap = (commRestoreTime - commLossTime)/86400000;
                 if(alarm.hasExpired()== false) {
-                    alarm.cancel();
-                    alarm = new TriggerFlushAlarm(currentTimeMillis());
-                    as.addAlarm(alarm);
+                    //alarm.cancel();
+                    //alarm = new TriggerFlushAlarm(currentTimeMillis());
+                    //.addAlarm(alarm);
                     comm_restore_flag = true;
                     myLoggingService.shout("Communication Re-Established with Customer: " + customerAgentName);
                     comm_count = 0;
