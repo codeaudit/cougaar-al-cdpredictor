@@ -35,7 +35,17 @@ public class CastellanDomain extends DomainAdapter {
         super.load();
     }
 
+    protected void loadLPs() {
+
+    }
+
     protected void loadFactory() {
+
+    }
+     protected void loadXPlan() {
+
+     }
+  /*  protected void loadFactory() {
 
         DomainBindingSite bindingSite = (DomainBindingSite) getBindingSite();
 
@@ -60,7 +70,6 @@ public class CastellanDomain extends DomainAdapter {
     protected void loadXPlan() {
 
         DomainBindingSite bindingSite = (DomainBindingSite) getBindingSite();
-
         if (bindingSite == null) {
             throw new RuntimeException("Binding site for the CSMART domain has not be set.\n" +
                     "Unable to initialize Castellan domain XPlan without a binding site.");
@@ -100,7 +109,7 @@ public class CastellanDomain extends DomainAdapter {
        /*  ClusterServesLogicProvider cluster =
                bindingSite.getClusterServesLogicProvider(); */
 
-        ais = (AgentIdentificationService) bindingSite.getServiceBroker().getService(this, AgentIdentificationService.class,
+   /*     ais = (AgentIdentificationService) bindingSite.getServiceBroker().getService(this, AgentIdentificationService.class,
                 new ServiceRevokedListener() {
                     public void serviceRevoked(ServiceRevokedEvent re) {
                         if(AgentIdentificationService.class.equals(re.getService()))
@@ -121,7 +130,7 @@ public class CastellanDomain extends DomainAdapter {
 
 
         addLogicProvider(new PlanEventLogLP(rootPlan, self));
-    }
+    }   */
 
     AgentIdentificationService ais;
     LDMService ldms;

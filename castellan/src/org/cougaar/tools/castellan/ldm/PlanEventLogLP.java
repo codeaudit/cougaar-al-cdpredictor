@@ -34,13 +34,13 @@ import org.cougaar.core.domain.RootPlan;
 //import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.plan.*;
 import org.cougaar.planning.ldm.asset.*;
-import org.cougaar.planning.ldm.lps.*;
+//import org.cougaar.planning.ldm.lps.*;
 import org.cougaar.tools.castellan.plugin.*;
 import org.cougaar.tools.castellan.pdu.*;
 import org.cougaar.tools.castellan.util.*;
 import org.cougaar.tools.castellan.planlog.*;
 import org.cougaar.glm.ldm.asset.Organization;
-import org.cougaar.glm.execution.eg.ClusterInfo;
+//import org.cougaar.glm.execution.eg.ClusterInfo;
 import org.cougaar.core.mts.*;
 
 import java.util.*;
@@ -584,10 +584,10 @@ public class PlanEventLogLP extends RelayLP implements LogicProvider, EnvelopeLo
             return ;
         }
 
-        Object ob = (Object) self.toString();
+        //Object ob = (Object) self;
 
-        ClusterInfo ci = (ClusterInfo)ob;
-        currentExecutionTime = ci.theExecutionTimeStatus.theExecutionTime;   //  Can we do this?
+        //ClusterInfo ci = (ClusterInfo)ob;
+        currentExecutionTime = getCurrentExecutionTime();   
         currentTime = System.currentTimeMillis();
 
         // Handle all execution traces.

@@ -35,6 +35,17 @@ public class CastellanDomain2 extends DomainAdapter  {
     }
 
     protected void loadFactory() {
+
+    }
+
+    protected void loadXPlan() {
+
+    }
+
+     protected void loadLPs() {
+
+     }
+  /*  protected void loadFactory() {
         DomainBindingSite bindingSite = (DomainBindingSite) getBindingSite();
 
         if (bindingSite == null) {
@@ -117,7 +128,7 @@ public class CastellanDomain2 extends DomainAdapter  {
         PlanningFactory ldmf = (PlanningFactory) bindingSite.getFactoryForDomain("castellan");
 
         addLogicProvider(new PlanLogLP(rootPlan, self));
-    }
+    }    */
 
     AgentIdentificationService ais;
     LDMService ldms;
