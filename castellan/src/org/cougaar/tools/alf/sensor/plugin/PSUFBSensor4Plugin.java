@@ -19,12 +19,56 @@ import java.util.Collection;
 import org.cougaar.core.service.community.CommunityService;
 import org.cougaar.multicast.AttributeBasedAddress;
 import org.cougaar.logistics.plugin.manager.LoadIndicator;
-
+import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import java.io.*;
 
 public class PSUFBSensor4Plugin extends ComponentPlugin
 {
-    
+
+        class TriggerFlushAlarm implements PeriodicAlarm
+    {
+        public TriggerFlushAlarm(long expTime)
+        {
+            this.expTime = expTime;
+        }
+
+        public void reset(long currentTime)
+        {
+            expTime = currentTime + delay;
+            expired = false;
+        }
+
+        public long getExpirationTime()
+        {
+            return expTime;
+        }
+
+        public void expire()
+        {
+            expired = true;
+		getBlackboardService().openTransaction();
+            setNormal();
+		getBlackboardService().closeTransaction();
+
+        }
+
+        public boolean hasExpired()
+        {
+            return expired;
+        }
+
+        public boolean cancel()
+        {
+            boolean was = expired;
+            expired = true;
+            return was;
+        }
+
+        boolean expired = false;
+        long expTime;
+        long delay = 60000;
+    }
+
     UnaryPredicate allocationPredicate = new UnaryPredicate()
     {
         public boolean execute(Object o)
@@ -100,7 +144,8 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
 		if (myTimestampService == null) {
             System.out.println("\n"+cluster+" ["+sensorname+"]: TimestampService is NOT available.\n");
         }
-			
+	        AlarmService as = getAlarmService() ;
+        as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 60000 ) ) ;		
     }
 
 
@@ -229,6 +274,20 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         
     }  
 
+    void setNormal () {
+                Iterator iter;
+        String status = LoadIndicator.NORMAL_LOAD;
+        for (iter = sensorSubscription.getCollection().iterator(); iter.hasNext();) {
+            LoadIndicator loadIndicator = (LoadIndicator) iter.next();
+            status = LoadIndicator.NORMAL_LOAD;
+            if (!same(loadIndicator.getLoadStatus(), status)) {
+                loadIndicator.setLoadStatus(status);
+                myBlackboardService.publishChange(loadIndicator);
+            }
+        }
+        
+        System.out.println("\n"+cluster+" ["+sensorname+"]: Load Index (LI) = -1"+" ["+status+"]");
+    }
 
     IncrementalSubscription allocationSubscription;   
     IncrementalSubscription sensorSubscription; 
