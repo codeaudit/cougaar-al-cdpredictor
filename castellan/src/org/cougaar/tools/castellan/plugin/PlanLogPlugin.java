@@ -168,9 +168,13 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
             bts = ( BlackboardTimestampService ) broker.getService( this, BlackboardTimestampService.class, null ) ;
             allElements = ( IncrementalSubscription ) getBlackboardService().subscribe( allPredicate ) ;
 
-            // Make a new
+            // Start the statistics logging
+            stats = new PlanLogStats() ;
+            getBlackboardService().publishAdd( stats ) ;
+
+            // Make a new client message transport
             UIDService service = ( UIDService ) broker.getService( this, UIDService.class, null ) ;
-            mtImpl = new RelayClientMTImpl( config, getBlackboardService(), service.nextUID(), getBindingSite().getAgentIdentifier() ) ;
+            mtImpl = new RelayClientMTImpl( config, getBlackboardService(), service.nextUID(), getBindingSite().getAgentIdentifier(), stats ) ;
             mtImpl.setPDUSink( this );
 
             // Check to see if any PDUBuffers already exist (based on rehydration?)
@@ -642,7 +646,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         else if ( action == EventPDU.ACTION_ADD ) {
             ct = bts.getCreationTime( o.getUID() ) ;
         }
-        else { // This must be a c
+        else { // This must be a changed condition, so just get the current system time.
             ct = getCurrentTime() ;
         }
 
@@ -714,6 +718,46 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
     protected void sendMessage( PDU pdu ) {
         // Publish this to the LogMessageBuffer
         // System.out.print("S+");
+        // increment count
+        if ( stats != null &&  pdu instanceof EventPDU ) {
+            EventPDU epdu = ( EventPDU ) pdu ;
+            if ( stats.getFirstEventTime() == 0 && epdu.getTime() != -1 ) {
+                stats.setFirstEventTime( epdu.getTime() );
+            }
+            else {
+                stats.setNumBadTimestamps( stats.getNumBadTimestamps() + 1 );
+            }
+            if ( epdu.getTime() != -1 ) {
+                stats.setLastEventTime( epdu.getTime() );
+            }
+
+            // Increment the number of messages sent by one.
+            stats.setNumPdusSent( stats.getNumPdusSent() + 1 );
+
+            // Track stats for task PDUs specifically.
+            if ( epdu instanceof TaskPDU ) {
+                TaskPDU tpdu = ( TaskPDU ) epdu ;
+                switch ( epdu.getAction() ) {
+                    case EventPDU.ACTION_ADD :
+                        stats.setNumTaskAdds( stats.getNumTaskAdds() + 1 );
+                        break ;
+                    case EventPDU.ACTION_CHANGE :
+                        stats.setNumTaskChanges( stats.getNumTaskChanges() + 1 );
+                        break ;
+                    case EventPDU.ACTION_REMOVE :
+                        stats.setNumTaskRemoves( stats.getNumTaskRemoves() + 1 );
+                        break ;
+                    default :
+                        if ( log.isErrorEnabled() ) {
+                            log.error( "EventPDU with unknown action." );
+                        }
+                }
+
+                taskUIDMap.put( tpdu.getUID(), tpdu.getUID() ) ;
+                stats.setNumUniqueTaskUIDs( taskUIDMap.size() ) ;
+            }
+
+        }
         mtImpl.sendMessage( pdu );
     }
 
@@ -804,6 +848,8 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         mtImpl.execute();
     }
 
+    protected HashMap taskUIDMap = new HashMap() ;
+    protected PlanLogStats stats ;
     protected FlushThread flushThread ;
     protected PlanLogConfig config ;
     protected PDUBuffer buffer ;

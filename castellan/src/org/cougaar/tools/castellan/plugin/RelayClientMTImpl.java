@@ -48,10 +48,11 @@ import java.io.*;
  */
 public class RelayClientMTImpl implements ClientMessageTransport {
 
-    public RelayClientMTImpl( PlanLogConfig config, BlackboardService bs, UID uid, ClusterIdentifier source ) {
+    public RelayClientMTImpl( PlanLogConfig config, BlackboardService bs, UID uid, ClusterIdentifier source, PlanLogStats stats ) {
         this.bs = bs;
         this.config = config ;
         this.source = source ;
+        this.stats = stats ;
 
         buffer = new SourceBufferRelay( uid,
                         new ClusterIdentifier( config.getLogCluster() ), source ) ;
@@ -161,6 +162,9 @@ public class RelayClientMTImpl implements ClientMessageTransport {
         msg.setSourceAgent( source.cleanToString() );
         msg.setDestination( new ClusterIdentifier( config.getLogCluster() ) );
         buffer.addOutgoing( msg ) ;
+        if ( stats != null ) {
+            stats.setNumMsgsSent( stats.getNumMsgsSent() + 1 ) ;
+        }
         bs.publishChange( buffer ) ;
     }
 
@@ -186,7 +190,11 @@ public class RelayClientMTImpl implements ClientMessageTransport {
             // Make a copy of the byte array.
             byte[] ba = bas.toByteArray();
             bas.reset();
-            //oos.close() ;
+            if ( stats != null ) {
+                stats.setNumBytesSent( stats.getNumBytesSent() + ba.length );
+            }
+
+            oos.close() ;
             oos = new ObjectOutputStream(bas);
             BatchMessage bm = new BatchMessage(ba, BatchMessage.SERIALIZED, false);
             sendOutgoing( bm );
@@ -209,6 +217,7 @@ public class RelayClientMTImpl implements ClientMessageTransport {
      */
     protected int maxBatchSize = 24000;
 
+    protected PlanLogStats stats ;
     protected PlanLogConfig config ;
     protected SourceBufferRelay buffer ;
 
