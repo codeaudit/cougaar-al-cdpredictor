@@ -40,8 +40,12 @@
 		<mkdir dir="staging/lib"/>
 		<mkdir dir="staging/configs/common"/>
 		<mkdir dir="staging/sys"/>
+		<mkdir dir="staging/doc/Logistics/psu/castellan/"/>
 		<antcall target="delete"/>
 		<antcall target="jar"/>
+		<copy todir="staging/doc/Logistics/psu/castellan/">
+			<fileset dir="doc"/>
+		</copy>
 		<copy file="${jar}" todir="staging/lib"/>
 		<copy file="test/configs/newminitestconfig/PlanEventLogConfig.xml" todir="staging/configs/common/"/>
 		<copy todir="staging/sys">
