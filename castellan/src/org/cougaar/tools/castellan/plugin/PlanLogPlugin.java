@@ -116,8 +116,10 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
     public void setupSubscriptions() {
         config= getConfigInfo() ;
+        log = ( LoggingService ) getServiceBroker().getService( this, LoggingService.class, null ) ;
 
         if ( config != null && config.getLogCluster() != null ) {
+
             ServiceBroker broker = getServiceBroker() ;
             bts = ( BlackboardTimestampService ) broker.getService( this, BlackboardTimestampService.class, null ) ;
             allElements = ( IncrementalSubscription ) getBlackboardService().subscribe( allPredicate ) ;
@@ -127,8 +129,30 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
             mtImpl = new RelayClientMTImpl( config, getBlackboardService(), service.nextUID(), getBindingSite().getAgentIdentifier() ) ;
             mtImpl.setPDUSink( this );
 
-            buffer = new PDUBuffer() ;
-            getBlackboardService().publishAdd( buffer ) ;
+            // Check to see if any PDUBuffers already exist (based on rehydration?)
+            Collection c = blackboard.query( new UnaryPredicate() {
+                public boolean execute ( Object o )
+                {
+                    if ( o instanceof PDUBuffer ) {
+                        return true ;
+                    }
+                    return false ;
+                }
+            } ) ;
+
+            if ( c.size() == 0 ) {
+                buffer = new PDUBuffer() ;
+                getBlackboardService().publishAdd( buffer ) ;
+            }
+            else {
+                Object[] buffers = c.toArray() ;
+                buffer = ( PDUBuffer ) buffers[0] ;
+                if ( buffers.length > 0 ) {
+                    if ( log != null && log.isWarnEnabled() ) {
+                        log.warn( "More than one PDU buffer created for agent \"" + getBindingSite().getAgentIdentifier() + "\". Using first." );
+                    }
+                }
+            }
 
             // Declare myself immediately.
             DeclarePDU pdu =
@@ -171,7 +195,6 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         try {
             String clusterName = null ;
             if ( fileName != null && finder != null ) {
-
 
                 File f = finder.locateFile( fileName ) ;
 
@@ -692,6 +715,18 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         return currentExecutionTime;
     }
 
+    public void suspend ()
+    {
+        super.suspend();
+        ServiceBroker sb = getServiceBroker() ;
+        sb.releaseService( this, LoggingService.class, null );
+    }
+
+    public void unload ()
+    {
+        super.unload();
+    }
+
     public void execute() {
         if ( allElements == null ) {
             return ;
@@ -719,13 +754,25 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
     protected PlanLogConfig config ;
     protected PDUBuffer buffer ;
     protected ClientMessageTransport mtImpl ;
+    /**
+     * Persistent observation of AllocationResult true/false state.
+     */
     protected HashMap allocationToBooleanMap = new HashMap();
+
+    /**
+     * Persistent observation of AR state.
+     */
     protected HashMap allocationToARMap = new HashMap();
+
+    /**
+     * Temp buffer. Non-persistent.
+     */
     protected ArrayList messages = new ArrayList(4);
     protected long currentExecutionTime, currentTime ;
     protected int logAllocationResultsLevel = PlanLogConstants.AR_LOG_LEVEL_SUCCESS;
     protected IncrementalSubscription allElements ;
-    protected MultiTreeSet sortedMap = new MultiTreeSet() ;
+
+    /** Used to remove duplicates. Does not need to be persisted.*/
     protected HashMap map = new HashMap() ;
     protected LoggingService log;
     protected BlackboardTimestampService bts = null ;

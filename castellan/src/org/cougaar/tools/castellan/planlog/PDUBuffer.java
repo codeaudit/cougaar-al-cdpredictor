@@ -40,11 +40,11 @@ import java.util.Iterator;
  */
 public class PDUBuffer implements java.io.Serializable
 {
-    public int getIncomingSize() {
+    public synchronized int getIncomingSize() {
         return incoming.size() ;
     }
 
-    public int getOutgoingSize() {
+    public synchronized int getOutgoingSize() {
         return outgoing.size() ;
     }
 

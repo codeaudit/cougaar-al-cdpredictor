@@ -46,9 +46,29 @@ public class LogServerPlugin extends ComponentPlugin
      */
     class FlushThread extends Thread {
 
+        public boolean isStop ()
+        {
+            return stop;
+        }
+
+        public void setStop ( boolean stop )
+        {
+            this.stop = stop;
+        }
+
+        public long getDelay ()
+        {
+            return delay;
+        }
+
+        public void setDelay ( long delay )
+        {
+            this.delay = delay;
+        }
+
         public void run ()
         {
-            while ( true ) {
+            while ( !stop ) {
                 try {
                     Thread.sleep( 2000 );
                 }
@@ -59,6 +79,7 @@ public class LogServerPlugin extends ComponentPlugin
             }
         }
 
+        boolean stop = false ;
         long delay = 2000 ;
     }
 

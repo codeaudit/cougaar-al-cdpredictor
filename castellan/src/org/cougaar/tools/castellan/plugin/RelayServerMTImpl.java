@@ -199,11 +199,21 @@ public class RelayServerMTImpl implements ServerMessageTransport {
     protected PlanLogConfig config ;
 
     /**
-     * Map cluster/agent names to relay.
+     * Map cluster/agent names to relay.  Non-persistent.
      */
     protected HashMap nameToRelayMap = new HashMap() ;
+
+    /**
+     * Actual buffers.  Non-persistent.
+     */
     protected ArrayList buffers = new ArrayList() ;
+
+    /**
+     * Initialized by parent. Non-persistent.
+     */
     protected PDUSink sink ;
+
     protected BlackboardService bs ;
+
     protected IncrementalSubscription relaySubscription ;
 }

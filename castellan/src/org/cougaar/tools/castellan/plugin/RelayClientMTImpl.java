@@ -51,6 +51,7 @@ public class RelayClientMTImpl implements ClientMessageTransport {
     public RelayClientMTImpl( PlanLogConfig config, BlackboardService bs, UID uid, ClusterIdentifier source ) {
         this.bs = bs;
         this.config = config ;
+        this.source = source ;
 
         buffer = new SourceBufferRelay( uid,
                         new ClusterIdentifier( config.getLogCluster() ), source ) ;
@@ -157,7 +158,7 @@ public class RelayClientMTImpl implements ClientMessageTransport {
     }
 
     private void sendOutgoing( LogMessage msg ) {
-        msg.setSource( source );
+        msg.setSourceAgent( source.cleanToString() );
         msg.setDestination( new ClusterIdentifier( config.getLogCluster() ) );
         buffer.addOutgoing( msg ) ;
         bs.publishChange( buffer ) ;
