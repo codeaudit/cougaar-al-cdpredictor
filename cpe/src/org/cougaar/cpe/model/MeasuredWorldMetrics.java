@@ -152,7 +152,8 @@ public class MeasuredWorldMetrics extends WorldMetrics {
 			violations.addMeasurement(new TimePeriodMeasurement(lastIntegrationTime, ev.getNewTime(), new Integer(accumViolations)));
 			entryRate.addMeasurement(new TimePeriodMeasurement(lastIntegrationTime, ev.getNewTime(), new Integer(accumEntries)));
 			fuelConsumption.addMeasurement(new TimePeriodMeasurement(lastIntegrationTime, ev.getNewTime(), new Double(accumFuelConsumption)));
-			for (Iterator iterator = getParent().getUnits(); iterator.hasNext();) {
+            predictedEntryRate.addMeasurement( new TimePeriodMeasurement(lastIntegrationTime, ev.getNewTime(), new Integer( accumPredictedEntries ) ) );
+            for (Iterator iterator = getParent().getUnits(); iterator.hasNext();) {
 				UnitEntity entry = (UnitEntity) iterator.next();
 				String unitId = entry.getId();
 				TimePeriodMeasurementPoint timePeriodMeasurementPoint = (TimePeriodMeasurementPoint) fuelConsumptionByUnit.get(unitId);
