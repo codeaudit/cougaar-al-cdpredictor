@@ -248,25 +248,30 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
             BNAggregate agg = (BNAggregate) referenceZoneWorld.getAggUnitEntity( wsum.getBnUnitId() ) ;
             for (int i=0;i<agg.getNumSubEntities();i++) {
                 UnitEntity newEntity = (UnitEntity) statusReport.getEntity( agg.getSubEntityName(i) ) ;
-                org.cougaar.cpe.model.EntityInfo info = referenceZoneWorld.getEntityInfo(newEntity.getId());
-                org.cougaar.cpe.model.UnitEntity pue;
+                if ( newEntity == null ) {
+                    continue ;
+                }
+                else {
+                    org.cougaar.cpe.model.EntityInfo info = referenceZoneWorld.getEntityInfo(newEntity.getId());
+                    org.cougaar.cpe.model.UnitEntity pue;
 
-                // Fill in the perceived message state.
-                if (info == null) {
-                    referenceZoneWorld.addEntity((UnitEntity) newEntity.clone(),
-                            new BinaryEngageByFireModel(0));
-                    info = referenceZoneWorld.getEntityInfo(newEntity.getId());
-                } else {
-                    pue = (org.cougaar.cpe.model.UnitEntity) info.getEntity();
-                    pue.setX(newEntity.getX());
-                    pue.setY(newEntity.getY());
-                    pue.setAmmoQuantity(newEntity.getAmmoQuantity());
-                    pue.setFuelQuantity(newEntity.getFuelQuantity());
+                    // Fill in the perceived message state.
+                    if (info == null) {
+                        referenceZoneWorld.addEntity((UnitEntity) newEntity.clone(),
+                                new BinaryEngageByFireModel(0));
+                        info = referenceZoneWorld.getEntityInfo(newEntity.getId());
+                    } else {
+                        pue = (org.cougaar.cpe.model.UnitEntity) info.getEntity();
+                        pue.setX(newEntity.getX());
+                        pue.setY(newEntity.getY());
+                        pue.setAmmoQuantity(newEntity.getAmmoQuantity());
+                        pue.setFuelQuantity(newEntity.getFuelQuantity());
+                    }
                 }
             }
 
             // TODO merge the target locations based on fidelity/error.
-            System.out.println("Merging status report " + statusReport );
+            // System.out.println("Merging status report " + statusReport );
             mergeSensorValues( statusReport ) ;
 
             long startTime = System.currentTimeMillis();
@@ -276,6 +281,8 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
             }
 
             long endTime = System.currentTimeMillis();
+
+            // Add a measurement point here.
             // updateUnitStatusDelayMP.addMeasurement(new DelayMeasurement(null, null, null, startTime, endTime));
         }
     }
