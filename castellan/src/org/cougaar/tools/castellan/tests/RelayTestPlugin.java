@@ -134,6 +134,10 @@ public class RelayTestPlugin extends ComponentPlugin {
                     + getClusterIdentifier() + "= "  + iter.next() );
         }
 
+        for ( Iterator iter = relays.getChangedCollection().iterator() ;  iter.hasNext() ; ) {
+            System.out.println( getBindingSite().getAgentIdentifier() + "::Changed relay in "
+                    + getClusterIdentifier() + "= "  + iter.next() );
+        }
     }
 
     FlushAlarm alarm ;
