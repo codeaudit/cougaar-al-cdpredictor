@@ -26,6 +26,19 @@ package org.cougaar.tools.castellan.ldm;
 
 public class PlanLogConfig implements java.io.Serializable
 {
+    public String toString() {
+        return "[ PlanLogConfig targetAgent= "+ getLogCluster() + 
+            ",isActive=" + isActive() + ",node=" + getNodeIdentifier() + ",isServer=" + isServer() + "] " ;
+    }
+    
+    public boolean isActive() {
+        return isActive ;
+    }
+    
+    public void setActive( boolean active ) {
+        this.isActive = active ;
+    }
+    
     public String getLogCluster()
     {
         return logCluster;
@@ -84,10 +97,11 @@ public class PlanLogConfig implements java.io.Serializable
         this.nodeIdentifier = nodeIdentifier;
     }
 
-    String logCluster ;
-    String nodeIdentifier ;
-    int arLogLevel ;
-    boolean logEpochs ;
-    boolean logPluginTriggers ;
-    boolean isServer = false ;
+    protected String logCluster ;
+    protected String nodeIdentifier ;
+    protected int arLogLevel ;
+    protected boolean logEpochs ;
+    protected boolean isActive = false ;
+    protected boolean logPluginTriggers ;
+    protected boolean isServer = false ;
 }
