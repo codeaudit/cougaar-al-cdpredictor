@@ -82,7 +82,9 @@ public class PSULogServerPlugin extends ComponentPlugin
                     break ;
                 }
 
-                flushBuffer() ;
+                getBlackboardService().openTransaction();
+                execute();
+                getBlackboardService().closeTransaction();
             }
         }
 
@@ -110,9 +112,11 @@ public class PSULogServerPlugin extends ComponentPlugin
 
         public void expire()
         {
-            System.out.println("PSULogServerPlugin:expire");
+            //System.out.println("PSULogServerPlugin:expire");
             expired = true;
-            flushBuffer();
+            getBlackboardService().openTransaction();
+            execute();
+            getBlackboardService().closeTransaction();
         }
 
         public boolean hasExpired()
@@ -231,10 +235,11 @@ public class PSULogServerPlugin extends ComponentPlugin
             System.out.println( "PSULogServerPlugin::Opened " + databaseName + " for writing." );
         }
 
-        AlarmService as = getAlarmService() ;
-        as.addRealTimeAlarm( new TriggerFlushAlarm( System.currentTimeMillis() + 1000 ) ) ;
-        //flushThread = new FlushThread() ;
-        //flushThread.start();
+        //AlarmService as = getAlarmService() ;
+        //System.out.println("Starting real time alarm at " + System.currentTimeMillis());
+        //as.addRealTimeAlarm( new TriggerFlushAlarm( System.currentTimeMillis() + 1000 ) ) ;
+        flushThread = new FlushThread() ;
+        flushThread.start();
     }
 
     protected String getDatabaseName()
@@ -297,29 +302,28 @@ public class PSULogServerPlugin extends ComponentPlugin
 
     public void execute()
     {
-        if (buffer == null)
+        for (Iterator iter = pduBufferSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
         {
-            for (Iterator iter = pduBufferSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
-            {
-                Object o = iter.next();
-                if (o instanceof PDUBuffer)
-                {
-                    buffer = (PDUBuffer) o;
-                    break;
-                }
-            }
+            buffers.add( iter.next() );
         }
 
         // Immediately flush the buffer.
-        flushBuffer();
+        flushBuffers();
     }
 
-    private void flushBuffer()
+    private void flushBuffers() {
+        for (int i=0;i<buffers.size();i++) {
+            flushBuffer( ( PDUBuffer ) buffers.get(i) );
+        }
+    }
+
+    private void flushBuffer( PDUBuffer buffer )
     {
         if (buffer != null)
         {
             synchronized (buffer)
             {
+                System.out.println("PSULogServerPlugin:: flushing " + buffer + " with size " + buffer.getIncomingSize() );
                 // Now, flush out the buffer into an InMemoryEventLog object
                 if (buffer.getIncomingSize() > 0)
                 {
@@ -353,6 +357,7 @@ public class PSULogServerPlugin extends ComponentPlugin
     protected InMemoryEventLog memoryLog;
 //    protected PersistentEventLog persistentLog;
     protected DBEventLog persistentLog;
+    protected ArrayList buffers = new ArrayList() ;
     protected PDUBuffer buffer;
     protected LoggingService log ;
     protected IncrementalSubscription pduBufferSubscription;
