@@ -33,10 +33,12 @@ public class ExecutionStats {
       myEventLog = theLog;
       myExecution = theExecution;
       myAgent = theAgent;
-      processCompletedTasks( theCompletedTasks );
-      System.out.println( "ExecutionStats.constructor()" );
-      System.out.println( "# OF CompletedTasks ASSOCIATED WITH THIS ExecutionStat: " 
-            + myCompletedTasks.size() );
+      if( !theCompletedTasks.isEmpty() ){
+          processCompletedTasks( theCompletedTasks );
+          System.out.println( "ExecutionStats.constructor()" );
+          System.out.println( "# OF CompletedTasks ASSOCIATED WITH THIS ExecutionStat: " 
+                + myCompletedTasks.size() );
+      }
       buildContainers();
       System.out.println( "ExecutionStats.constructor()" );
       System.out.println( "# OF Batches OF TASKS ASSOCIATED WITH THIS ExecutionStats: " 
