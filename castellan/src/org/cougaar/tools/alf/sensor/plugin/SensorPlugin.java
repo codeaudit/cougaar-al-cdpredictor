@@ -36,6 +36,9 @@ import org.cougaar.tools.castellan.planlog.DBEventLog;
 import org.cougaar.tools.castellan.pdu.PDU;
 import org.cougaar.tools.castellan.pdu.EventPDU;
 import org.cougaar.tools.alf.sensor.TheSensor;
+import org.cougaar.core.adaptivity.InterAgentOperatingMode;
+import org.cougaar.core.agent.ClusterIdentifier;
+import org.cougaar.core.adaptivity.OMCRangeList;
 
 import java.util.Iterator;
 import java.util.Collection;
@@ -64,7 +67,9 @@ public class SensorPlugin extends ComponentPlugin
         public void expire()
         {
             expired = true;
+		getBlackboardService().openTransaction();
             flushBuffer();
+		getBlackboardService().closeTransaction();
         }
 
         public boolean hasExpired()
@@ -117,7 +122,7 @@ public class SensorPlugin extends ComponentPlugin
         ServiceBroker broker = getServiceBroker();
         log = (LoggingService) broker.getService(this, LoggingService.class, null);
 
-        BlackboardService bs = getBlackboardService();
+        bs = getBlackboardService();
         pduBufferSubscription = (IncrementalSubscription) bs.subscribe(pduBufferPredicate);
         Collection c = getParameters();
 
@@ -180,6 +185,7 @@ public class SensorPlugin extends ComponentPlugin
 
         AlarmService as = getAlarmService() ;
         as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
+
     }
 
     protected String getDatabaseName()
@@ -219,9 +225,19 @@ public class SensorPlugin extends ComponentPlugin
                     {
                         for (Iterator iter = buffer.getIncoming() ; iter.hasNext() ;)
                         {
-//                            memoryLog.add((PDU) iter.next());
-  						    sensor.add((PDU) iter.next());		// Hong
-                        }
+  				        sensor.add((PDU) iter.next());		// Hong
+//                                fbsensor.add(pdu);
+				}
+			  // Update sensor status after PDUs in buffer are all added.
+//                    fbsensor.update();
+//			  for (i=0; i<=fbsensor.clusters-1; i++) {
+//				if (status[i]!=fbsensor.state[i]) {
+//				    status[i]=fbsensor.state[i]; 
+//				    psu_fb[i].setValue(new Integer(status[i]));
+//				    bs.publishChange(psu_fb[i]);
+//				}
+//			  }
+
                     }
                     if (logToDatabase)
                     {
@@ -239,12 +255,45 @@ public class SensorPlugin extends ComponentPlugin
         }
     }
 
+    public void publishAdd(InterAgentOperatingMode a) {
+
+		bs.publishAdd(a);
+
+    }
+
+    public void publishChange(InterAgentOperatingMode a) {
+
+		bs.publishChange(a);
+    }
+
+    public UIDService getUIDService() {
+
+	 return (UIDService) getServiceBroker().getService(this, UIDService.class, null);
+    }
+
     String databaseName = null;
     boolean logToMemory = true, logToDatabase = false;
+<<<<<<< SensorPlugin.java
+    DBEventLog DBLog;
+=======
 	TheSensor sensor;		
 //    InMemoryEventLog memoryLog;
     DBEventLog DBLog;
+>>>>>>> 1.3
     PDUBuffer buffer;
     LoggingService log ;
     IncrementalSubscription pduBufferSubscription;
+
+// Feedback
+// Yunho and Hari's Loadforecaster and Falling behind sensor
+    TheSensor sensor;		
+   InterAgentOperatingMode[] psu_fb;
+   InterAgentOperatingMode[] psu_lf3;
+   int[] prev_state;
+   BlackboardService bs;
+
+// Seokcheon's Loadforecaster and Falling behind sensor
+//    FallingBehindSensor fbsensor;
+//    InterAgentOperatingMode[] psu_fb;
+//    int[] status;
 }
