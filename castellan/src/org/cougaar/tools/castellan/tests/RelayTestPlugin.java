@@ -37,8 +37,11 @@ import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.agent.ClusterIdentifier;
+import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.util.UnaryPredicate;
 import org.cougaar.tools.alf.sensor.SensorConditionRelay;
+import org.cougaar.tools.castellan.ldm.FlushObject;
+import org.cougaar.tools.castellan.plugin.PlanLogPlugin;
 
 import java.util.Set;
 import java.util.Collections;
@@ -47,6 +50,56 @@ import java.util.Iterator;
 
 public class RelayTestPlugin extends ComponentPlugin {
 
+    class FlushAlarm implements PeriodicAlarm {
+        public FlushAlarm( long expTime )
+        {
+            this.expTime = expTime;
+        }
+
+        public void reset( long currentTime )
+        {
+            expTime = currentTime + delay ;
+            expired = false ;
+        }
+
+        public long getExpirationTime()
+        {
+            return expTime ;
+        }
+
+        public void expire()
+        {
+            expired = true ;
+            BlackboardService bs = getBlackboardService() ;
+            bs.openTransaction();
+            OMCRangeList range = new OMCRangeList( new Integer( 0 ), new Integer( 1 ) ) ;
+            SensorCondition condition = new SensorCondition( "FallingBehind", range, new Integer( count % 2 ) ) ;
+            mt.setValue( condition );
+            bs.publishChange( mt ) ;
+            bs.closeTransaction();
+        }
+
+        public boolean hasExpired()
+        {
+            return expired ;
+        }
+
+        public boolean cancel()
+        {
+            boolean was = expired;
+            expired=true;
+            return was;
+        }
+
+        FlushObject flushedObject ;
+        boolean stop = false ;
+        boolean expired = false ;
+        int count = 1 ;
+        long expTime ;
+        long delay = 5000L ;
+    }
+
+
     protected void setupSubscriptions() {
         BlackboardService bs = getBlackboardService() ;
         ServiceBroker sb = getServiceBroker() ;
@@ -54,7 +107,6 @@ public class RelayTestPlugin extends ComponentPlugin {
 
         // This is stupid.
         OMCRangeList range = new OMCRangeList( new Integer( 0 ), new Integer( 1 ) ) ;
-
         SensorCondition condition = new SensorCondition( "FallingBehind", range, new Integer( 0 ) ) ;
 
         Vector v = new Vector( getParameters() )  ;
@@ -71,16 +123,20 @@ public class RelayTestPlugin extends ComponentPlugin {
             }
         }) ;
 
+        getAlarmService().addRealTimeAlarm( new FlushAlarm( System.currentTimeMillis() + 5000 ) ) ;
+
     }
 
     protected void execute() {
 
         for ( Iterator iter = relays.getAddedCollection().iterator() ;  iter.hasNext() ; ) {
-            System.out.println(getBindingSite().getAgentIdentifier() + "::Found relay in " + getClusterIdentifier() + "= "  + iter.next() );
+            System.out.println( getBindingSite().getAgentIdentifier() + "::Found relay in "
+                    + getClusterIdentifier() + "= "  + iter.next() );
         }
 
     }
 
+    FlushAlarm alarm ;
     SensorConditionRelay mt ;
     IncrementalSubscription relays ;
 }
