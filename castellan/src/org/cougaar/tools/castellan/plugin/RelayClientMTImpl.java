@@ -159,7 +159,7 @@ public class RelayClientMTImpl implements ClientMessageTransport {
     }
 
     private void sendOutgoing( LogMessage msg ) {
-        System.out.println("RelayClientMTImpl:");
+        // System.out.println("RelayClientMTImpl:");
         msg.setSourceAgent( source.cleanToString() );
         msg.setDestination( new ClusterIdentifier( config.getLogCluster() ) );
         buffer.addOutgoing( msg ) ;
