@@ -16,7 +16,7 @@ public class TaskLog extends UniqueObjectLog {
         this.taskVerb = taskVerb.intern() ;
     }
 
-    void outputParamString(StringBuffer buf) {
+    public void outputParamString(StringBuffer buf) {
         super.outputParamString( buf ) ;
         if ( !this.getClass().equals( MPTaskLog.class ) ) {
         buf.append( ",parent=" ).append( parentTask ) ;

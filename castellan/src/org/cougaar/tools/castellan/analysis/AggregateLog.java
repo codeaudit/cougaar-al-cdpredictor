@@ -52,6 +52,7 @@ public class AggregateLog implements Loggable {
     
     void outputParamString( StringBuffer buf ) {
         buf.append( getLogType( getClass() ) ) ;
+        buf.append( ",id=" ).append( getID() ) ;
         buf.append( ",#children=" ).append( getNumChildren() ) ;
         buf.append( ",#inst=" ).append( getNumLogs() ) ;
         buf.append( ",#parents=" ).append( getNumParents() ) ;

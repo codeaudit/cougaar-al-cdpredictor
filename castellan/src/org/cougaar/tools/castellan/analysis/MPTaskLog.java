@@ -29,7 +29,7 @@ public class MPTaskLog extends TaskLog {
         return mpt ;
     }
     
-    void outputParamString(StringBuffer buf) {
+    public void outputParamString(StringBuffer buf) {
         super.outputParamString( buf ) ;
         buf.append( ",#parents=" ).append( getNumParents() ) ;
         buf.append( ",verb=").append( taskVerb ) ;
