@@ -29,6 +29,7 @@ import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.blackboard.Subscription;
 import org.cougaar.core.adaptivity.OperatingModeCondition;
 import org.cougaar.core.service.LoggingService;
+import org.cougaar.core.service.BlackboardService;
 import org.cougaar.util.UnaryPredicate;
 import org.cougaar.tools.techspecs.qos.MeasurementPoint;
 import org.cougaar.cpe.agents.plugin.WorldStateReference;
@@ -43,19 +44,6 @@ import java.util.Comparator;
 
 
 public class AgentDisplayPlugin extends ComponentPlugin {
-
-
-    private static final String WINDOWS_LF =
-            "com.sun.java.swing.plaf.windows.WindowsLookAndFeel";
-
-
-//    static {
-//        try {
-//            UIManager.setLookAndFeel( WINDOWS_LF ) ;
-//            Thread.sleep( 5000 );
-//        } catch ( Exception e ) {
-//        }
-//    }
 
     protected void setupSubscriptions() {
         logger = (LoggingService) getServiceBroker().getService( this, LoggingService.class, null ) ;
@@ -92,6 +80,10 @@ public class AgentDisplayPlugin extends ComponentPlugin {
 
     public long getBaseTime() {
         return baseTime;
+    }
+
+    protected BlackboardService getBlackboardService() {
+        return super.getBlackboardService();
     }
 
     protected void execute() {
