@@ -141,20 +141,43 @@ public class PlanLogConfigPlugin extends ComponentPlugin
         config = getConfigInfo() ;
 
         if ( config != null ) {
-            BlackboardService b = getBlackboardService() ;
-            System.out.println( "PlanLogConfigPlugIn:: Publishing configuration file for cluster " + getClusterIdentifier() );
-            b.publishAdd( config ) ;
+            if ( config.getLogCluster() == null ) {
+                if ( log.isInfoEnabled() ) {
+                    log.info( "No target agent found for " + 
+                     getBindingSite().getAgentIdentifier() + ", logging disabled." );
+                }
+                System.out.println( "No target agent found for " + 
+                    getBindingSite().getAgentIdentifier() + ", logging disabled."  ) ;
+                config.setActive( false ) ;
+            }
+            else {
+                if ( config.getLogCluster().equals( getBindingSite().getAgentIdentifier().cleanToString() ) ) {
+                    config.setServer( true );
+                }
+            }
         }
         else {
-            System.out.println( "PlanLogConfigPlugIn:: No plan log configuration file available." );
+            config = new PlanLogConfig() ;
+            if ( log.isWarnEnabled() ) {
+                log.info( "No plan logging configuration file specified.  Logging is disabled." ) ;
+                // log.info( "Using " + config + " for agent " + getBindingSite().getAgentIdentifier() ) ;
+            }
+            System.out.println( "PlanLogConfigPlugIn:: No plan log configuration file available. Logging is disabled." );
         }
 
+        BlackboardService b = getBlackboardService() ;
+        System.out.println( "PlanLogConfigPlugIn:: Publishing configuration " + config + " for cluster " + 
+                             getBindingSite().getAgentIdentifier()) ;
+        b.publishAdd( config ) ;
+        
         // Disable batching
         // Publish periodic flush messages to the LP
         //Thread t = new TimerThread() ;
         //t.start();
         // Set up a timer to fire every 5 seconds.
-        getAlarmService().addRealTimeAlarm( new FlushAlarm( System.currentTimeMillis() + 5000 ) ) ;
+        if ( config.isActive() ) {
+            getAlarmService().addRealTimeAlarm( new FlushAlarm( System.currentTimeMillis() + 5000 ) ) ;
+        }
     }
 
     protected PlanLogConfig getConfigInfo() {
@@ -166,6 +189,9 @@ public class PlanLogConfigPlugin extends ComponentPlugin
             fileName = ( String ) paramVector.elementAt(0) ;
         }
 
+        if ( fileName == null ) {
+            return null ;
+        }        
         // DEBUG
         // System.out.printlbn( "Configuring PlanEventLogPlugIn from " + fileName ) ;
 
@@ -177,19 +203,18 @@ public class PlanLogConfigPlugin extends ComponentPlugin
         NodeIdentificationService nis = ( NodeIdentificationService )
                 sb.getService( this, NodeIdentificationService.class, null ) ;
         config.setNodeIdentifier( nis.getNodeIdentifier().cleanToString() ) ;
-
+        
         try {
             String clusterName = null ;
+            boolean isActive = false ;
             if ( fileName != null && finder != null ) {
-
-
                 File f = finder.locateFile( fileName ) ;
 
                 // DEBUG -- Replace by call to log4j
                 if ( log != null && log.isInfoEnabled() ) {
-                    log.info( "PlanLogConfigPlugin:: Configuring PlanLogConfig from " + f );
+                    log.info( "Configuring plan logging from " + f );
                 }
-                System.out.println( "PlanLogConfigPlugin:: Configuring PlanLogConfig from " + f ) ;
+                System.out.println( "PlanLogConfigPlugin:: Configuring plan logging from " + f ) ;
 
                 if ( f != null && f.exists() ) {
                     //
@@ -214,15 +239,28 @@ public class PlanLogConfigPlugin extends ComponentPlugin
                                 for (int i=0;i<nodes.getLength();i++) {
                                     Node n = nodes.item(i) ;
                                     clusterName = n.getAttributes().getNamedItem( "identifier" ).getNodeValue() ;
-                                    System.out.println( "Found identifier=" + clusterName );
                                 }
                                 if ( clusterName != null ) {
                                     config.setLogCluster( clusterName );
                                 }
 
+                                String isActiveParam = null ;
+                                nodes = doc.getElementsByTagName( "LoggingActive" ) ;
+                                for (int i=0;i<nodes.getLength();i++) {
+                                    Node n = nodes.item(i) ;
+                                    isActiveParam = n.getAttributes().getNamedItem( "value" ).getNodeValue() ;
+                                }
+                                
+                                if ( isActiveParam != null ) {
+                                    if ( isActiveParam.equals( "true" ) ) {
+                                        config.setActive( true ) ;
+                                    }
+                                    else {
+                                        config.setActive( false ) ;
+                                    }
+                                }
                                 // Get logging level
                                 //nodes = doc.getElementsByTagName( PlanLogConstants.AR_LOG_DETAIL ) ;
-
 
                                 // Get whether to log epochs
                                 //nodes = doc.getElementsByTagName( PlanLogConstants.LOG_EPOCHS ) ;
@@ -232,6 +270,9 @@ public class PlanLogConfigPlugin extends ComponentPlugin
                             else {
                                 // DEBUG -- replace with log4j
                                 System.out.println( "Warning:: Plan log config file is invalid, no root node \"plpconfig\"" ) ;
+                                if ( log.isErrorEnabled() ) {
+                                    log.error( "Plan log config file is invalid, no root node \"plpconfig\"" ) ;
+                                }
                             }
                         }
                         catch ( Exception e ) {
@@ -248,17 +289,6 @@ public class PlanLogConfigPlugin extends ComponentPlugin
 
         } catch ( Exception e ) {
             e.printStackTrace() ;
-        }
-
-        if ( config.getLogCluster() == null ) {
-            System.out.println( "Warning:: No configuration information found for " + getClusterIdentifier() ) ;
-        }
-        else {
-            if ( config.getLogCluster().equals( getClusterIdentifier().toString() ) ) {
-            // DEBUG
-                System.out.println( "Setting " + getClusterIdentifier() + " as server." );
-                config.setServer( true );
-            }
         }
 
         return config ;
