@@ -25,14 +25,12 @@
 package org.cougaar.tools.alf.sensor.plugin;
 
 import org.cougaar.core.plugin.ComponentPlugin;
-import org.cougaar.core.service.*;
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.util.UID;
-import org.cougaar.core.agent.ClusterIdentifier;
-import org.cougaar.core.adaptivity.OMCRangeList;
+import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.core.service.community.CommunityService;
-import org.cougaar.core.util.UniqueObject;
+import org.cougaar.core.service.*;
 import org.cougaar.core.util.XMLize;
 import org.cougaar.core.util.XMLizable;
 import org.cougaar.util.*;
@@ -49,10 +47,7 @@ import org.w3c.dom.Document;
 
 import java.util.Iterator;
 import java.util.Collection;
-import java.util.Hashtable;
-import java.util.Arrays;
 import java.util.Vector;
-import java.util.Enumeration;
 
 import java.io.*;
 
@@ -88,19 +83,17 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 			}    
 		};
 
+	AlarmService as;
+    TriggerFlushAlarm alarm = null;
+
 	BlackboardService bs;
-//   	BlackboardTimestampService bts; 
    	UIDService uidservice;
 
    	String cluster;  // the current agent's name
 	
 	RbfRidgeRegression rbfnn = null;
 	LoadIndicator loadIndicator = null;
-//	Hashtable lookuptable = null;
 
-//	long starttime = -1L;
-//	private int Hongfbtype = 2;
-//	private String [] fbresult = null;
 	double [] a;
 	InternalState internalState = null;
 
@@ -112,21 +105,12 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 
     public void setupSubscriptions()   {
 
-//		bts = ( BlackboardTimestampService ) getServiceBroker().getService( this, BlackboardTimestampService.class, null ) ;
         bs = getBlackboardService();
 		cluster = getBindingSite().getAgentIdentifier().toString();
-
-  //  	fbresult = new String[3];
-  //  	fbresult[0] = LoadIndicator.NORMAL_LOAD;	// normal
-  //  	fbresult[1] = LoadIndicator.MODERATE_LOAD;	// mild falling behind
-//		fbresult[2] = LoadIndicator.SEVERE_LOAD;	// severe falling behind
 
 		internalStateSubscription 	= (IncrementalSubscription) bs.subscribe(internalStatePredicate);
 		loadIndicatiorSubscription 	= (IncrementalSubscription) bs.subscribe(loadIndicatiorPredicate);
 		taskSubscription		 	= (IncrementalSubscription) bs.subscribe(taskPredicate);
-
-		// Read threshold values and publishAdd the lookuptable for future hydration.
-//		getThresholdforLookupTable(); // in this function fbsensor will be constructed.
 
 		uidservice =(UIDService) getServiceBroker().getService(this, UIDService.class, null);
 
@@ -169,10 +153,6 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 			}
 
 			internalState = new InternalState(1000, Integer.MAX_VALUE, uidservice.nextUID());
-//			if (lookuptable == null)
-//			{
-//				internalState.over = true;
-//			}
 
 		    CommunityService communityService = (CommunityService) getBindingSite().getServiceBroker().getService(this, CommunityService.class, null);
 
@@ -180,17 +160,19 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 			internalState.setalCommunities(alCommunities);
 
 			bs.publishAdd(internalState);
-//			if(!internalState.over) { System.out.println("PSUFBSensor5Plugin start at " + cluster); }
 			System.out.println("PSUFBSensor5Plugin start at " + cluster); 
 		}
 
 		bs.setShouldBePersisted(false);
+		as = getAlarmService() ;
     }
 	
 	public void execute()
     {
         Iterator iter;
-        
+
+        if (alarm != null) alarm.cancel();
+
         if (loadIndicator == null)
 		{
 	        for (iter = loadIndicatiorSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
@@ -200,7 +182,6 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 			}
 		}
 
-/*
 		if (internalState == null)
 		{
 	        for (iter = internalStateSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
@@ -208,11 +189,11 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 		        internalState = (InternalState) iter.next();
 				// debug
 				internalState.show();
-				if(!internalState.over) { System.out.println("PSUFBSensor5Plugin start at " + cluster); }
+				System.out.println("PSUFBSensor5Plugin start at " + cluster +" again"); 
 				break;
 			}
 		} 
-*/
+
 		if (offsetTime == -1)
 		{
 			for (iter = taskSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
@@ -250,15 +231,16 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 		else 
 		{
 		    long nowTime = System.currentTimeMillis()-offsetTime;
-//			System.out.println(nowTime+","+nextTime+","+ (nextTime-nowTime));
 			if (nowTime >= nextTime)	  
 			{		  
-//				System.out.println("Check num of tasks");
 				nextTime = nextTime + 1000;	
 
 				checkTaskSubscription(nowTime, taskSubscription);
 			}
 		}
+
+		alarm = new TriggerFlushAlarm( currentTimeMillis() + 60000 );
+        as.addAlarm(alarm) ;
     }
 
 	private void checkTaskSubscription(long nowTime, IncrementalSubscription taskSubscription)
@@ -399,4 +381,48 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 		System.out.println(cluster + ": adding loadIndicator to be sent to " + loadIndicator.getTargets());
 	}
 
+
+	class TriggerFlushAlarm implements PeriodicAlarm
+    {
+        public TriggerFlushAlarm(long expTime)
+        {
+            this.expTime = expTime;
+        }
+
+        public void reset(long currentTime)
+        {
+            expTime = currentTime + delay;
+            expired = false;
+        }
+
+        public long getExpirationTime()
+        {
+            return expTime;
+        }
+
+        public void expire()
+        {
+            expired = true;
+			getBlackboardService().openTransaction();
+            sendLoadIndicator(1, LoadIndicator.NORMAL_LOAD);
+			getBlackboardService().closeTransaction();
+
+        }
+
+        public boolean hasExpired()
+        {
+            return expired;
+        }
+
+        public boolean cancel()
+        {
+            boolean was = expired;
+            expired = true;
+            return was;
+        }
+
+        boolean expired = false;
+        long expTime;
+        long delay = 60000;
+    }
 }
