@@ -31,6 +31,7 @@ import org.cougaar.core.service.UIDServer;
 import org.cougaar.core.adaptivity.InterAgentCondition;
 import org.cougaar.core.adaptivity.SensorCondition;
 import org.cougaar.core.adaptivity.OMCRangeList;
+import org.cougaar.core.adaptivity.InterAgentOperatingMode;
 import org.cougaar.core.relay.Relay;
 import org.cougaar.core.util.UID;
 import org.cougaar.core.mts.MessageAddress;
@@ -75,6 +76,8 @@ public class RelayTestPlugin extends ComponentPlugin {
             OMCRangeList range = new OMCRangeList( new Integer( 0 ), new Integer( 1 ) ) ;
             SensorCondition condition = new SensorCondition( "FallingBehind", range, new Integer( count % 2 ) ) ;
             mt.setValue( condition );
+            iaom.setValue( new Integer( count%2 ) );
+            count++ ;
             bs.publishChange( mt ) ;
             bs.closeTransaction();
         }
@@ -112,11 +115,13 @@ public class RelayTestPlugin extends ComponentPlugin {
         Vector v = new Vector( getParameters() )  ;
         mt = new SensorConditionRelay(us.nextUID(), new ClusterIdentifier( ( String ) v.get(0) ), getClusterIdentifier(),
                 condition, null ) ;
+        iaom = new InterAgentOperatingMode( "FallingBehind?", range, new Integer(0) ) ;
+        bs.publishAdd( iaom ) ;
         bs.publishAdd( mt ) ;
 
         relays = ( IncrementalSubscription ) bs.subscribe( new UnaryPredicate() {
             public boolean execute(Object o) {
-                if ( o instanceof SensorConditionRelay ) {
+                if ( o instanceof SensorConditionRelay || o instanceof InterAgentOperatingMode ) {
                     return true ;
                 }
                 return false ;
@@ -142,5 +147,6 @@ public class RelayTestPlugin extends ComponentPlugin {
 
     FlushAlarm alarm ;
     SensorConditionRelay mt ;
+    InterAgentOperatingMode iaom ;
     IncrementalSubscription relays ;
 }
