@@ -23,6 +23,7 @@ import org.cougaar.core.relay.Relay;
 import org.cougaar.core.agent.service.alarm.Alarm;
 import java.io.Serializable;
 import org.cougaar.cpe.agents.messages.ControlMessage;
+import org.cougaar.cpe.agents.messages.OpmodeNotificationMessage;
 import org.cougaar.core.adaptivity.OperatingModeCondition;
 
 import java.io.File;
@@ -33,25 +34,17 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 
 	//get subscriptions of the measurements points - from BDEAgentPlugin, C2AgentPlugin, UnitAgentPlugin
 	protected void setupSubscriptions() {
-		logger =
-			(LoggingService) getServiceBroker().getService(
-				this,
-				LoggingService.class,
-				null);
+		logger = (LoggingService) getServiceBroker().getService(this, LoggingService.class, null);
 
 		baseTime = System.currentTimeMillis();
 
-		measurementPointSubscription =
-			(IncrementalSubscription) getBlackboardService()
-				.subscribe(new UnaryPredicate() {
+		measurementPointSubscription = (IncrementalSubscription) getBlackboardService().subscribe(new UnaryPredicate() {
 			public boolean execute(Object o) {
 				return o instanceof MeasurementPoint;
 			}
 		});
 
-		controlTargetRelaySubscription =
-			(IncrementalSubscription) getBlackboardService()
-				.subscribe(new UnaryPredicate() {
+		controlTargetRelaySubscription = (IncrementalSubscription) getBlackboardService().subscribe(new UnaryPredicate() {
 			public boolean execute(Object o) {
 				if (o instanceof ControlTargetBufferRelay) {
 					return true;
@@ -59,13 +52,13 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 				return false;
 			}
 		});
-		
-		opModeCondSubscription = (IncrementalSubscription) getBlackboardService().subscribe( new UnaryPredicate() {
-					public boolean execute(Object o) {
-						return o instanceof OperatingModeCondition ;
-					}
-				}) ;
-		
+
+		opModeCondSubscription = (IncrementalSubscription) getBlackboardService().subscribe(new UnaryPredicate() {
+			public boolean execute(Object o) {
+				return o instanceof OperatingModeCondition;
+			}
+		});
+
 	}
 
 	/**
@@ -86,63 +79,42 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 			//System.out.println(
 			//"Measurement points size " + measurementPoints.size());
 			for (int i = 0; i < measurementPoints.size(); i++) {
-				MeasurementPoint measurementPoint =
-					(MeasurementPoint) measurementPoints.get(i);
+				MeasurementPoint measurementPoint = (MeasurementPoint) measurementPoints.get(i);
 				//System.out.println(
 				//	"Measurement points name " + measurementPoint.getName());
 				long[] delays = new long[period];
-				if (measurementPoint
-					instanceof EventDurationMeasurementPoint) {
-					EventDurationMeasurementPoint dmp =
-						(EventDurationMeasurementPoint) measurementPoint;
+				if (measurementPoint instanceof EventDurationMeasurementPoint) {
+					EventDurationMeasurementPoint dmp = (EventDurationMeasurementPoint) measurementPoint;
 					iter = dmp.getMeasurements(period);
 				}
 				int typeOfDelayMeasurement = -1;
 				//System.out.println("iter " + iter.hasNext());
 				if ((iter != null) && (iter.hasNext())) {
 					//first column is total delay, second column is number of delay points
-					count = 0;	
+					count = 0;
 					while (iter.hasNext()) {
-						DelayMeasurement delayMeasurement =
-							(DelayMeasurement) iter.next();
+						DelayMeasurement delayMeasurement = (DelayMeasurement) iter.next();
 						long delay = 0;
 						//						System.out.println(
 						//							"DelayMeasurment " + delayMeasurement);
 						//TODO getEvent or getAction() resolve									
 						//TODO some duplicate names in call to delaymeasurement
 						if (delayMeasurement.getAction() != null) {
-							if ((delayMeasurement
-								.getAction()
-								.equals("ReplanTime"))
-								&& (total_delay[2][1] < period)) {
-								delay =
-									delayMeasurement.getLocalTime()
-										- delayMeasurement.getTimestamp();
+							if ((delayMeasurement.getAction().equals("ReplanTime")) && (total_delay[2][1] < period)) {
+								delay = delayMeasurement.getLocalTime() - delayMeasurement.getTimestamp();
 								total_delay[2][0] += delay;
 								total_delay[2][1]++;
 								typeOfDelayMeasurement = 2;
 								//System.out.println("DELAY " + delay);
 
-							} else if (
-								(delayMeasurement
-									.getAction()
-									.equals("ProcessUpdateBN"))
-									&& (total_delay[3][1] < period)) {
-								delay =
-									delayMeasurement.getLocalTime()
-										- delayMeasurement.getTimestamp();
+							} else if ((delayMeasurement.getAction().equals("ProcessUpdateBN")) && (total_delay[3][1] < period)) {
+								delay = delayMeasurement.getLocalTime() - delayMeasurement.getTimestamp();
 								total_delay[3][0] += delay;
 								total_delay[3][1]++;
 								typeOfDelayMeasurement = 3;
 								//System.out.println("DELAY " + delay);
-							} else if (
-								(delayMeasurement
-									.getAction()
-									.equals("ProcessZonePlanBN"))
-									&& (total_delay[4][1] < period)) {
-								delay =
-									delayMeasurement.getLocalTime()
-										- delayMeasurement.getTimestamp();
+							} else if ((delayMeasurement.getAction().equals("ProcessZonePlanBN")) && (total_delay[4][1] < period)) {
+								delay = delayMeasurement.getLocalTime() - delayMeasurement.getTimestamp();
 								total_delay[4][0] += delay;
 								total_delay[4][1]++;
 								//System.out.println("DELAY " + delay);
@@ -157,8 +129,7 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 					for (int ii = 0; ii < 7; ii++) {
 						if (total_delay[ii][1] > 0) {
 
-							avg_delays[ii][0] =
-								(double) (total_delay[ii][0] / total_delay[ii][1]);
+							avg_delays[ii][0] = (double) (total_delay[ii][0] / total_delay[ii][1]);
 						} else {
 							avg_delays[ii][0] = -1;
 						}
@@ -166,11 +137,7 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 					if (count > 0) {
 						double sum = 0;
 						for (int p = 0; p < count; p++) {
-							double diffSq =
-								(double) Math.pow(
-									delays[p]
-										- avg_delays[typeOfDelayMeasurement][0],
-									2);
+							double diffSq = (double) Math.pow(delays[p] - avg_delays[typeOfDelayMeasurement][0], 2);
 
 							//System.out.println("diffSq: " + diffSq);					
 							sum += diffSq;
@@ -201,15 +168,32 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 			measurement();
 		}
 		findRelay();
+		//if there are any generic messages they are received
 		receiveMessage(relayFromSuperior);
-		publishOpModeChange(null);
+
+		//if any new control messages arrived these need to be changed
+		if (cm != null)
+			publishOpModeChanges(cm);
+	}
+
+	public void processMessage(Object[] o) {
+		// all types of message received are known
+		// so the object array Object[] o is traversed and the latest this is set to the local copy
+		if (o.length > 0) {
+			cm = null;
+			for (int i = 0; i < o.length; i++) {
+				if (o[i] instanceof ControlMessage) {
+					cm = (ControlMessage) o[i];
+				} else {
+				}
+			}
+		}
 	}
 
 	public void measurement() {
 		try {
 			measurementPoints.clear();
-			measurementPoints.addAll(
-				measurementPointSubscription.getCollection());
+			measurementPoints.addAll(measurementPointSubscription.getCollection());
 
 			//			find the mean and variance
 			//			logger.shout(
@@ -224,7 +208,10 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 				//						"Mean Delays " + i + "  " + Dlay[i] + " secs.");
 
 				//send the delays through TargetControlBufferRelay
-				sendMessage(Dlay);
+				OpmodeNotificationMessage msg = new OpmodeNotificationMessage(this.getAgentIdentifier(), "rename");
+				msg.setTimeForModes(Dlay);
+				putControlParameters(msg);
+				sendMessage(msg);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -237,27 +224,21 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 				//						+ ":  SCHEDULING NEXT MEASUREMENT in "
 				//						+ nextTime / 1000
 				//						+ " secs.");
-				getAlarmService().addRealTimeAlarm(
-					new MeasurementAlarm(nextTime));
+				getAlarmService().addRealTimeAlarm(new MeasurementAlarm(nextTime));
 			}
 
 		}
 	}
 	private void findRelay() {
 		//	Find any new relays from one's superior.
-		Collection relayCollection =
-			controlTargetRelaySubscription.getAddedCollection();
+		Collection relayCollection = controlTargetRelaySubscription.getAddedCollection();
 		Iterator iter = relayCollection.iterator();
 		//System.out.println("relay iterator in ControlC2AgentPlugin: " + iter);
 
 		while (iter.hasNext()) {
-			ControlTargetBufferRelay relay =
-				(ControlTargetBufferRelay) iter.next();
+			ControlTargetBufferRelay relay = (ControlTargetBufferRelay) iter.next();
 			if (relayFromSuperior == null) {
-				System.out.println(
-					getAgentIdentifier()
-						+ " -------------found RELAY from------------- "
-						+ relay.getSource());
+				System.out.println(getAgentIdentifier() + " -------------found RELAY from------------- " + relay.getSource());
 				relayFromSuperior = relay;
 				//				relayFromSuperior.addResponse((Serializable) "GOD");
 				//				this.getBlackboardService().publishChange(
@@ -278,60 +259,89 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 
 		if (relayFromSuperior != null) {
 			relayFromSuperior.addResponse((Serializable) msg);
-			this.getBlackboardService().publishChange(
-				(ControlTargetBufferRelay) relayFromSuperior);
+			this.getBlackboardService().publishChange((ControlTargetBufferRelay) relayFromSuperior);
 		}
 
 		if (getBlackboardService().isTransactionOpen() && !wasOpen) {
 			getBlackboardService().closeTransaction();
 		}
 	}
-	
+
 	/*
 	 * receives a control parameter set from superior
 	 */
-	private Object receiveMessage(ControlTargetBufferRelay ctbr)
-	{
-		if (ctbr!=null)
-		{
+	private Object receiveMessage(ControlTargetBufferRelay ctbr) {
+		if (ctbr != null) {
 			Object[] o = (ctbr.clearIncoming());
-			if (o.length>0){
-				if (o[0] instanceof ControlMessage)
-					System.out.println(((ControlMessage)o[0]).getControlParameter("BN1Replan"));
-				return o[0];
-			}							
+			if (o.length > 0) {
+				//this will put the latest control message in cm
+				processMessage(o); // <--
+
+				//remove later
+				//if (o[0] instanceof ControlMessage)
+				//System.out.println(((ControlMessage) o[0]).getControlParameter("BN1Replan"));
+				//return o[0];
+
+				return ((Object) cm);
+			}
 		}
 		return null;
 	}
-	
-	private void publishOpModeChange(Object opmode) {
+
+	private void publishOpModeChanges(ControlMessage c) {
+		if (c != null) {
+			// valid opmodes exist
 			boolean wasOpen = true;
 			if (!getBlackboardService().isTransactionOpen()) {
 				wasOpen = false;
 				getBlackboardService().openTransaction();
 			}
-			
-		
+
 			//use the changed opmode and publish it
 			Collection opModeCollection = opModeCondSubscription.getCollection();
 			Iterator iter = opModeCollection.iterator();
 			while (iter.hasNext()) {
 				OperatingModeCondition omc = (OperatingModeCondition) iter.next();
-			if (omc.getName().equals("ReplanPeriod"))
-			{
-				//change it to new value
-				omc.setValue(new Integer(70000));
-				System.out.println("Operating mode changed");	
+
+				//				if (omc.getName().equals("ReplanPeriod")) {
+				//					//change it to new value
+				//					omc.setValue(new Integer(70000));
+				//					System.out.println("Operating mode changed");
+				//				}
+				
+				if ((omc.getName() != null) && (c.getControlParameter(this.getAgentIdentifier(), omc.getName()) != null)) {
+					Object i = c.getControlParameter(this.getAgentIdentifier(), omc.getName());
+					omc.setValue(new Integer(Integer.parseInt(i.toString())));//dont know if this works
+					System.out.println("Operating mode changed in " + this.getAgentIdentifier() + " to " + Integer.parseInt(i.toString()));
+				}
 			}
-								
-			}
-			
 
 			if (getBlackboardService().isTransactionOpen() && !wasOpen) {
 				getBlackboardService().closeTransaction();
 			}
-			
 		}
+	}
+
+	private void putControlParameters(OpmodeNotificationMessage m) {
+		boolean wasOpen = true;
+		if (!getBlackboardService().isTransactionOpen()) {
+			wasOpen = false;
+			getBlackboardService().openTransaction();
+		}
+		m.empty();
+		//put all the current opmodes in the opmode notification message
+		Collection opModeCollection = opModeCondSubscription.getCollection();
+		Iterator iter = opModeCollection.iterator();
+		while (iter.hasNext()) {
+			OperatingModeCondition omc = (OperatingModeCondition) iter.next();
+			m.putControlParameter((Object) omc.getName(), (Object) omc.getValue());
+		}
+
+		if (getBlackboardService().isTransactionOpen() && !wasOpen) {
+			getBlackboardService().closeTransaction();
+		}
+
+	}
 
 	public class MeasurementAlarm implements Alarm {
 		private boolean expired;
@@ -373,14 +383,14 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 		protected long expirationTime;
 		protected long period;
 	}
+	//messages that this node gets
+	ControlMessage cm = null;
 
 	LoggingService logger;
 	ArrayList measurementPoints = new ArrayList();
 	ArrayList opModes = new ArrayList();
 	long baseTime = 0;
-	IncrementalSubscription measurementPointSubscription,
-		controlTargetRelaySubscription,
-		opModeCondSubscription;
+	IncrementalSubscription measurementPointSubscription, controlTargetRelaySubscription, opModeCondSubscription;
 	private boolean started = false;
 	ControlTargetBufferRelay relayFromSuperior;
 	HashMap h = new HashMap();
