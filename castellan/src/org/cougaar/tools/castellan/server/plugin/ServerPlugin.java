@@ -27,6 +27,7 @@ package org.cougaar.tools.castellan.server.plugin;
 import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.service.LoggingService;
+import org.cougaar.core.service.BlackboardService;
 import org.cougaar.tools.castellan.plugin.RelayServerMTImpl;
 import org.cougaar.tools.castellan.pdu.PDUSink;
 import org.cougaar.tools.castellan.pdu.PDU;
@@ -39,6 +40,53 @@ import java.util.Collection;
 
 public class ServerPlugin extends ComponentPlugin implements PDUSink {
 
+    class FlushThread extends Thread {
+
+        public long getInterval ()
+        {
+            return interval;
+        }
+
+        public void setInterval ( long interval )
+        {
+            this.interval = interval;
+        }
+
+        public boolean isStop ()
+        {
+            return stop;
+        }
+
+        public void setStop ( boolean stop )
+        {
+            this.stop = stop;
+        }
+
+        public void run ()
+        {
+            while ( !stop ) {
+                try {
+                   sleep( interval ) ;
+                }
+                catch ( InterruptedException e ) {
+                }
+
+                if ( stop ) {
+                    break ;
+                }
+
+                BlackboardService bs = getBlackboardService() ;
+                bs.openTransaction();
+                impl.flush();
+                bs.closeTransaction();
+            }
+        }
+
+        long interval = 4000 ;
+        boolean stop = false ;
+    }
+
+
     public void setupSubscriptions() {
         ServiceBroker sb = getServiceBroker() ;
         log = ( LoggingService ) sb.getService( this, LoggingService.class, null ) ;
@@ -47,6 +95,15 @@ public class ServerPlugin extends ComponentPlugin implements PDUSink {
         impl.setPDUSink( this );
 
         findOrCreateBuffer() ;
+        flushThread = new FlushThread() ;
+        flushThread.start();
+    }
+
+    public void unload () {
+        if ( flushThread != null ) {
+             flushThread.setStop( true );
+             flushThread.interrupt();
+        }
     }
 
     protected void findOrCreateBuffer() {
@@ -102,4 +159,5 @@ public class ServerPlugin extends ComponentPlugin implements PDUSink {
     protected LoggingService log ;
     protected PDUBuffer buffer ;
     protected RelayServerMTImpl impl ;
+    protected FlushThread flushThread ;
 }
