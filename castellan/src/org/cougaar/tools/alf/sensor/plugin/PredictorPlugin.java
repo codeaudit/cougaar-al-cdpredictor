@@ -279,7 +279,7 @@ public class PredictorPlugin extends ComponentPlugin {
 
 			h.add(currentDate,demand);			
 			historyList.put(new Integer(futureDate), h);
-			myLoggingService.shout("historyList size = " + historyList.size()); 
+//			myLoggingService.shout("historyList size = " + historyList.size()); 
 			return true;
 		}
 
@@ -649,7 +649,7 @@ public class PredictorPlugin extends ComponentPlugin {
 				for (int j=sDay;j<=day;j++ )
 				{
 					double d =historyOfOnDemandDay.getDemandOnDay(j);
-					if (d !=1)
+					if (d !=-1)
 					{
 						myLoggingService.shout(j+":"+d+" for "+day);
 					}
@@ -817,7 +817,7 @@ public class PredictorPlugin extends ComponentPlugin {
 		    
 					if (historyList.add(uid,end_time,qty))
 					{
-						myLoggingService.shout("@@@@@@@ "+adj+ " add "+ uid.getOwner()+"["+ today+","+end_time+","+qty +"] in "+cluster);
+//						myLoggingService.shout("@@@@@@@ "+adj+ " add "+ uid.getOwner()+"["+ today+","+end_time+","+qty +"] in "+cluster);
 						updated = true;
 					} 
 //				}
@@ -890,7 +890,7 @@ public class PredictorPlugin extends ComponentPlugin {
 		    
 					if (historyList.remove(uid,end_time,qty))
 					{
-						myLoggingService.shout("@@@@@@@ "+adj+ " remove "+ uid.getOwner()+"["+ today+","+end_time+","+qty +"] in "+cluster);
+//						myLoggingService.shout("@@@@@@@ "+adj+ " remove "+ uid.getOwner()+"["+ today+","+end_time+","+qty +"] in "+cluster);
 						updated = true;
 					} 
 //				}
@@ -1136,7 +1136,7 @@ public class PredictorPlugin extends ComponentPlugin {
     private final int MovingAverage = 1;
     private final int SupportVectorMachine = 2;
     private final int KalmanFilter = 3;
-    private int selectedPredictor = MovingAverage;
+    private int selectedPredictor = KalmanFilter;
     private HashMap ammoHistory = null;
     private HashMap bulkPOLHistory = null;
     private Vector ammoCustomers = new Vector();
