@@ -26,6 +26,7 @@ public class InternalState implements java.io.Serializable, UniqueObject, XMLiza
 	public	boolean over;
 	public	long nextcheckpoint;
 	public  Collection alCommunities = null;
+	public  boolean rehydrate;
 
 //	public  long unittime;								// waiting time method
 //	public  long timelimit;								// waiting time method
@@ -41,7 +42,7 @@ public class InternalState implements java.io.Serializable, UniqueObject, XMLiza
 		over = false;
 		NoTasks = 0;				
 		Correction = 0;
-
+		rehydrate = false;
 //		unittime = ut;  // 1 sec	// waiting time method
 //		NoFinish = 0;				// waiting time method
 //		CTFinish = 0;				// waiting time method
@@ -73,7 +74,7 @@ public class InternalState implements java.io.Serializable, UniqueObject, XMLiza
 	}   
 
 	public void show() {
-		System.out.println("nextcheckpoint = " + nextcheckpoint + ", StartTime = " + StartTime + ", currentstate = " +currentstate);
+		System.out.println("nextcheckpoint = " + nextcheckpoint + ", CurrentTime = " + CurrentTime + ", StartTime = " + StartTime + ", currentstate = " +currentstate);
 	}
 
 	public UID getUID() {

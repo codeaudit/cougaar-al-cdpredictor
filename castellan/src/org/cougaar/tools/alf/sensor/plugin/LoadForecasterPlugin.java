@@ -164,7 +164,9 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 			transcomStartCondition = new PSUSensorCondition("transcomStart", new OMCRangeList(new Double(0),new Double(Double.MAX_VALUE)),new Double(0), us.nextUID());
 			
 			rbfnn = new RbfRidgeRegression();
-			rbfnn.setParameters(10, 0.0000001, 0.00001, 10);
+
+			// num_hidden1, lamda1, increment1, count_limit1, dimension1
+			rbfnn.setParameters(10, 0.0000001, 0.00001, 10, 5);
 
 			ConfigFinder finder = getConfigFinder();
 			String inputName = "m.txt";
@@ -381,7 +383,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 		}
 */
 
-		if (internalState.Thadakamala == 5)
+		if (internalState.Thadakamala >= 3)
 		{
 
 			double xx = rbfnn.f(internalState.Hong);
