@@ -54,124 +54,99 @@ import java.io.*;
 
 public class LoadForecasterPlugin extends ComponentPlugin {
 	
-	IncrementalSubscription timeIndicatiorSubscription;
-	IncrementalSubscription planCompletion1Subscription;
-	IncrementalSubscription planCompletion2Subscription;
-	IncrementalSubscription conusgroundStartSubscription;
-	IncrementalSubscription transcomStartSubscription;
+	// 
+	IncrementalSubscription loadIndicatiorSubscription;
+	IncrementalSubscription lfMessageSubscription;
 	IncrementalSubscription rbfnnSubscription;
 	IncrementalSubscription internalStateSubscription;
+	IncrementalSubscription taskSubscription;
 
-	UnaryPredicate planCompletion1Predicate = new UnaryPredicate() { 
+	//
+	UnaryPredicate lfMessagePredicate = new UnaryPredicate() { 
 		public boolean execute(Object o) 
 		{  
-			if (o instanceof PSUSensorCondition)
-			{
-				PSUSensorCondition sensorcon = (PSUSensorCondition) o;
-				if (sensorcon.getName().compareToIgnoreCase("PlanCompletionTime-Transcom")==0)
-				{
-					return true;
-				}
-			}
+			if (o instanceof LFMessage)	{	return true;	}
 			return false;
 		}    
 	};
 
-	UnaryPredicate planCompletion2Predicate = new UnaryPredicate() { 
-		public boolean execute(Object o) 
-		{  
-			if (o instanceof PSUSensorCondition)
-			{
-				PSUSensorCondition sensorcon = (PSUSensorCondition) o;
-				if (sensorcon.getName().compareToIgnoreCase("PlanCompletionTime-GlobalSeaAir")==0)
+    UnaryPredicate internalStatePredicate	= new UnaryPredicate()	{	public boolean execute(Object o) {  return o instanceof InternalStateLF;		}    };
+    UnaryPredicate rbfnnPredicate			= new UnaryPredicate()	{	public boolean execute(Object o) {  return o instanceof RbfRidgeRegression;		}    };
+	UnaryPredicate taskPredicate			= new UnaryPredicate()	{ 	public boolean execute(Object o) {  return (o instanceof Task); 				}   };
+
+	UnaryPredicate loadIndicatiorPredicate			
+		= new UnaryPredicate()	{ 
+			public boolean execute(Object o) {  
+				if (o instanceof LoadIndicator)
 				{
-					return true;
+					LoadIndicator lindicator = (LoadIndicator) o;
+					if ((lindicator.getAgentName()).equalsIgnoreCase(cluster))
+					{
+						return true;
+					}
 				}
-			}
-			return false;
-		}    
-	};
+				return false;   
+			}    
+		};
 
-    UnaryPredicate timeIndicatiorPredicate = new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof StartIndicator;   }    };
-
-    UnaryPredicate conusgroundStartPredicate = new UnaryPredicate()	{ 
-
-		public boolean execute(Object o) 
-		{  
-			if (o instanceof PSUSensorCondition)
-			{
-				PSUSensorCondition sensorcon = (PSUSensorCondition) o;
-				if (sensorcon.getName().compareToIgnoreCase("conusgroundStart")==0)
-				{
-					return true;
-				}
-			}
-			return false;
-		}    
-	};
-
-    UnaryPredicate transcomStartPredicate = new UnaryPredicate()	{ 
-
-		public boolean execute(Object o) 
-		{  
-			if (o instanceof PSUSensorCondition)
-			{
-				PSUSensorCondition sensorcon = (PSUSensorCondition) o;
-				if (sensorcon.getName().compareToIgnoreCase("transcomStart")==0)
-				{
-					return true;
-				}
-			}
-			return false;
-		}    
-	};
-
-    UnaryPredicate internalStatePredicate	= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof InternalStateLF;   }    };
-    UnaryPredicate rbfnnPredicate			= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof RbfRidgeRegression;   }    };
-    UIDService uidservice;
+	//
+	UIDService uidservice;
     BlackboardService bs;
 
-	PSUSensorCondition completionTime1Condition = null;
-	PSUSensorCondition completionTime2Condition = null;
-	PSUSensorCondition conusgroundStartCondition = null;
-	PSUSensorCondition transcomStartCondition = null;
+	// 
+	LoadIndicator loadIndicator = null;
 	RbfRidgeRegression rbfnn = null;
 	InternalStateLF internalState = null;
 
+	long offsetTime = -1;
+	int curr_state = -1;
+
+	double [] a_row; // CONUSGround, GlobalAir, GlobalSea, PlanePacker, ShipPacker, TheaterGround, TRANSCOM
+
+	double cumEstimatedValue=0;
+	int count=0;
+
+	String cluster = null;
+	int canForecast =0;
+
     public void setupSubscriptions()   {
+		
+		a_row = new double[14];
+
+		for (int i=0;i<14 ; i++)	{		a_row[i] = 0; 		} 
 
 		UIDService us=(UIDService) getServiceBroker().getService(this, UIDService.class, null);
 
 		ServiceBroker broker = getServiceBroker();
         bs = getBlackboardService();
 
-		internalStateSubscription = (IncrementalSubscription) bs.subscribe(internalStatePredicate);
-        planCompletion1Subscription = (IncrementalSubscription) bs.subscribe(planCompletion1Predicate);
-        planCompletion2Subscription = (IncrementalSubscription) bs.subscribe(planCompletion2Predicate);
-        conusgroundStartSubscription = (IncrementalSubscription) bs.subscribe(conusgroundStartPredicate);
-        transcomStartSubscription = (IncrementalSubscription) bs.subscribe(transcomStartPredicate);
+		internalStateSubscription	= (IncrementalSubscription) bs.subscribe(internalStatePredicate);
+        lfMessageSubscription		= (IncrementalSubscription) bs.subscribe(lfMessagePredicate);
+        rbfnnSubscription			= (IncrementalSubscription) bs.subscribe(rbfnnPredicate);
+		taskSubscription			= (IncrementalSubscription) bs.subscribe(taskPredicate);
 
-        timeIndicatiorSubscription = (IncrementalSubscription) bs.subscribe(timeIndicatiorPredicate);
-        rbfnnSubscription = (IncrementalSubscription) bs.subscribe(rbfnnPredicate);
-		
 		uidservice =(UIDService) getServiceBroker().getService(this, UIDService.class, null);
 
 		if (bs.didRehydrate() == false)
         {
-			completionTime1Condition = new PSUSensorCondition("PlanCompletionTime-Transcom", new OMCRangeList(new Double(0),new Double(Double.MAX_VALUE)),new Double(0), us.nextUID());
-			completionTime2Condition = new PSUSensorCondition("PlanCompletionTime-GlobalSeaAir", new OMCRangeList(new Double(0),new Double(Double.MAX_VALUE)),new Double(0), us.nextUID());
-			conusgroundStartCondition = new PSUSensorCondition("conusgroundStart", new OMCRangeList(new Double(0),new Double(Double.MAX_VALUE)),new Double(0), us.nextUID());
-			transcomStartCondition = new PSUSensorCondition("transcomStart", new OMCRangeList(new Double(0),new Double(Double.MAX_VALUE)),new Double(0), us.nextUID());
-			
 			rbfnn = new RbfRidgeRegression();
 
 			// num_hidden1, lamda1, increment1, count_limit1, dimension1
-			rbfnn.setParameters(10, 0.0000001, 0.00001, 10, 5);
+//			rbfnn.setParameters(500, 0.00000001, 0.01, 20, 14);
 
 			ConfigFinder finder = getConfigFinder();
-			String inputName = "m.txt";
+			String inputName = "model.txt";
 
 			try {
+
+				File paramFile = finder.locateFile( "param.txt" ) ;
+				if ( paramFile != null && paramFile.exists() ) {
+
+					rbfnn.readParam(paramFile);
+
+			    } else {
+					System.out.println("Param model error.");
+				}
 
 				if ( inputName != null && finder != null ) {
 
@@ -187,44 +162,21 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 		        e.printStackTrace() ;
 			}
 
-			if (completionTime1Condition != null)
-			{
-				bs.publishAdd(completionTime1Condition);
-			} 
-
-			if (completionTime2Condition != null)
-			{
-				bs.publishAdd(completionTime2Condition);
-			} 
-
-			if (conusgroundStartCondition != null)
-			{
-				bs.publishAdd(conusgroundStartCondition);
-			} 
-
-			if (transcomStartCondition != null)
-			{
-				bs.publishAdd(transcomStartCondition);
-			}
-
 			internalState = new InternalStateLF(uidservice.nextUID());
 
-			if (internalState != null)
-			{
-				bs.publishAdd(internalState);
-			}
+			if (internalState != null)	{	bs.publishAdd(internalState);	}
 
-			if (rbfnn != null)
-			{
-				bs.publishAdd(rbfnn);
-			}
+			if (rbfnn != null)			{	bs.publishAdd(rbfnn);			}
+
+			loadIndicator = new LoadIndicator(this.getClass(), cluster, uidservice.nextUID(), LoadIndicator.NORMAL_LOAD);
+			bs.publishAdd(loadIndicator);
+			System.out.println("NORMAL_LOAD");
 		}
 
 		bs.setShouldBePersisted(false);
 
 		String cluster = getBindingSite().getAgentIdentifier().toString();
 		System.out.println("LoadForecasterPlugin start at " + cluster);
-
     }
 
 	public void execute()
@@ -240,6 +192,16 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 			}
 		} 
 
+        if (loadIndicator == null)
+		{
+	        for (iter = loadIndicatiorSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
+	        {
+		        loadIndicator = (LoadIndicator) iter.next();
+				break;
+			}
+		}
+
+
 		if (internalState == null)
 		{
 	        for (iter = internalStateSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
@@ -251,153 +213,114 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 			}
 		} 
 
-        // Retrieve completionTimeCondition which contains the estimated plan completion time 
-		if ( completionTime1Condition == null)
+		if (offsetTime == -1)
 		{
-	        for (iter = planCompletion1Subscription.getAddedCollection().iterator() ; iter.hasNext() ;)
+			for (iter = taskSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
 	        {
-		        completionTime1Condition = (PSUSensorCondition) iter.next();
+			        Task t = (Task) iter.next();
+					Verb v = t.getVerb();
+					if (v.equals("GetLogSupport"))
+					{
+						offsetTime = System.currentTimeMillis();
+						System.out.println("PSULF_STARTTIME="+offsetTime);
+						a_row[12] = 0;
+						a_row[13] = (float) taskSubscription.size();  
+
+						break;
+					}
+			}
+
+		} else {
+
+			if (taskSubscription.hasChanged())	{	a_row[12] = (float) (System.currentTimeMillis() - offsetTime);	a_row[13] = (float) taskSubscription.size();  	
+//				printA_row();
 			}
 		}
 
-		if ( completionTime2Condition == null)
-		{
-	        for (iter = planCompletion2Subscription.getAddedCollection().iterator() ; iter.hasNext() ;)
-	        {
-		        completionTime2Condition = (PSUSensorCondition) iter.next();
-			}
-		}
+//		if (lfMessageSubscription.hasChanged())
+//		{
+			// collect timeindicators which are supposed to be sent by other agent.
+			for (iter = lfMessageSubscription.getChangedCollection().iterator() ; iter.hasNext() ;)
+			{
+				LFMessage lfmessage = (LFMessage) iter.next();
+				String agentname = lfmessage.getAgentName();
 
-		if ( conusgroundStartCondition == null)
-		{
-	        for (iter = conusgroundStartSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
-	        {
-		        conusgroundStartCondition = (PSUSensorCondition) iter.next();
+				double time = (double) (lfmessage.getTime() - offsetTime);
+				if (time < 0 || offsetTime == -1)	{ time = 0;	}
+	
+				if ((a_row[12] > 25000 || time > 25000) && canForecast == 0 )	 {	canForecast = 1;		 }
+				// CONUSGround, GlobalAir, GlobalSea, PlanePacker, ShipPacker, TheaterGround, TRANSCOM
+				if		(agentname.equalsIgnoreCase("CONUSGround"))		{	a_row[0] = time ;		a_row[1] = (double) lfmessage.getNum_of_tasks();  	}
+				else if (agentname.equalsIgnoreCase("GlobalAir"))		{	a_row[2] = time ;		a_row[3] = (double) lfmessage.getNum_of_tasks();  	}
+				else if (agentname.equalsIgnoreCase("GlobalSea"))		{	a_row[4] = time ;		a_row[5] = (double) lfmessage.getNum_of_tasks();  	}
+				else if (agentname.equalsIgnoreCase("PlanePacker"))		{	a_row[6] = time ;		a_row[7] = (double) lfmessage.getNum_of_tasks();  	}
+				else if (agentname.equalsIgnoreCase("ShipPacker"))		{	a_row[8] = time ;		a_row[9] = (double) lfmessage.getNum_of_tasks();  	}
+				else if (agentname.equalsIgnoreCase("TheaterGround"))	{	a_row[10] = time ;		a_row[11] = (double) lfmessage.getNum_of_tasks();  	}
 			}
-		}
+//			printA_row();
+//		}
 
-		if ( transcomStartCondition == null)
+		if ((lfMessageSubscription.hasChanged() || taskSubscription.hasChanged()) && canForecast > 0 )
 		{
-	        for (iter = transcomStartSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
-	        {
-		        transcomStartCondition = (PSUSensorCondition) iter.next();
-			}
+			forecast(a_row);
 		}
-
-		// collect timeindicators which are supposed to be sent by other agent.
-		for (iter = timeIndicatiorSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
-        {
-            StartIndicator timeindicator = (StartIndicator)iter.next(); 
-			forecast(timeindicator);
-        }
     }	
 
+	public void forecast(double [] a_row) {
 
-	public void forecast(StartIndicator timeindicator) {
+		double y = rbfnn.f(a_row);
+
+		count++;
+
+		cumEstimatedValue = cumEstimatedValue+y;
 		
-		long x;
-		double y;
+		double avg = (double)cumEstimatedValue/count;
 
-		// I assume the NCA's GetLogSupport arrives first. In Tiny-1AD, this is always correct. 
-		// But, in distributed environment, it might be wrong. Still, the error is not much large.
-		if (timeindicator.getAgentName().equalsIgnoreCase("NCA"))
+		if (avg > 630000)
 		{
-			internalState.PlanStartTime = timeindicator.getStartTime();
-			System.out.println("The society plan start time = " + internalState.PlanStartTime);
-		} else if (timeindicator.getAgentName().equalsIgnoreCase("TRANSCOM")) {
-			
-			x = timeindicator.getStartTime() - internalState.PlanStartTime;
-			y = 7.5691*x + 178905;
+			if (curr_state == -1)
+			{
+				System.out.println("SEVERE_LOAD");
+//				loadIndicator.setLoadStatus(LoadIndicator.SEVERE_LOAD);
+//				bs.publishChange(loadIndicator);
+				curr_state = 1;
+			}
 
-			completionTime1Condition.setValue(new Double(y));
-			bs.publishChange(completionTime1Condition);
-			System.out.println("The estimated plan completion time based on TRANSCOM time = " + y);
-
-			y = 3.4561*x + 123563;	// The estimated start time of CONUSGROUND based on TRANSCOM time
-
-			System.out.println("The estimated start time of CONUSGROUND based on TRANSCOM time = " + y);
-			conusgroundStartCondition.setValue(new Double(y));
-			bs.publishChange(conusgroundStartCondition);
-
-		} else if (timeindicator.getAgentName().equalsIgnoreCase("Globalsea"))	{
-
-			internalState.globalsea_time = timeindicator.getStartTime() - internalState.PlanStartTime;
-			internalState.hari++;
-
-		} else if (timeindicator.getAgentName().equalsIgnoreCase("Globalair"))	{
-
-			internalState.globalair_time = timeindicator.getStartTime() - internalState.PlanStartTime;
-			internalState.hari++;
-
-		} else if (timeindicator.getAgentName().equalsIgnoreCase("1-AD"))	{
-
-			internalState.Hong[0] = (double) timeindicator.getStartTime() - internalState.PlanStartTime;
-			internalState.Thadakamala++;
-
-		} else if (timeindicator.getAgentName().equalsIgnoreCase("21-TSC-HQ"))	{
-
-			internalState.Hong[1] = (double) timeindicator.getStartTime() - internalState.PlanStartTime;
-			internalState.Thadakamala++;
-
-		} else if (timeindicator.getAgentName().equalsIgnoreCase("3-SUPCOM-HQ"))	{
-
-			internalState.Hong[2] = (double) timeindicator.getStartTime() - internalState.PlanStartTime;
-			internalState.Thadakamala++;
-
-		} else if (timeindicator.getAgentName().equalsIgnoreCase("5-CORPS-ARTY"))	{
-
-			internalState.Hong[3] = (double) timeindicator.getStartTime() - internalState.PlanStartTime;
-			internalState.Thadakamala++;
-		} else if (timeindicator.getAgentName().equalsIgnoreCase("5-CORPS-REAR"))	{
-
-			internalState.Hong[4] = (double) timeindicator.getStartTime() - internalState.PlanStartTime;
-			internalState.Thadakamala++;
+		} else {
+			if (curr_state == 1)
+			{
+				System.out.println("NORMAL_LOAD");
+//				loadIndicator.setLoadStatus(LoadIndicator.NORMAL_LOAD);
+//				bs.publishChange(loadIndicator);
+				curr_state = -1;
+			}
 		}
 
-		if (internalState.hari == 2)
-		{
-			double xx = (internalState.globalsea_time + internalState.globalair_time)/2;
-			y = 3.711*xx + 153705;
+//		if (count > 30)	{    canForecast = -1; 	}
 
-			completionTime2Condition.setValue(new Double(y));
-			bs.publishChange(completionTime2Condition);
-			
-			System.out.println("The estimated plan completion time based on GlobalSea and GlobalAir time = " + y);
-			internalState.hari = -1;
-		}
-
-
-/*		Using three inputs
-		if (internalState.onead_time > 0 && internalState.Thadakamala == 2)
-		{
-
-			double xx = rbfnn.f(internalState.Hong);
-
-//			y = xx + 5000;
-
-			transcomStartCondition.setValue(new Double(y));
-			bs.publishChange(transcomStartCondition);
-			
-			System.out.println("The estimated starting time of Transcom = " + y);
-			internalState.Thadakamala = -2;
-		}
-*/
-
-		if (internalState.Thadakamala >= 3)
-		{
-
-			double xx = rbfnn.f(internalState.Hong);
-
-			transcomStartCondition.setValue(new Double(xx));
-			bs.publishChange(transcomStartCondition);
-			
-			System.out.println("The estimated starting time of Transcom = " + xx);
-			internalState.Thadakamala = -2;
-		}
-
-
-		System.out.println("Actual time" + timeindicator.getAgentName() + " starts at " + (timeindicator.getStartTime() - internalState.PlanStartTime));
-
+		printA_row(y,avg);
 	}
 
+	private void printA_row(double y, double avg) 
+	{
+		// printing
+		String s = "[PSULF-y] ";
+		s = s+a_row[0];
+
+		for (int i=1;i<14;i++)	{	s = s + ","+ a_row[i];	}
+						
+		s = s + " ["+ y +","+avg+"]";
+		System.out.println(s);
+	}
+
+	private void printA_row() 
+	{
+		// printing
+		String s = "[PSULF] ";
+		s = s+a_row[0];
+
+		for (int i=1;i<14;i++)	{	s = s + ","+ a_row[i];	}
+
+		System.out.println(s);
+	}
 }
