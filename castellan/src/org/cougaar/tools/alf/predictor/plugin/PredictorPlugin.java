@@ -163,6 +163,7 @@ public class PredictorPlugin extends ComponentPlugin {
 			Collection c = myBS.query(supplyArrayListPredicate);
 			for (Iterator iter = c.iterator(); iter.hasNext();) {
 				local_alist = (PredictorSupplyArrayList) iter.next();
+				System.out.println("local_alist rehydrated "+local_alist.size());
 			}
 		}
 	}
@@ -175,7 +176,7 @@ public class PredictorPlugin extends ComponentPlugin {
 			for (Iterator iter = c.iterator(); iter.hasNext();) {
 				PredictorHashMap pHashmap = (PredictorHashMap) iter.next();
 				hashmap = pHashmap.getMap();
-				if (hashmap.size() > 1) {
+				if (hashmap.size() >= 1) {
 					kf = new KalmanFilter(hashmap);
 					myBS.publishAdd(kf);
 					flag = true;
@@ -194,6 +195,8 @@ public class PredictorPlugin extends ComponentPlugin {
 
 	//Kalman Filter specific implementation
 	public void checkdataModelMapSubscription() {
+		Collection e = taskSubscription.getAddedCollection();
+		System.out.println("taskSubscription Size "+e.size()+" Current time "+new Date(currentTimeMillis()));
 		for (Enumeration et = dataModelMapSubscription.getChangedList(); et.hasMoreElements();) {
 			PredictorHashMap pHashmap = (PredictorHashMap)et.nextElement();
 			hashmap = pHashmap.getMap();
@@ -252,10 +255,15 @@ public class PredictorPlugin extends ComponentPlugin {
 	}
 
 	private void setDemandDataList(PredictorSupplyArrayList demandDataList) {
-		if(local_alist.isEmpty())	this.local_alist.addAll(demandDataList);
+		if(local_alist.isEmpty())	{
+			this.local_alist.addAll(demandDataList);
+			myBS.publishAdd(local_alist);
+		}
 		else {
 			//local_alist.clear();
 			local_alist.addAll(demandDataList);
+			myBS.publishChange(local_alist);
+
 		}
 	}
 
@@ -308,10 +316,13 @@ public class PredictorPlugin extends ComponentPlugin {
 		Task task;
 		long currentTime = currentTimeMillis()/86400000; //Time in terms of days
 		//System.out.println("PPlugincurrentTime "+currentTime);
+		//if(currentTime > 1) System.out.println("InsideActualInputDemand Time "+new Date(currentTimeMillis()));
 		if(status) {
 			Collection e = taskSubscription.getCollection();
 			for (Iterator iter = e.iterator(); iter.hasNext();) {
+			//for(Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
 				task = (Task)iter.next();
+			  //task = (Task)e.nextElement();
 				taskColl.add(task);
 				String customer = (String) task.getPrepositionalPhrase("For").getIndirectObject();
 				String supplyclass = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
