@@ -110,6 +110,7 @@ public class PSULogServerPlugin extends ComponentPlugin
 
         public void expire()
         {
+            System.out.println("PSULogServerPlugin:expire");
             expired = true;
             flushBuffer();
         }
@@ -230,10 +231,10 @@ public class PSULogServerPlugin extends ComponentPlugin
             System.out.println( "PSULogServerPlugin::Opened " + databaseName + " for writing." );
         }
 
-        //AlarmService as = getAlarmService() ;
-        //as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
-        flushThread = new FlushThread() ;
-        flushThread.start();
+        AlarmService as = getAlarmService() ;
+        as.addRealTimeAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
+        //flushThread = new FlushThread() ;
+        //flushThread.start();
     }
 
     protected String getDatabaseName()
