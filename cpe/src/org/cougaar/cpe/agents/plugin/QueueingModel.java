@@ -94,11 +94,14 @@ public class QueueingModel extends ComponentPlugin {
 				MeasurementPoint measurementPoint = (MeasurementPoint) measurementPoints.get(i);
 				if (measurementPoint instanceof TimePeriodMeasurementPoint) {
 					TimePeriodMeasurementPoint dmp = (TimePeriodMeasurementPoint) measurementPoint;
-					iter = dmp.getMeasurements(period);
+					System.out.println("Measurement points name " + dmp.getName());
+					iter = dmp.getMeasurements();
 					double total = 0;
 					double count = 0;
 					if ((iter != null) && (iter.hasNext())) {
-						Object o = ((TimePeriodMeasurement) iter.next()).getValue();
+						TimePeriodMeasurement t= (TimePeriodMeasurement) iter.next();
+						Object o = t.getValue();
+						System.out.println(o.toString());
 						if (o instanceof Double)
 							total += ((Double) (o)).doubleValue();
 						else if (o instanceof Integer)
