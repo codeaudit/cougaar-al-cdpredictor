@@ -184,6 +184,44 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
         }
     }
 
+    public static void dumpOMCMesurements( OMCMeasurementPoint mp, OutputStream stream ) {
+        PrintWriter pw = new PrintWriter( stream ) ;
+
+        Iterator iter = mp.getMeasurements() ;
+        while (iter.hasNext())
+        {
+            OMCMeasurement m = (OMCMeasurement) iter.next() ;
+            pw.print( m.getSimTime() );
+            if ( iter.hasNext() ) {
+                pw.print( ", " ) ;
+            }
+        }
+        pw.println();
+
+        iter = mp.getMeasurements() ;
+        while (iter.hasNext())
+        {
+            OMCMeasurement m = (OMCMeasurement) iter.next() ;
+            pw.print( m.getTime() );
+            if ( iter.hasNext() ) {
+                pw.print( ", " ) ;
+            }
+        }
+        pw.println();
+
+        iter = mp.getMeasurements() ;
+        while (iter.hasNext())
+        {
+            OMCMeasurement m = (OMCMeasurement) iter.next() ;
+            pw.print( m.getValue() );
+            if ( iter.hasNext() ) {
+                pw.print( ", " ) ;
+            }
+        }
+        pw.println();
+        pw.flush();
+    }
+
     public String getSaveMPOutDir()
     {
         return saveMPOutDir;
@@ -215,6 +253,9 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                         }
                         else if ( measurementPoint instanceof TimePeriodMeasurementPoint ) {
                             dumpTimePeriodMeasurements( ( TimePeriodMeasurementPoint ) measurementPoint, fos ) ;
+                        }
+                        else if ( measurementPoint instanceof OMCMeasurementPoint ) {
+                            dumpOMCMesurements( (OMCMeasurementPoint) measurementPoint, fos );
                         }
                         fos.flush();
                         fos.close();
