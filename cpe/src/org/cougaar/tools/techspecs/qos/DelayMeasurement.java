@@ -26,6 +26,17 @@ public class DelayMeasurement extends TimestampMeasurementImpl {
 //        }
     }
 
+    public DelayMeasurement(String eventName, String actionName, MessageAddress source, long timestamp, long localTime,
+                            long simulationTime ) {
+        super(eventName, actionName, source, timestamp);
+        this.localTime = localTime ;
+        this.simulationTime = simulationTime ;
+//        if ( localTime < timestamp ) {
+//            throw new IllegalArgumentException(
+//                    "Local time precedes timestamp. Negative delays are not allowed." ) ;
+//        }
+    }
+
     public void toString(StringBuffer buf) {
         super.toString(buf);
         buf.append( ",localTime=").append( localTime/1000 ).append( " secs." ) ;
@@ -33,6 +44,10 @@ public class DelayMeasurement extends TimestampMeasurementImpl {
 
     public long getDelay() {
         return localTime - timestamp ;
+    }
+
+    public long getSimulationTime() {
+        return simulationTime;
     }
 
     /**
@@ -44,4 +59,5 @@ public class DelayMeasurement extends TimestampMeasurementImpl {
     }
 
     long localTime ;
+    long simulationTime = -1 ;
 }

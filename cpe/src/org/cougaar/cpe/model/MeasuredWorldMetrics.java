@@ -127,7 +127,6 @@ public class MeasuredWorldMetrics extends WorldMetrics
 //                ",integrationPeriod=" +integrationPeriod+
 //                ",lastIntegrationTime=" + lastIntegrationTime);
         if ( ev.getNewTime() - lastIntegrationTime >= integrationPeriod ) {
-            lastIntegrationTime = ev.getNewTime() ;
             attrition.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Double( accumAttrition )));
             penalties.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Integer( accumPenalties )));
             kills.addMeasurement( new TimePeriodMeasurement( lastIntegrationTime, ev.getNewTime(), new Integer( accumKills ) ) );
@@ -162,6 +161,8 @@ public class MeasuredWorldMetrics extends WorldMetrics
             accumKills = 0 ;
             accumViolations = 0 ;
             accumEntries = 0 ;
+
+            lastIntegrationTime = ev.getNewTime() ;
         }
         lastTime = ev.getNewTime() ;
     }
