@@ -76,7 +76,7 @@ public class Threshold
 		
 		int ts = (int) (ll / 1000) + 1 + 1;
 
-		System.out.println("ll = " + ll + ", ts = " + ts);
+//		System.out.println("ll = " + ll + ", ts = " + ts);
 
 		// memory allocation 
 		maximal = new float[ts];
@@ -213,7 +213,7 @@ public class Threshold
 		
 		int ts = (int) (ll / 1000) + 1 + 1;
 
-		System.out.println("ll = " + ll + ", ts = " + ts);
+//		System.out.println("ll = " + ll + ", ts = " + ts);
 
 		// memory allocation 
 		normal = new float[ts];

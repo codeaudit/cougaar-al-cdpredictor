@@ -66,6 +66,7 @@ public class SensorPlugin extends ComponentPlugin
                     Thread.sleep( 2000 );
                 }
                 catch ( InterruptedException e ) {
+					e.printStackTrace() ; 
                 }
 
                 flushBuffer() ;
@@ -200,12 +201,12 @@ public class SensorPlugin extends ComponentPlugin
         props.put( "password", "" ) ;
 
         // Create event logs.
-        System.out.println("SensorPlugin:: Hostname=" + props.getProperty("dbpath") + ",username=" + props.getProperty("user") ) ;
+        log.shout("SensorPlugin:: Hostname=" + props.getProperty("dbpath") + ",username=" + props.getProperty("user") ) ;
         if (logToMemory)
         {
 		  // Hong : Begin
           // instantiate a falling behind sensor
-          System.out.println( "SensorPlugin instantiate sensor " + fbtype);
+          log.shout( "SensorPlugin instantiate sensor " + fbtype);
    		  sensor = new TheSensor(this, fbtype);	
 		  // Hong : End
         }
@@ -225,12 +226,12 @@ public class SensorPlugin extends ComponentPlugin
                 {
                     log.error("Could not open \"" + databaseName + "\" persistent database for writing.");
                 }
-                System.out.println("Could not open database for writing.");
-                System.out.println(e);
+                log.shout("Could not open database for writing.");
+//                log.shout(e);
                 e.printStackTrace();
             }
             log.info( "Opened " + databaseName + " for writing." );
-            System.out.println( "SensorPlugin::Opened " + databaseName + " for writing." );
+            log.shout( "SensorPlugin::Opened " + databaseName + " for writing." );
         }
 
         //AlarmService as = getAlarmService() ;

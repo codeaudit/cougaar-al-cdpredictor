@@ -94,7 +94,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 	BlackboardService bs;
     BlackboardTimestampService bts; 
     UIDService uidservice;
-
+    private LoggingService myLoggingService;
     String cluster;  // the current agent's name
 
 	LoadIndicator loadIndicator = null;
@@ -107,7 +107,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 	InternalState internalState = null;
 
     public void setupSubscriptions()   {
-
+		myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null);
 		bts = ( BlackboardTimestampService ) getServiceBroker().getService( this, BlackboardTimestampService.class, null ) ;
         bs = getBlackboardService();
 		cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
@@ -135,7 +135,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 				internalState.over = true;
 			}
 			bs.publishAdd(internalState);
-			if(!internalState.over) { System.out.println("PSUFBSensor2Plugin start at " + cluster); }
+//			if(!internalState.over) { System.out.println("PSUFBSensor2Plugin start at " + cluster); }
 		}
 
 		bs.setShouldBePersisted(false);
@@ -177,7 +177,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 		Long From; 
 		int FbLevel = 0;
 		float LLThreshold = 0, ULThreshold = 0;
-		int lt = 0; 
+//		int lt = 0; 
 		int st = 0;
 
 		try
@@ -255,7 +255,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 		} 
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't read the input file, io error" );
+		    myLoggingService.shout("can't read the input file, io error" );
 	    }
 	}
 
@@ -281,7 +281,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 						if (starttime == -1) { return; }
 
 						internalState.StartTime = starttime;
-						System.out.println("\n" + cluster + "'s first task : time = " + internalState.StartTime + " with verb = " + v +", " + pdu.getUID().toString());
+						myLoggingService.shout("\n" + cluster + "'s first task : time = " + internalState.StartTime + " with verb = " + v +", " + pdu.getUID().toString());
 						bs.publishChange(internalState);
 
 					    CommunityService communityService = (CommunityService) getBindingSite().getServiceBroker().getService(this, CommunityService.class, null);
@@ -300,12 +300,12 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 								StartIndicator tindicator = new StartIndicator(cluster, uidservice.nextUID(), starttime, 10);
 								tindicator.addTarget(new AttributeBasedAddress().getAttributeBasedAddress(community, "Role", "AdaptiveLogisticsManager"));
 								bs.publishAdd(tindicator);
-								System.out.println(getAgentIdentifier().toString() + ": adding StartIndicator to be sent to " + tindicator.getTargets());
+								myLoggingService.shout(getAgentIdentifier().toString() + ": adding StartIndicator to be sent to " + tindicator.getTargets());
 							}
 
 							if(!internalState.over) { sendLoadIndicator(0, LoadIndicator.NORMAL_LOAD); }
 						} else {
-							System.out.println(getAgentIdentifier().toString() + " Destination address is null");
+							myLoggingService.shout(getAgentIdentifier().toString() + " Destination address is null");
 						}
 					}
 				}
@@ -316,7 +316,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 
 					Task tpdu = ( Task ) p ;
 
-					String s = tpdu.getVerb().toString();
+//					String s = tpdu.getVerb().toString();
 
 					if (internalState.StartTime > 0 )
 					{
@@ -364,7 +364,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 				// debug
 				internalState.show();
 				internalState.rehydrate = true;
-				if(!internalState.over) { System.out.println("PSUFBSensor2Plugin start at " + cluster); }
+				if(!internalState.over) { myLoggingService.shout("PSUFBSensor2Plugin start at " + cluster); }
 				break;
 			}
 		} 
@@ -402,7 +402,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 
 			if (t >= internalState.nextcheckpoint)
 			{
-				System.out.println(cluster + " at time " + t + ", # of tasks = " + internalState.NoTasks);
+				myLoggingService.shout(cluster + " at time " + t + ", # of tasks = " + internalState.NoTasks);
 				internalState.nextcheckpoint = t - t%1000;
 				checkfallingbehindness2(internalState.nextcheckpoint, internalState.NoTasks);	// Type 2
 				internalState.nextcheckpoint = internalState.nextcheckpoint + 1000;
@@ -411,14 +411,14 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 
 		public void checkfallingbehindness2(long curr_time, int num_task) { // for the number of tasks
 
-			boolean FbSV = false;
+//			boolean FbSV = false;
 			int newlydetectedstate = internalState.currentstate;
 
-			if (FbSV == true) // check whether SV check falling behindness.
-			{
+//			if (FbSV == true) // check whether SV check falling behindness.
+//			{
 
 			
-			} else {
+//			} else {
 
 				// Consult Lookup table
 				Vector thresholdlist = (Vector) lookuptable.get(new Long(curr_time));
@@ -436,11 +436,11 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 					if (newlydetectedstate != internalState.currentstate)
 					{
 						internalState.currentstate = newlydetectedstate;
-						System.out.println(cluster+","+num_task+","+curr_time+", Falling behind: level "+ fbresult[internalState.currentstate]);
+						myLoggingService.shout(cluster+","+num_task+","+curr_time+", Falling behind: level "+ fbresult[internalState.currentstate]);
 						sendLoadIndicator(1, fbresult[internalState.currentstate]);
 					}
 				}
-			}
+//			}
 		}
 
 		public void getAverageWaitingTime(org.cougaar.core.util.UID uid, long time1) {
@@ -518,11 +518,11 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 
 			if (c[1] > 0 && internalState.currentstate < 2)  // Severe falling behind
 			{
-				System.out.println(cluster+","+chktime+","+awt+", S, by waiting time");
+				myLoggingService.shout(cluster+","+chktime+","+awt+", S, by waiting time");
 				internalState.currentstate = 2;
 				sendLoadIndicator(1, fbresult[internalState.currentstate]);
 			} else 	if (c[0] > 0  && c[1] < 0 && internalState.currentstate < 1) {  // Mild falling behind
-				System.out.println(cluster+","+chktime+","+awt+", M, by waiting time");
+				myLoggingService.shout(cluster+","+chktime+","+awt+", M, by waiting time");
 				internalState.currentstate = 1;
 				sendLoadIndicator(1, fbresult[internalState.currentstate]);
 			} 
@@ -536,7 +536,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 				loadIndicator = new LoadIndicator(this.getClass(), cluster, uidservice.nextUID(), loadlevel);
 				if (loadIndicator == null)
 				{
-					System.out.println("loadindicator is null");
+					myLoggingService.shout("loadindicator is null");
 				}
 				for (Iterator iterator = internalState.alCommunities.iterator(); iterator.hasNext();) {
 					String community = (String) iterator.next();
@@ -544,11 +544,11 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 //					loadIndicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
 					if (aba == null)
 					{
-						System.out.println("aba is null");
+						myLoggingService.shout("aba is null");
 					}
 					loadIndicator.addTarget(aba);
 					bs.publishAdd(loadIndicator);
-					System.out.println(cluster + ": add loadIndicator to be sent to " + loadIndicator.getTargets());
+					myLoggingService.shout(cluster + ": add loadIndicator to be sent to " + loadIndicator.getTargets());
 				}
 
 
@@ -556,7 +556,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 			
 		        loadIndicator.setLoadStatus(loadlevel);
 				bs.publishChange(loadIndicator);
-				System.out.println(cluster + ": change loadIndicator to be sent to " + loadIndicator.getTargets());
+				myLoggingService.shout(cluster + ": change loadIndicator to be sent to " + loadIndicator.getTargets());
 			}	
 
 

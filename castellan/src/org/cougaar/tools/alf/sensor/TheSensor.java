@@ -82,7 +82,7 @@ public class TheSensor implements java.io.Serializable {
 	  } 
 	  catch (java.io.IOException ioexc)
 	  {
-//		 System.err.println ("can't write file, io error" );
+		 ioexc.printStackTrace() ; //System.err.println ("can't write file, io error" );
 	  }
 
 	  // Table for checking number of tasks by agents
@@ -206,7 +206,7 @@ public class TheSensor implements java.io.Serializable {
 		} 
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't read the input file, io error" );
+		    ioexc.printStackTrace() ;  // System.err.println ("can't read the input file, io error" );
 	    }
 	}
 
@@ -228,7 +228,7 @@ public class TheSensor implements java.io.Serializable {
 
 					java.io.BufferedReader param_File = new java.io.BufferedReader ( new java.io.FileReader(paramFile));					
 
-					read_input(param_File, "47-FSB");
+					read_input(param_File);
 
 					param_File.close();
 
@@ -238,7 +238,7 @@ public class TheSensor implements java.io.Serializable {
                     
 					java.io.BufferedReader input_file = new java.io.BufferedReader ( new java.io.FileReader(inputFile));					
 
-					read_input(input_file, "47-FSB");
+					read_input(input_file);
 
 					input_file.close();
                 }
@@ -318,7 +318,7 @@ public class TheSensor implements java.io.Serializable {
 	}
 */
 	// read SV from files.
-	private void read_input(java.io.BufferedReader input_stream, String agent){ 
+	private void read_input(java.io.BufferedReader input_stream){ 
 
 		String s = null;
 //		int is_linear=1; // linear kernel?
@@ -388,7 +388,7 @@ public class TheSensor implements java.io.Serializable {
 		} 
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't read the input file, io error" );
+		    ioexc.printStackTrace() ; // System.err.println ("can't read the input file, io error" );
 	    }
 
 
@@ -513,13 +513,13 @@ public class TheSensor implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't write file, io error" + s);
+		    ioexc.printStackTrace() ; // System.err.println ("can't write file, io error" + s);
 	    }
-		
-		if (flag)
-		{
+		flag = true;		
+//		if (flag)
+//		{
 //			System.out.println(s);
-		}
+//		}
 	}
 
 
@@ -602,7 +602,7 @@ public class TheSensor implements java.io.Serializable {
 
 		public void checkfallingbehindness2(long curr_time, int num_task) { // for the number of tasks
 
-			boolean FbSV = false;
+//			boolean FbSV = false;
 			int newlydetectedstate = currentstate;
 
 //			if (FbSV == true) // check whether SV check falling behindness.

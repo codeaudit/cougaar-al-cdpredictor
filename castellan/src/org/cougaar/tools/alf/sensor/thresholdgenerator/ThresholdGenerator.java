@@ -30,7 +30,7 @@ class ThresholdGenerator
 	for (int i=0;i<ntest;i++)
 	{
 		timeseires.useDataBase(test[i][0]);
-		System.out.println(test[i][0]);
+//		System.out.println(test[i][0]);
 
 		if (mode == 1)	{
 			series[i] = timeseires.generateTSofWaitingTime(agentname, classno, unittime);
@@ -47,10 +47,10 @@ class ThresholdGenerator
 
 //	float [] mseries = null;
 
-    if (series[0] == null)
-    {
+//    if (series[0] == null)
+//    {
 //		System.out.println("series is null");
-    }
+//    }
 
 
 	//Plain file

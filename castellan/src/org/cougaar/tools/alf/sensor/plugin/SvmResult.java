@@ -83,7 +83,7 @@ public class SvmResult implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't read model file, io error" );
+		    ioexc.printStackTrace() ; // System.err.println ("can't read model file, io error" );
 	    }
 	}
 
@@ -116,7 +116,7 @@ public class SvmResult implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't read param file, io error" );
+		    ioexc.printStackTrace() ; // System.err.println ("can't read param file, io error" );
 	    }
 	}
 
@@ -156,7 +156,7 @@ public class SvmResult implements java.io.Serializable {
 //				System.out.print("\n");
 
 				yyy = f(xx);				
-				System.out.println("yyy="+yyy);
+//				System.out.println("yyy="+yyy);
 
 				double diff = (yyy-yy);
 				ResultData.write(yyy+","+yy+","+diff+"\n");
@@ -172,7 +172,7 @@ public class SvmResult implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't read test file, io error" );
+		    ioexc.printStackTrace() ; // System.err.println ("can't read test file, io error" );
 	    }
 	}
 
@@ -238,6 +238,6 @@ public class SvmResult implements java.io.Serializable {
 		demand[1] =	4.14	            ;	
 		demand[2] =	4.14	            ;	
 
-		System.out.println(svmresult.f(demand));
+//		System.out.println(svmresult.f(demand));
 	}
 }

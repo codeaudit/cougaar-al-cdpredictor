@@ -86,9 +86,9 @@ public class DemandPerAgent implements java.io.Serializable
 			return; 
 		}
 
-		if (!demandHistoryOfCertainType.removeDemandData(task))	{
+//		if (!demandHistoryOfCertainType.removeDemandData(task))	{
 //			myLoggingService.shout ("[HONG]DemandPerAgent : you tried to remove a task of "+ofType +" in "+agentName );
-		}
+//		}
 	}
 
 	public double averagePast(int timeWindow, int targetDate, String nomenclature, String type) {

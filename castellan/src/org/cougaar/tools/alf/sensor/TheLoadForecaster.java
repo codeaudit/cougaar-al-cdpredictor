@@ -237,8 +237,8 @@ public class TheLoadForecaster {
 			ForecastResult = new java.io.BufferedWriter ( new java.io.FileWriter("forecating.txt", true ));
 	  } 
 	  catch (java.io.IOException ioexc)
-	  {
-//		    System.err.println ("can't write file, io error" );
+	  {   
+		  ioexc.printStackTrace() ; //  System.err.println ("can't write file, io error" );
 	  }
 
     }
@@ -301,12 +301,12 @@ public class TheLoadForecaster {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't write file, io error" + s);
+		    ioexc.printStackTrace() ; //  System.err.println ("can't write file, io error" + s);
 	    }
-		
-		if (flag)
-		{
+		flag = true;
+//		if (flag)
+//		{
 //			System.out.println(s);
-		}
+//		}
 	}
 }

@@ -63,7 +63,7 @@ public class InternalState implements java.io.Serializable, UniqueObject //, XML
 	}   
 
 	public void show() {
-		System.out.println("nextcheckpoint = " + nextcheckpoint + ", CurrentTime = " + CurrentTime + ", StartTime = " + StartTime + ", currentstate = " +currentstate);
+//		System.out.println("nextcheckpoint = " + nextcheckpoint + ", CurrentTime = " + CurrentTime + ", StartTime = " + StartTime + ", currentstate = " +currentstate);
 	}
 
 	public UID getUID() {

@@ -45,7 +45,7 @@ public class SummarizeResults {
 							+ "addedRarConfidence,addedEarsuccess,addedEarConfidence,changedRarsuccess,changedRarConfidence,changedEarsuccess,changedEarConfidence\n");
 
 			String s = null;
-			int k=0;
+//			int k=0;
 			Vector v = null;
 
 			while ((s=DataReader.readLine())!=null)
@@ -89,7 +89,7 @@ public class SummarizeResults {
 						}
 								
 						Iterator vi = v.iterator();
-						for (;vi.hasNext();)
+						while (vi.hasNext())
 						{
 							String sv = (String) vi.next();
 
@@ -158,8 +158,8 @@ public class SummarizeResults {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't read or write file, io error" );
-			System.err.println ("DatafileMaker constructor");
+		    ioexc.printStackTrace() ; // System.err.println ("can't read or write file, io error" );
+//			System.err.println ("DatafileMaker constructor");
 	    }
   }
 

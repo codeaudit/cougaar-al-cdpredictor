@@ -83,7 +83,7 @@ public class RbfRidgeRegression implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't read or write file, io error" );
+		    ioexc.printStackTrace() ; // System.err.println ("can't read or write file, io error" );
 //			System.err.println ("RbfRidgeRegression constructor");
 	    }
 		
@@ -109,7 +109,7 @@ public class RbfRidgeRegression implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't read or write file, io error" );
+		    ioexc.printStackTrace() ; // System.err.println ("can't read or write file, io error" );
 //			System.err.println ("RbfRidgeRegression constructor");
 	    }
 	}
@@ -162,7 +162,7 @@ public class RbfRidgeRegression implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't read or write file, io error" );
+		    ioexc.printStackTrace() ; // System.err.println ("can't read or write file, io error" );
 //			System.err.println ("RbfRidgeRegression constructor");
 	    }
 	}
@@ -215,7 +215,7 @@ public class RbfRidgeRegression implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't read or write file, io error" );
+		    ioexc.printStackTrace() ; // System.err.println ("can't read or write file, io error" );
 //			System.err.println ("RbfRidgeRegression constructor");
 	    }
 	}
@@ -259,7 +259,7 @@ public class RbfRidgeRegression implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't read or write file, io error" );
+		    ioexc.printStackTrace() ; // System.err.println ("can't read or write file, io error" );
 //			System.err.println ("RbfRidgeRegression constructor");
 	    }
 	}
@@ -332,7 +332,7 @@ public class RbfRidgeRegression implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-//		    System.err.println ("can't read or write file, io error" );
+		    ioexc.printStackTrace() ; // System.err.println ("can't read or write file, io error" );
 //			System.err.println ("RbfRidgeRegression constructor");
 	    }
 	}
@@ -363,7 +363,7 @@ public class RbfRidgeRegression implements java.io.Serializable {
 			// Find H function
 			H = calcDesignMatrix(X,m,r);
 
-			System.out.println("weight");	
+//			System.out.println("weight");	
 			// Calculate Weight Matrix
 			w = calcWeight(H,lamda,y);
 
@@ -659,6 +659,7 @@ public class RbfRidgeRegression implements java.io.Serializable {
 		int r = X.length;
 		int c = m.length;
 
+		d = null; // temporarily. if we want to use d, this line should be deleted.
 //		Matrix.showMatrix("X",X);
 
 		double [][] H = new double[r][c];
@@ -753,9 +754,9 @@ public class RbfRidgeRegression implements java.io.Serializable {
 	}
 
 */
-	private double hermite(double x) {
-		return 1 + (1-x+2*Math.pow(x,2))*Math.exp(-1*Math.pow(x,2));
-	}
+//	private double hermite(double x) {
+//		return 1 + (1-x+2*Math.pow(x,2))*Math.exp(-1*Math.pow(x,2));
+//	}
 
 
 	private boolean changemandw() {

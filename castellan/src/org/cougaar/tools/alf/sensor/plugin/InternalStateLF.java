@@ -57,7 +57,7 @@ public class InternalStateLF implements java.io.Serializable, UniqueObject //, X
 
 	public void show() {
 
-		System.out.println("PlanStartTime = " + PlanStartTime + ", globalsea_time = " + globalsea_time + ", globalair_time = " + globalair_time + ", onead_time = " +onead_time);
+//		System.out.println("PlanStartTime = " + PlanStartTime + ", globalsea_time = " + globalsea_time + ", globalair_time = " + globalair_time + ", onead_time = " +onead_time);
 
 	}
 

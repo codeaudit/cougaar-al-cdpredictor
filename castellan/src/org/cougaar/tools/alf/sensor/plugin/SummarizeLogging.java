@@ -49,8 +49,8 @@ public class SummarizeLogging {
 			Summarized.write("Agent\tPlugin\tType\tStart Time\tEnd Time\tLapse Time\n");
 
 			String s = null;
-			int k=0;
-			Vector v = null;
+//			int k=0;
+//			Vector v = null;
 
 			while ((s=DataReader.readLine())!=null)
 			{
@@ -107,7 +107,7 @@ public class SummarizeLogging {
 					{
 		    
 						StringTokenizer st = new StringTokenizer(s,";");
-						String Head			= st.nextToken();
+						st.nextToken(); //String Head			= st.nextToken();
 						String Agent		= st.nextToken();
 						String Plugin		= st.nextToken();
 						String Type			= st.nextToken();
@@ -137,8 +137,8 @@ public class SummarizeLogging {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't read or write file, io error" );
-			System.err.println ("DatafileMaker constructor");
+		    ioexc.printStackTrace() ; // System.err.println ("can't read or write file, io error" );
+//			System.err.println ("DatafileMaker constructor");
 	    }
   }
 

@@ -47,9 +47,9 @@ public class MatlabInterface
 						matmatrix[i].set(j,0,series[i][0][j]);  // time
 						matmatrix[i].set(j,1,series[i][1][j]);  // num of tasks
 					}
-				} else {
+				} //else {
 //					System.out.println("series " + i + " is null");
-				}
+//				}
 			}
 
 			int s = threshold.length;
@@ -67,9 +67,9 @@ public class MatlabInterface
 
 					}
 
-				} else {
-					System.out.println("series " + i + " is null");
-				}
+				} //else {
+				//	System.out.println("series " + i + " is null");
+				//}
 			}
 			
 			String plot = "plot(";
@@ -140,9 +140,9 @@ public class MatlabInterface
 						matmatrix[i].set(j,0,series[i][0][j]);  // time
 						matmatrix[i].set(j,1,series[i][1][j]);  // num of tasks
 					}
-				} else {
+				} //else {
 //					System.out.println("series " + i + " is null");
-				}
+			//	}
 			}
 
 			String plot = "plot(";
@@ -190,7 +190,7 @@ public class MatlabInterface
 //			System.out.println(plot);
 			eng.evalString( "title('"+agentname + ", class="+classno+"')");
 		}
-
+/*
 		public void pause() {
 
 			BufferedReader br = new BufferedReader(new java.io.InputStreamReader(System.in)); 
@@ -203,5 +203,6 @@ public class MatlabInterface
 		         System.exit(1); 
 		    } 
 		}
+*/
 	};
 

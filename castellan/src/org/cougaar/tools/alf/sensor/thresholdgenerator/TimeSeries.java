@@ -49,7 +49,7 @@ public class TimeSeries {
 //		System.out.println("Use database");
 		 try {
            PdStatement.executeQuery("USE " + DatabaseName);
-        } catch (SQLException E) {
+        } catch (SQLException E) { E.printStackTrace() ;
 //        	System.out.println("SQLException: " + E.getMessage());
 //          System.out.println("SQLState:     " + E.getSQLState());
 //          System.out.println("VendorError:  " + E.getErrorCode());
@@ -64,7 +64,7 @@ public class TimeSeries {
 
 //			System.out.println("start_time = " + start_time);
 
-        } catch (SQLException E) {
+        } catch (SQLException E) {	E.printStackTrace() ;
 //        	System.out.println("SQLException: " + E.getMessage());
 //          System.out.println("SQLState:     " + E.getSQLState());
 //          System.out.println("VendorError:  " + E.getErrorCode());
@@ -202,7 +202,7 @@ public class TimeSeries {
 			
 			PdStatement.executeUpdate("DROP TABLE " + table2);
 
-		} catch (SQLException E) {
+		} catch (SQLException E) { E.printStackTrace() ;
 //        System.out.println("SQLException: " + E.getMessage());
 //        System.out.println("SQLState:     " + E.getSQLState());
 //        System.out.println("VendorError:  " + E.getErrorCode());
@@ -367,7 +367,7 @@ public class TimeSeries {
 			
 			PdStatement.executeUpdate("DROP TABLE " + table2);
 
-		} catch (SQLException E) {
+		} catch (SQLException E) {  E.printStackTrace() ;
 //          System.out.println("SQLException: " + E.getMessage());
 //          System.out.println("SQLState:     " + E.getSQLState());
 //          System.out.println("VendorError:  " + E.getErrorCode());
@@ -391,9 +391,9 @@ public class TimeSeries {
 						PdStatement.executeQuery("drop table " + tablename);
 					} 
 				}
-		} catch (SQLException E) {
+		} catch (SQLException E) { E.printStackTrace() ;
 //		  System.out.println("checkAndDelete");
-          System.out.println("SQLException: " + E.getMessage());
+//          System.out.println("SQLException: " + E.getMessage());
 //          System.out.println("SQLState:     " + E.getSQLState());
 //          System.out.println("VendorError:  " + E.getErrorCode());
         }
@@ -512,9 +512,9 @@ public class TimeSeries {
 					tt.finishtime = tt2.eventtime;
 //					s = "update tasklist set finishtime = " + rs1.getLong(1) + " where taskuid = " + uid + " and tasksid = '" + sid +"'";
 //					PdStatement3.executeUpdate(s);
-			 	 }else {
+			 	 }//else {
 //				 	System.out.println(k+ " does not exist !!!");
-				 }		 
+//				 }		 
 			}
 
 
@@ -528,9 +528,9 @@ public class TimeSeries {
 			if (rs1.next())
 			{
 				me = rs1.getInt(1);
-			}else {
+			}//else {
 //				System.out.println("Hey Hari something wrong !!!");
-			}
+//			}
 
 			sz = (int) me/unittime + 1;
 			
@@ -573,8 +573,8 @@ public class TimeSeries {
 //				System.out.print(".");
 			} while(ct < me);
 			
-		} catch (SQLException E) {
-			System.out.println("SQLException: " + E.getMessage());
+		} catch (SQLException E) {	E.printStackTrace() ;
+//			System.out.println("SQLException: " + E.getMessage());
 //          System.out.println("SQLState:     " + E.getSQLState());
 //          System.out.println("VendorError:  " + E.getErrorCode());
         }
@@ -879,9 +879,9 @@ public class TimeSeries {
 					tt.finishtime = tt2.eventtime;
 //					s = "update tasklist set finishtime = " + rs1.getLong(1) + " where taskuid = " + uid + " and tasksid = '" + sid +"'";
 //					PdStatement3.executeUpdate(s);
-			 	 }else {
+			 	 } // else {
 //				 	System.out.println(k+ " does not exist !!!");
-				 }		 
+//				 }		 
 			}
 
 //			System.out.println("F");
@@ -895,9 +895,9 @@ public class TimeSeries {
 			if (rs1.next())
 			{
 				me = rs1.getInt(1);
-			}else {
+			} //else {
 //				System.out.println("Hey Hari something wrong !!!");
-			}
+//			}
 
 			sz = (int) me/unittime + 1;
 			
@@ -937,8 +937,8 @@ public class TimeSeries {
 				c++;
 			} while(ct < me);
 			
-		} catch (SQLException E) {
-            System.out.println("SQLException: " + E.getMessage());
+		} catch (SQLException E) { E.printStackTrace() ;
+//            System.out.println("SQLException: " + E.getMessage());
 //          System.out.println("SQLState:     " + E.getSQLState());
 //          System.out.println("VendorError:  " + E.getErrorCode());
         }
@@ -1253,8 +1253,8 @@ public class TimeSeries {
     try {
       Class.forName("org.gjt.mm.mysql.Driver");
 
-    } catch(java.lang.ClassNotFoundException e) {
-       System.err.print("(EstablishConnetction) ClassNotFoundException:");
+    } catch(java.lang.ClassNotFoundException e) { e.printStackTrace() ;
+//       System.err.print("(EstablishConnetction) ClassNotFoundException:");
 //      System.err.println(e.getMessage());
     }
 
@@ -1276,9 +1276,9 @@ public class TimeSeries {
       PdStatement3 = con.createStatement();
      
     } catch(SQLException ex) {
-
+		ex.printStackTrace() ;
 //      System.err.println("(EstablishConnetction) -----SQLException-----");
-        System.err.println("SQLState:  " + ex.getSQLState());
+//        System.err.println("SQLState:  " + ex.getSQLState());
 //      System.err.println("Message:  " + ex.getMessage());
 //      System.err.println("Vendor:  " + ex.getErrorCode());
     } 
