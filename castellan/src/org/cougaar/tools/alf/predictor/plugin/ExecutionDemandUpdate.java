@@ -114,7 +114,7 @@ public class ExecutionDemandUpdate {
 												+itemName+" "+new Date(values1.getCommitmentTime())+" "+new Date(values1.getEndTime())+" "+values1.getQuantity()+" "+new Date(values1.getPublishTime()));
 							}
 						}
-						computePerDayDemand(valueList);
+						//computePerDayDemand(valueList);
 						if(itemName.equalsIgnoreCase("JP8")) {
 							for (Iterator iterator1 = valueList.iterator(); iterator1.hasNext();) {
 								Values values1 = (Values) iterator1.next();
@@ -129,7 +129,7 @@ public class ExecutionDemandUpdate {
 					//printList(itemName, valueList);
 				}
 			}
-			retainAllItems();
+			//retainAllItems();
 		}
 		psal.add(CRMap);
 		return psal;

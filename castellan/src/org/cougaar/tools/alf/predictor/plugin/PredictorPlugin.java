@@ -100,6 +100,10 @@ public class PredictorPlugin extends ComponentPlugin {
 				if (tempTask.getVerb().equals(Constants.Verb.SUPPLY)) {
 					if (!tempTask.getPrepositionalPhrase("For").getIndirectObject().equals(cluster)) {
 						if (!TaskUtils.isMyRefillTask(tempTask, cluster)) {
+							if(tempTask.getDirectObject().getTypeIdentificationPG().getTypeIdentification().equalsIgnoreCase("DODIC/C625")){
+								System.out.println("DODIC/C625FoundInPartOneAfterRefillTaskCheck"+" UID "+tempTask.getUID()+" ParentTaskUID "
+								+tempTask.getParentTaskUID());
+						}
 							return true;
 						}
 					}
@@ -138,7 +142,7 @@ public class PredictorPlugin extends ComponentPlugin {
 		as = (AlarmService) getBindingSite().getServiceBroker().getService(this, AlarmService.class, null);
 		commstatusSubscription = (IncrementalSubscription) myBS.subscribe(commstatusPredicate);
 		taskSubscription = (IncrementalSubscription) myBS.subscribe(taskPredicate);
-		if (!taskSubscription.isEmpty()) taskSubscription.clear();
+		//if (!taskSubscription.isEmpty()) taskSubscription.clear();
 		if (selectedPredictor == KalmanFilter) {
 			salSubscription = (IncrementalSubscription) myBS.subscribe(supplyArrayListPredicate);
 			dataModelMapSubscription = (IncrementalSubscription) myBS.subscribe(dataModelMapPredicate);
@@ -303,24 +307,29 @@ public class PredictorPlugin extends ComponentPlugin {
 	public void actualInputDemand() {
 		Task task;
 		long currentTime = currentTimeMillis()/86400000; //Time in terms of days
-		System.out.println("PPlugincurrentTime "+currentTime);
+		//System.out.println("PPlugincurrentTime "+currentTime);
 		if(status) {
-			for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
-				task = (Task)e.nextElement();
+			Collection e = taskSubscription.getCollection();
+			for (Iterator iter = e.iterator(); iter.hasNext();) {
+				task = (Task)iter.next();
 				taskColl.add(task);
 				String customer = (String) task.getPrepositionalPhrase("For").getIndirectObject();
 				String supplyclass = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
 				Asset as = task.getDirectObject();
+				//System.out.println("LISTTASKS Customer "+customer+" supplyClass "+supplyclass+" item "+as.getTypeIdentificationPG().getTypeIdentification());
 				//String item_name = as.getTypeIdentificationPG().getNomenclature();
-				String item_name = as.getTypeIdentificationPG().getTypeIdentification();
+
+				if(as!= null) {
+					String item_name = as.getTypeIdentificationPG().getTypeIdentification();
+					System.out.println("PPlugin asset: UID"+" "+task.getUID()+" "+customer+" "
+					+supplyclass+" "+item_name+" ParentTaskUID "+task.getParentTaskUID()+" time "+
+					(long) (task.getPreferredValue(AspectType.END_TIME)) +" quantity "+
+					task.getPreferredValue(AspectType.QUANTITY)+ " verb "+task.getVerb());
+
+				//else System.out.println("PPlugin asset null:  TaskUID"+task.getUID()+" "+customer+" "+supplyclass
+					//			+" "+item_name+" ParentTaskUID "+task.getParentTaskUID());
 				addAsset(as);
 				if(task.getUID().getOwner().equalsIgnoreCase("Prediction")) System.out.println("Is a Prediction Task: "+task.getUID());
-				if(as!= null) {
-					System.out.println("PPlugin asset: UID"+" "+task.getUID()+" "+customer+" "
-									+supplyclass+" "+item_name+" ParentTaskUID "+task.getParentTaskUID());
-				}
-				else System.out.println("PPlugin asset null:  TaskUID"+task.getUID()+" "+customer+" "+supplyclass
-								+" "+item_name+" ParentTaskUID "+task.getParentTaskUID());
 				//ArrayList assetList = getAssetList();
 				//if (assetList.size()== 1) myBS.publishAdd(assetList); else myBS.publishChange(assetList);
 
@@ -349,6 +358,7 @@ public class PredictorPlugin extends ComponentPlugin {
 						}
 					}
 				}
+			}
 			}
 		} else return;
 	}
@@ -532,10 +542,10 @@ public class PredictorPlugin extends ComponentPlugin {
 							double execQuantity = -1;
 							for(Iterator it = local_alist.iterator();it.hasNext();) {
 								HashMap executionDataList = (HashMap)it.next();
-								for (Iterator it1 = executionDataList.keySet().iterator(); it1.hasNext();) {
-									CustomerRoleKey crk = (CustomerRoleKey) it1.next();
+								//for (Iterator it1 = executionDataList.keySet().iterator(); it1.hasNext();) {
+								//	CustomerRoleKey crk = (CustomerRoleKey) it1.next();
 								//HashMap executionDataList = (HashMap)local_alist.get(0);
-									HashMap itemMap = (HashMap)executionDataList.get(crk);
+									HashMap itemMap = (HashMap)executionDataList.get(customerRoleKey);
 									if(itemMap!= null) {
 										ArrayList valueList1 = (ArrayList)itemMap.get(item_name);
 										//System.out.println("itemMAPexistsForItem "+item_name);
@@ -551,7 +561,7 @@ public class PredictorPlugin extends ComponentPlugin {
 											if(item_name.equalsIgnoreCase("JP8")) System.out.println("QuantitySetJP8 "+quantity);
 										}
 									}
-								}
+								//}
 							}
 							if (time_gap == -1 || time_gap <= ((int) pred_gap/86400000)) {
 								if ((int) pred_gap / 86400000 >= 1) {
