@@ -198,7 +198,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
                 superior = organization ;
             }
             else if ( !superior.getMessageAddress().getAddress().equals( organization.getMessageAddress().getAddress() )) {
-                System.err.println("WARNING: More than one superior " +
+                log.warn( "More than one superior " +
                         superior + " and " + organization + " found for " + getAgentIdentifier() );
             }
         }
@@ -209,7 +209,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         while (iter.hasNext()) {
             TargetBufferRelay relay = (TargetBufferRelay) iter.next();
             if ( relayFromSuperior == null ) {
-                System.out.println( getAgentIdentifier() + " found relay from " + relay.getSource() );
+                log.shout( getAgentIdentifier() + " found relay from superior organization " + relay.getSource() );
                 relayFromSuperior = relay ;
             }
         }
