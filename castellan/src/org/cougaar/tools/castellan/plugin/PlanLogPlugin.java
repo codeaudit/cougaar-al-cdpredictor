@@ -316,6 +316,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
         if ( config.getLogCluster() == null ) {
             System.out.println( "Warning:: No configuration information found for agent " + getBindingSite().getAgentIdentifier() ) ;
+            log.info( "Warning:: No configuration information found for agent " + getBindingSite().getAgentIdentifier() );
         }
         else {
             if ( config.getLogCluster().equals( getBindingSite().getAgentIdentifier().cleanToString() ) ) {
@@ -836,10 +837,10 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         {
             Object o = e.nextElement();
             if ( o instanceof Task ) {
-                Task temp = ( Task ) o ;
-                // Just count these UIDs up.
-                debugTaskUIDMap.put( temp.getUID(), temp.getUID() ) ;
-                stats.setNumTasksSeenDebug( debugTaskUIDMap.size() );
+                //Task temp = ( Task ) o ;
+                // Just count these UIDs up since we should only ever see one add.
+                //debugTaskUIDMap.put( temp.getUID(), temp.getUID() ) ;
+                stats.setNumTasksSeenDebug( stats.getNumTasksSeenDebug() + 1 );
             }
             processObject( ( UniqueObject ) o, EventPDU.ACTION_ADD );
         }
