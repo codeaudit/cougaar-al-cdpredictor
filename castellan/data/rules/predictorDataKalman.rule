@@ -2,7 +2,8 @@
 # Rule to insert Predictor Data plugin
 
 predictorDataKalman = "org.cougaar.tools.alf.sensor.plugin.PredictorDataPlugin"
-agentList = ["47-FSB", "123-MSB", "1-35-ARBN", "1-6-INFBN", "102-POL-SUPPLYCO", "106-TCBN", "110-POL-SUPPLYCO", "28-TCBN", "6-TCBN", "HNS"]
+#agentList = ["47-FSB", "123-MSB", "1-35-ARBN", "1-6-INFBN", "102-POL-SUPPLYCO", "106-TCBN", "110-POL-SUPPLYCO", "28-TCBN", "6-TCBN", "HNS"]
+agentList = ["123-MSB"]
 
   society.each_agent do |agent|
     if (agentList.include?(agent.name))

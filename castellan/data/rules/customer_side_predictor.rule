@@ -2,12 +2,14 @@
 # Rule to insert Customer Side Predictor plugin
 
 predictor = "org.cougaar.tools.alf.sensor.plugin.ARPredictorPlugin"
-agentList = ["47-FSB", "123-MSB", "1-35-ARBN", "1-6-INFBN"]
+arg="false"
+agentList = ["47-FSB"]
 
 society.each_agent do |agent|
 	if (agentList.include?(agent.name))
 		agent.add_component do |c|
 			c.classname = predictor
+			c.add_argument(arg) unless c.has_argument?(arg)
 		end
 	end
 end
