@@ -1,6 +1,9 @@
 package org.cougaar.cpe.model;
 
 import org.cougaar.cpe.ui.WorldDisplayPanel;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.swing.*;
 import java.util.ArrayList;
@@ -8,7 +11,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.awt.*;
 
-public class TargetGeneratorModel
+public class TargetGeneratorModel implements TargetGenerator
 {
     private long nextClusterGenerationTime;
     private boolean isWaitingToGenerate = false;
@@ -36,6 +39,40 @@ public class TargetGeneratorModel
         long end ;
         long lastGenerationTime ;
         float probGeneration ;
+    }
+
+    /**
+     * Configuring the target generator model with default parameters
+     */
+    public TargetGeneratorModel()
+    {
+    }
+
+    private String getNodeValueForTag(Document doc, String tagName, String namedItem ) {
+        NodeList nodes = doc.getElementsByTagName( tagName );
+
+        String value = null ;
+        // Get target plan log
+        for (int i=0;i<nodes.getLength();i++) {
+            Node n = nodes.item(i) ;
+            value = n.getAttributes().getNamedItem( namedItem ).getNodeValue() ;
+        }
+        return value;
+    }
+
+    public void initialize(Document doc)
+    {
+        Node root = doc.getDocumentElement() ;
+        if( root.getNodeName().equals( "TargetGeneratorConfig" ) ) {
+            String probGenerationValue = getNodeValueForTag(doc, "ProbGeneration", "value" ) ;
+            if ( probGenerationValue != null ) {
+                probUnitGeneration = Float.parseFloat( probGenerationValue ) ;
+            }
+        }
+        else {
+            throw new RuntimeException( "No root document element TargetGeneratorConfig found." ) ;
+        }
+
     }
 
     public TargetGeneratorModel( WorldState ws, int seed, int numClustersActive, float probGeneration ) {
