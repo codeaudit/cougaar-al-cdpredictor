@@ -20,398 +20,156 @@
   *
   * </copyright>
   *
-*/
+  */
 
-
-package org.cougaar.tools.alf.sensor.plugin;
+package org.cougaar.tools.predictor.plugin;
 
 import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.Vector;
-import java.lang.Math;
-import java.io.PrintWriter;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import java.util.HashMap;
+import java.util.Iterator;
 
 public class KalmanFilter implements java.io.Serializable {
 
-    public KalmanFilter(ArrayList alt) {
-        this.alt = alt;
-    }
+	private HashMap dataModelMap;
+	public HashMap apriorEstimateMap = new HashMap(); 	   //Key: Crk+itemName, value: ArrayList Values
+	public HashMap aposteriorEstimateMap = new HashMap(); //Key: Crk+itemName, value: ArrayList Values
 
-    public Hashtable getHashtable(String supplier, String customer, String supply_class, String itemname) {
+  public KalmanFilter(HashMap dataModelMap) {
+  	this.dataModelMap = dataModelMap;
+  }
 
-        String s = supplier;
-        String c = customer;
-        String sc = supply_class;
-        String item = itemname;
-        Hashtable ht = null;
-        for (int i = 0; i < alt.size(); i++) {
-            ht = (Hashtable) alt.get(i);
-            Vector vList = (Vector) ht.get(new Integer(1));
-          /*  if (s.compareToIgnoreCase((String) vList.elementAt(0)) == 0 &&
-                    c.compareToIgnoreCase((String) vList.elementAt(1)) == 0 &&
-                    sc.compareToIgnoreCase((String) vList.elementAt(2)) == 0 &&
-                    item.compareToIgnoreCase((String) vList.elementAt(5)) == 0) {
-                return ht;
-            } */
-            if (c.compareToIgnoreCase((String) vList.elementAt(0)) == 0 &&
-                    sc.compareToIgnoreCase((String) vList.elementAt(1)) == 0 &&
-                    item.compareToIgnoreCase((String) vList.elementAt(4)) == 0) {
-                return ht;
-            }
-        }
+	public void timeUpdate(){
+			for(Iterator iterator = aposteriorEstimateMap.keySet().iterator();iterator.hasNext();) {
+				String key = (String)iterator.next();
+				ArrayList postEstValuesList = (ArrayList)aposteriorEstimateMap.get(key);
+				ArrayList apriorEstValuesList = new ArrayList();
+				for(Iterator iterator1 = postEstValuesList.iterator();iterator1.hasNext();) {
+					KFValues postEstKFValues = (KFValues)iterator1.next();
+					long endTime = postEstKFValues.getEndTime();
+					double quantity = postEstKFValues.getQuantity();
+					apriorEstValuesList.add(new KFValues(endTime+4*86400000, quantity, -1, -1));
+				}
+				apriorEstimateMap.put(key, apriorEstValuesList);
+			}
+	}
 
-        return null;
-    }
-
-    /* This method does time update on the demand model implies it apriori estimates demand
-     * from the customer one time step in the future (time steps could be made multiple)
-     */
-
-    public ArrayList timeUpdate(ArrayList a) {
-
-        ArrayList ali = a;
-        if (ali != null) {
-            for (int l = 0; l < ali.size(); l++) {
-                   Vector ali_vector = (Vector) ali.get(l);
-                   String s = ali_vector.elementAt(0).toString();
-                   String c = ali_vector.elementAt(1).toString();
-                   String sc = ali_vector.elementAt(2).toString();
-                   String item = ali_vector.elementAt(3).toString();
-                   //long publish_date = new Long(ali_vector.elementAt(4).toString()).longValue();
-                   //long commit_date = new Long(ali_vector.elementAt(5).toString()).longValue();
-                   long last_date = new Long(ali_vector.elementAt(6).toString()).longValue();
-                   Hashtable hTable = getHashtable(s, c, sc, item);
-                        if (hTable!= null) {
-                            for (int m = 1; m <= hTable.size(); m++) {
-                                Vector vl = (Vector) hTable.get(new Integer(m));
-                                //if (last_date == new Long(vl.elementAt(3).toString()).longValue()) {
-                                    if (last_date == new Long(vl.elementAt(2).toString()).longValue()) {
-                                    long d = last_date + 1;
-                                    //double aprior_estimate = new Double(((Vector) hTable.get(new Integer(m))).elementAt(4).toString()).doubleValue();
-                                    double aprior_estimate = new Double(((Vector) hTable.get(new Integer(m))).elementAt(3).toString()).doubleValue();
-                                    Vector temp_est_vec = new Vector();
-                                    //temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(0).toString(), 0);
-                                    temp_est_vec.insertElementAt(s, 0);
-                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(0).toString(), 1);
-                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(1).toString(), 2);
-                                    temp_est_vec.insertElementAt(new Long(d), 3);
-                                    temp_est_vec.insertElementAt(new Long(last_date), 4);
-                                    temp_est_vec.insertElementAt(new Double(aprior_estimate), 5);
-                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(4).toString(), 6);
-                                    estimate_array.add(estimate_array.size(), temp_est_vec);
-                                    //System.out.println("Aprior Estimate for day " + d + " supplier " + s + " customer " + c + " supply class " + sc + " is " + aprior_estimate);
-                                    break;
-                                }
-                            }
-                        }
-                 /*   else {
-                        long day_val = new Long(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(6).toString()).longValue();
-                        if (hTable!= null) {
-                          for (int i = 1; i <= hTable.size(); i++) {
-                              Vector v = (Vector) hTable.get(new Integer(i));
-                              long day = new Long(v.elementAt(3).toString()).longValue();
-                              if (day_val == day) {
-                                  v.removeElementAt(4);
-                                  double quantity = new Double(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(5).toString()).doubleValue();
-                                  v.insertElementAt(new Double(quantity),4);
-                                  break;
-                              } else {
-                                  continue;
-                              }
-                          }
-                        }
-                    } */
-                }
-            return estimate_array;
-        } else
-            return null;
-    }
-
-
-
-    /*  This method uses the apriori estimate and the actual demand to compute the error
-     *  and the aposteriori estimate and updates the demand model
-     */
-
-    public void measurementUpdate(ArrayList a) {
-
-        double gain = 0.5;
-        ArrayList ali = a;
-        if (ali != null) {
-            for (int l = 0; l < ali.size(); l++) {
-                 Vector ali_vector = (Vector) ali.get(l);
-                 String s = ali_vector.elementAt(0).toString();
-                 String c = ali_vector.elementAt(1).toString();
-                 String sc = ali_vector.elementAt(2).toString();
-                 String item = ali_vector.elementAt(3).toString();
-
-                /* Hashtable tempHTable = (Hashtable)ali.get(l);
-                 if(tempHTable!=null){
-                    boolean flag = tempHTable.containsKey(new Integer(1));
-                    if(flag==true){
-                    String s = ((Vector)tempHTable.get(new Integer(1))).elementAt(0).toString();
-                    String c = ((Vector)tempHTable.get(new Integer(1))).elementAt(1).toString();
-                    String sc = ((Vector)tempHTable.get(new Integer(1))).elementAt(2).toString();
-                    String item = ((Vector)tempHTable.get(new Integer(1))).elementAt(3).toString(); */
-
-                    Hashtable hTable = getHashtable(s, c, sc, item);
-                    if (hTable != null) {
-                        if (estimate_array != null) {
-
-                            for (int n = 0; n < estimate_array.size(); n++) {
-                                if ((((Vector) estimate_array.get(n)).elementAt(0).toString()).equals(s) &&
-                                    (((Vector) estimate_array.get(n)).elementAt(1).toString()).equals(c) &&
-                                    (((Vector) estimate_array.get(n)).elementAt(2).toString()).equals(sc) &&
-                                        (((Vector) estimate_array.get(n)).elementAt(6).toString()).equals(item)) {
-
-                                    double apri_estimate = new Double(((Vector) estimate_array.get(n)).elementAt(5).toString()).doubleValue();
-                                    double act_value = new Double(ali_vector.elementAt(7).toString()).doubleValue();
-                                    long day_val = new Long(ali_vector.elementAt(6).toString()).longValue();
-                                    if (apri_estimate != -1 && act_value != -1) {
-                                        double apost = 0;
-                                        double error = act_value - apri_estimate;
-                                        //System.out.println("Error is  " + error + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
-                                        if (error < 0) {
-                                            apost = apri_estimate - (gain * Math.abs(error));
-                                            //System.out.println("Aposterior Estimate is " + apost + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
-                                        } else {
-                                            apost = apri_estimate + (gain * Math.abs(error));
-                                            //System.out.println("Aposterior Estimate is " + apost + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
-                                        }
-                                        printToFile(s,c,sc,item,day_val,apri_estimate,apost,error,true);
-                                        for (int i = 1; i <= hTable.size(); i++) {
-                                        Vector vl = (Vector) hTable.get(new Integer(i));
-                                        //if(new Long(vl.elementAt(3).toString()).longValue() == last_day) {
-                                        long curr_day = new Long(ali_vector.elementAt(6).toString()).longValue();
-                                        //if (new Long(vl.elementAt(3).toString()).longValue() == curr_day) {
-                                          if (new Long(vl.elementAt(2).toString()).longValue() == curr_day) {
-                                            //double original_value = new Double(vl.elementAt(4).toString()).doubleValue();
-                                              double original_value = new Double(vl.elementAt(3).toString()).doubleValue();
-                                            original_value = apost;
-                                            if (original_value < 0) {
-                                                original_value = 0;
-                                                //vl.removeElementAt(4);
-                                                //vl.insertElementAt(new Double(original_value), 4);
-                                                vl.removeElementAt(3);
-                                                vl.insertElementAt(new Double(original_value), 3);
-                                                break;
-                                            } else {
-                                                vl.removeElementAt(3);
-                                                vl.insertElementAt(new Double(original_value), 3);
-                                                //vl.removeElementAt(4);
-                                                //vl.insertElementAt(new Double(original_value), 4);
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-
-                               break;
-                            }
-
-                        }
-                    }
-                }
-            }
-           estimate_array.clear();
-        } else
-            return;
-    }
-
-  /*   public ArrayList allTimeUpdate(ArrayList a) {
-
-        ArrayList ali = a;
-        if (ali != null) {
-            for (int l = 0; l < ali.size(); l++) {
-                Hashtable tempHTable = (Hashtable)ali.get(l);
-                for(int iterTable = 1; iterTable<=tempHTable.size();iterTable++){
-                    String s = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(0).toString();
-                    String c = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(1).toString();
-                    String sc = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(2).toString();
-                    Hashtable hTable = getHashtable(s, c, sc);
-                        long current_day = new Long(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(3).toString()).longValue();
-                        long pred_day = new Long(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(6).toString()).longValue();
-                        long last_day = new Long(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(4).toString()).longValue();
-                        if (hTable != null) {
-                            for (int m = 1; m <= hTable.size(); m++) {
-                                Vector vl = (Vector) hTable.get(new Integer(m));
-                                if (pred_day == new Long(vl.elementAt(3).toString()).longValue()) {
-                                    long d = pred_day + 1;
-                                    //long d = pred_day + 86400000;
-                                    double aprior_estimate = new Double(((Vector) hTable.get(new Integer(m))).elementAt(4).toString()).doubleValue();
-                                    Vector temp_est_vec = new Vector();
-                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(0).toString(), 0);
-                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(1).toString(), 1);
-                                    temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(2).toString(), 2);
-                                    temp_est_vec.insertElementAt(new Long(d), 3);
-                                    temp_est_vec.insertElementAt(new Long(last_day), 4);
-                                    temp_est_vec.insertElementAt(new Double(aprior_estimate), 5);
-                                    estimate_array.add(estimate_array.size(), temp_est_vec);
-                                    for (int i = 1; i <= hTable.size(); i++) {
-                                      Vector v = (Vector) hTable.get(new Integer(i));
-                                      long day = new Long(v.elementAt(3).toString()).longValue();
-                                      if (pred_day == day) {
-                                        v.removeElementAt(4);
-                                        double quantity = new Double(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(5).toString()).doubleValue();
-                                        v.insertElementAt(new Double(quantity),4);
-                                        break;
-                                        } else {
-                                          continue;
-                                        }
-                                    }
-                                    //System.out.println("Aprior Estimate for day " + d + " supplier " + s + " customer " + c + " supply class " + sc + " is " + aprior_estimate);
-                                    //break;
-                                }
-                            }
-                        }
-
-                    else {
-                          continue;
-                    }
-                }
-
-                }
-                return estimate_array;
-                } else return null;
-    }
-
-     public void allMeasurementUpdate(ArrayList a) {
-
-        double gain = 0.8;
-        ArrayList ali = a;
-        if (ali != null) {
-            for (int l = 0; l < ali.size(); l++) {
-                 Hashtable tempHTable = (Hashtable)ali.get(l);
-                 if(tempHTable!=null){
-                  for(int scan_rows = 1; scan_rows <= tempHTable.size();scan_rows++){
-                      boolean flag = tempHTable.containsKey(new Integer(1));
-                      if(flag==true){
-                        String s = ((Vector)tempHTable.get(new Integer(scan_rows))).elementAt(0).toString();
-                        String c = ((Vector)tempHTable.get(new Integer(scan_rows))).elementAt(1).toString();
-                        String sc = ((Vector)tempHTable.get(new Integer(scan_rows))).elementAt(2).toString();
-                        long day_value = new Long(((Vector) tempHTable.get(new Integer(scan_rows))).elementAt(6).toString()).longValue();
-                        Hashtable hTable = getHashtable(s, c, sc);
-                        if (hTable != null) {
-                          if (estimate_array != null) {
-                            for (int n = 0; n < estimate_array.size(); n++) {
-                                if ((((Vector) estimate_array.get(n)).elementAt(0).toString()).equals(s) &&
-                                    (((Vector) estimate_array.get(n)).elementAt(1).toString()).equals(c) &&
-                                    (((Vector) estimate_array.get(n)).elementAt(2).toString()).equals(sc)) {
-                                    long day_val = new Long(((Vector) estimate_array.get(n)).elementAt(3).toString()).longValue();
-                                    if(day_value == day_val) {
-                                      double apri_estimate = new Double(((Vector) estimate_array.get(n)).elementAt(5).toString()).doubleValue();
-                                      double act_value = new Double(((Vector) tempHTable.get(new Integer(scan_rows))).elementAt(5).toString()).doubleValue();
-                                      if (apri_estimate != -1 && act_value != -1) {
-                                        double apost = 0;
-                                        double error = act_value - apri_estimate;
-                                        //System.out.println("Error is  " + error + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
-                                        if (error < 0) {
-                                            apost = apri_estimate - (gain * Math.abs(error));
-                                            //System.out.println("Aposterior Estimate is " + apost + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
-                                        } else {
-                                            apost = apri_estimate + (gain * Math.abs(error));
-                                            //System.out.println("Aposterior Estimate is " + apost + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
-                                        }
-                                        try {
-                                            pr = new PrintWriter(new BufferedWriter(new FileWriter(s + "error" + ".txt", true)));
-                                            pr.print(s);
-                                            pr.print(",");
-                                            pr.print(c);
-                                            pr.print(",");
-                                            pr.print(sc);
-                                            pr.print(",");
-                                            pr.print(day_val);
-                                            pr.print(",");
-                                            pr.print(apri_estimate);
-                                            pr.print(",");
-                                            pr.print(apost);
-                                            pr.print(",");
-                                            pr.print(error);
-                                            pr.println();
-                                            pr.close();
-                                        } catch (Exception e) {
-                                            System.out.println(e);
-                                        }
-                                        for (int i = 1; i <= hTable.size(); i++) {
-                                          Vector vl = (Vector) hTable.get(new Integer(i));
-                                          //if(new Long(vl.elementAt(3).toString()).longValue() == last_day) {
-                                          //long curr_day = new Long(((Vector) tempHTable.get(new Integer(1))).elementAt(6).toString()).longValue();
-                                          if (new Long(vl.elementAt(3).toString()).longValue() == day_value) {
-                                            double original_value = new Double(vl.elementAt(4).toString()).doubleValue();
-                                            original_value = apost;
-                                            if (original_value < 0) {
-                                                original_value = 0;
-                                                vl.removeElementAt(4);
-                                                vl.insertElementAt(new Double(original_value), 4);
-                                                break;
-                                            } else {
-                                                vl.removeElementAt(4);
-                                                vl.insertElementAt(new Double(original_value), 4);
-                                                break;
-                                            }
-                                        }
-                                   }
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        }
-        }
-        }
-        estimate_array.clear();
-        } else
-            return;
-    }   */
-
-    public void printToFile(String su, String cu, String sucl, String itm, long day, double apri, double apos,double error, boolean toggle){
-        toggle = print_flag;
-        if(toggle == true){
-           try {
-               pr = new PrintWriter(new BufferedWriter(new FileWriter(su + "error" + ".txt", true)));
-               pr.print(su);
-               pr.print(",");
-               pr.print(cu);
-               pr.print(",");
-               pr.print(sucl);
-               pr.print(",");
-               pr.print(itm);
-               pr.print(",");
-               pr.print(day);
-               pr.print(",");
-               pr.print(apri);
-               pr.print(",");
-               pr.print(apos);
-               pr.print(",");
-               pr.print(error);
-               pr.println();
-               pr.close();
-           } catch (Exception e) {
-               System.out.println(e);
-            }
-        }
-    }
-
-    private ArrayList alt;
-    private ArrayList estimate_array = new ArrayList();
-    PrintWriter pr;
-    boolean print_flag = false;
+	public void measurementUpdate(PredictorSupplyArrayList psal) {
+	HashMap CRMap = (HashMap)psal.get(0); 		//There is only one hashmap in the arraylist
+	for(Iterator iterator = CRMap.keySet().iterator();iterator.hasNext();) {
+		CustomerRoleKey crk = (CustomerRoleKey)iterator.next();
+		HashMap valuesMap = (HashMap)CRMap.get(crk);
+		for(Iterator iter = valuesMap.keySet().iterator();iter.hasNext();){
+			String itemName = (String)iter.next();
+			ArrayList valuesList = (ArrayList)valuesMap.get(itemName);
+			ArrayList aPostEstList = new ArrayList();
+			for(Iterator iter1 = valuesList.iterator();iter1.hasNext();) {
+				Values value = (Values)iter1.next();
+				long endTime = value.getEndTime();
+				double quantity = value.getQuantity();
+				if(apriorEstimateMap.isEmpty()) {
+					ArrayList storedList = getElementDataList(crk, itemName);
+					for(int i= 0; i < storedList.size();i++) {
+						Values storedValue = (Values)storedList.get(i);
+						if(storedValue.getEndTime() == endTime) {
+							storedList.remove(storedValue);
+							storedList.add(new Values(endTime, quantity));
+							aPostEstList.add(new KFValues(endTime, quantity, -1, -1));
+							break;
+						}
+					}
+				} else {
+					ArrayList storedList = getElementDataList(crk, itemName);
+					for(int i=0; i < storedList.size();i++){
+						Values storedValue = (Values)storedList.get(i);
+						if(storedValue.getEndTime() == endTime) {
+							storedList.remove(storedValue);
+							storedList.add(new Values(endTime, quantity));
+							break;
+						}
+					}
+					ArrayList aPriorEstList = (ArrayList)apriorEstimateMap.get(crk+itemName);
+					for(int i=0; i < aPriorEstList.size();i++){
+						KFValues aPriorValue = (KFValues)aPriorEstList.get(i);
+						if(aPriorValue.getEndTime()==endTime){
+							double error = aPriorValue.getQuantity() - quantity;
+							double aPostEstimate = aPriorValue.getQuantity() + 0.5 * error;
+							aPostEstList.add(new KFValues(endTime, aPostEstimate, error, 0.5));
+						}
+					}
+					//Check if the endTime matches the apriorestimate end time
+					//if yes then compute aposteriorestimate
+				}
+			}
+			aposteriorEstimateMap.put(crk+itemName,aPostEstList);
+		}
+	}
+		apriorEstimateMap.clear();
+		timeUpdate();
 }
 
+	public double getApriorEstimate(CustomerRoleKey crk, String itemName, long endTime) {
+		if(!apriorEstimateMap.isEmpty()){
+			ArrayList kfValuesList = (ArrayList)apriorEstimateMap.get(crk+itemName);
+			for(Iterator iterator = kfValuesList.iterator();iterator.hasNext();){
+				KFValues kfValues = (KFValues)iterator.next();
+				if(kfValues.getEndTime()== endTime) {
+					return kfValues.getQuantity();
+				}
+			}
+			return -1;
+		}
+		else return -1;
+	}
 
-/* Hashtable tempHTable = (Hashtable)ali.get(l);
-                for(int iterTable = 1; iterTable<=tempHTable.size();iterTable++){
-                    String s = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(0).toString();
-                    String c = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(1).toString();
-                    String sc = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(2).toString();
-                    String item = ((Vector)tempHTable.get(new Integer(iterTable))).elementAt(3).toString();
-                    Hashtable hTable = getHashtable(s, c, sc, item);
-                    if(iterTable == 1){
-                        long publish_date = new Long(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(4).toString()).longValue();
-                        long commit_date = new Long(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(5).toString()).longValue();
-                        long last_date = new Long(((Vector)tempHTable.get(new Integer(iterTable))).elementAt(6).toString()).longValue();  */
+	public double getAposteriorEstimate(CustomerRoleKey crk, String itemName, long endTime){
+		if(!aposteriorEstimateMap.isEmpty()){
+			ArrayList kfValuesList = (ArrayList)aposteriorEstimateMap.get(crk+itemName);
+			for(Iterator iterator = kfValuesList.iterator();iterator.hasNext();){
+				KFValues kfValues = (KFValues)iterator.next();
+				if(kfValues.getEndTime()== endTime) {
+					return kfValues.getQuantity();
+				}
+			}
+			return -1;
+		}
+		else return -1;
+	}
+
+	public ArrayList getElementDataList(CustomerRoleKey crk, String item_name){
+		HashMap valuesMap = (HashMap)dataModelMap.get(crk);
+		if(valuesMap!= null)
+		return (ArrayList)valuesMap.get(item_name);
+		else return null;
+	}
+
+	public class KFValues {
+		private long endTime;
+		private double quantity;
+		private double error;
+		private double gain;
+
+		public KFValues(long endTime, double quantity, double error, double gain){
+			this.endTime = endTime;
+			this.quantity = quantity;
+			this.error = error;
+			this.gain = gain;
+		}
+
+		public long getEndTime(){
+			return endTime;
+		}
+
+		public double getQuantity(){
+			return quantity;
+		}
+
+		public double getError(){
+			return error;
+		}
+
+		public double getGain(){
+			return gain;
+		}
+
+	}
+}
