@@ -116,23 +116,11 @@ public class SupplierSideARPlugin extends ComponentPlugin
           LogisticsInventoryPG logInvpg = (LogisticsInventoryPG) inv.searchForPropertyGroup(LogisticsInventoryPG.class);
           if (logInvpg != null) {
 			  // Here, it will return true for any logistics inventory information. 
-//            String type = getAssetType(logInvpg);
-//
-//			if (supplyType.equals(type)) {			
               return true;
-//            }
           }
         }
         return false;
       }
-
-//	  private String getAssetType(LogisticsInventoryPG invpg) {
-//        Asset a = invpg.getResource();
-//        if (a == null) return null;
-//        SupplyClassPG pg = (SupplyClassPG)  a.searchForPropertyGroup(SupplyClassPG.class);
-//        return pg.getSupplyType();
-//      }
-
 	}
 
     private String getAssetType(LogisticsInventoryPG invpg) {
@@ -152,17 +140,9 @@ public class SupplierSideARPlugin extends ComponentPlugin
         public boolean execute(Object o) {
           if (o instanceof org.cougaar.logistics.plugin.inventory.InventoryPolicy) {
             String type = ((InventoryPolicy) o).getResourceType();
-//			System.out.println("type = " + type);
             if (type.equals(this.type)) {
-//              if (logger.isInfoEnabled()) {
-//                logger.info("Found an inventory policy for " + this.type + "agent is: " + getMyOrganization());
-//              }
               return true;
-            } else {
-//              if (logger.isDebugEnabled()) {
-//                logger.debug("Ignoring type of: " + type + " in " + getMyOrganization() + " this type is: " + this.type);
-//              }
-            }
+            } 
           }
           return false;
         }
@@ -185,7 +165,7 @@ public class SupplierSideARPlugin extends ComponentPlugin
 	
 	double [] a;
 
-	long baseTime = 13005; // August 10th 2005 
+	// long baseTime = 13005; // August 10th 2005 
 
 	boolean oplan_is_not_detected = true;
 	boolean isPublishedBefore = false;
@@ -207,14 +187,12 @@ public class SupplierSideARPlugin extends ComponentPlugin
         as = (AlarmService) getBindingSite().getServiceBroker().getService(this, AlarmService.class, null);
 
 	    inventoryPolicySubscription = (IncrementalSubscription) bs.subscribe(new InventoryPolicyPredicate("Ammunition"));
-//		logisticsOPlanSubscription	= (IncrementalSubscription) bs.subscribe(new LogisticsOPlanPredicate());
-//	    inventorySubscription		= (IncrementalSubscription) bs.subscribe(new InventoryPredicate("Ammunition"));
 		relationSubscription		= (IncrementalSubscription) bs.subscribe(relationPredicate);
 
 		String dir = System.getProperty("org.cougaar.workspace");
 		
 		long forName = System.currentTimeMillis()/300000;
-
+/*
 		try	{
 			rstInv = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster + forName +".inv.txt", true ));
 		}
@@ -222,10 +200,7 @@ public class SupplierSideARPlugin extends ComponentPlugin
 	    {
 		    System.err.println ("can't write data collecting file, io error" );
 	    }						
-
-
-//		CommunityService communityService = (CommunityService) getBindingSite().getServiceBroker().getService(this, CommunityService.class, null);
-//		alCommunities = communityService.listParentCommunities(cluster, "(CommunityType=AdaptiveLogistics)");		
+*/
 
 		createIndex();
 
@@ -235,15 +210,11 @@ public class SupplierSideARPlugin extends ComponentPlugin
 
 		// making a message
 		InventoryInfo iInfo = new InventoryInfo(30,cluster,currentTimeMillis());
-//		arPluginMessage = new ARPluginMessage(transform(iInfo),cluster,uidservice.nextUID());
 		arPluginMessage = new ARPluginMessage(iInfo,cluster,uidservice.nextUID());
 		arPluginMessage.setTime(currentTimeMillis());
 		sendInventoryInfo(arPluginMessage);
 
-
-//		bs.publishAdd(arPluginMessage);
 		myLoggingService.shout("SupplierSideARPlugin start at " + cluster); 
-		bs.setShouldBePersisted(false);
 
     }
 	
@@ -253,11 +224,6 @@ public class SupplierSideARPlugin extends ComponentPlugin
     {
         Iterator iter;
 		
-//		Collection tempcustomers = buildCustomerList();
-//		if (tempcustomers.size()>0)	{
-//			customers.addAll(tempcustomers);	
-//		}
-
 		long nowTime = currentTimeMillis();
 
 		if (Rantime != (long) nowTime / 86400000)	{
@@ -268,7 +234,6 @@ public class SupplierSideARPlugin extends ComponentPlugin
 			Rantime = (long) nowTime / 86400000;
 		}
 
-//		Collection c = bs.query(new InventoryPredicate("Ammunition"));
 		Collection c = bs.query(new InventoryPredicate("All"));
 
 		if (c!=null)	{	
@@ -311,17 +276,13 @@ public class SupplierSideARPlugin extends ComponentPlugin
 					continue;
 				}
 
-//				String type = "";
-//				String outputStr ="";
 				String nomenclature ="";
-//				String typeId ="";
 				Schedule invLevels = null;
 
 				Asset a = logInvpg.getResource();
 				if (a != null) {
 					SupplyClassPG pg = (SupplyClassPG)  a.searchForPropertyGroup(SupplyClassPG.class);
-//					type = pg.getSupplyType();
-//					typeId = a.getTypeIdentificationPG().getTypeIdentification();
+
 					nomenclature = a.getTypeIdentificationPG().getNomenclature(); 
 				}
 
@@ -330,7 +291,7 @@ public class SupplierSideARPlugin extends ComponentPlugin
 				}
 
 				invLevels = logInvpg.getBufferedInvLevels(); 
-		
+/*		
 				try
 				{
 
@@ -338,8 +299,6 @@ public class SupplierSideARPlugin extends ComponentPlugin
 				      QuantityScheduleElement invLevel = (QuantityScheduleElement) en.nextElement();
 					  if (invLevel.getStartTime()/86400000 == (long) nowTime/86400000)
 					  {
-//							rstInv.write(nowTime/86400000 +"\t"+ checkingTime + "\t" + modifier + "\t" + type + "\t"+ nomenclature+ "\t" + typeId + "\t" 
-//									+invLevel.getStartTime()/86400000+"\t"+invLevel.getEndTime()/86400000+"\t"+invLevel.getQuantity() +"\n");
 							rstInv.write(nowTime/86400000 +"\t"+ checkingTime + "\t" + modifier + "\t" + nomenclature+ "\t"  
 									+invLevel.getStartTime()/86400000+"\t"+invLevel.getEndTime()/86400000+"\t"+invLevel.getQuantity() +"\n");
 							// for relay
@@ -355,10 +314,10 @@ public class SupplierSideARPlugin extends ComponentPlugin
 				{
 					System.err.println ("can't write file, io error" );
 			    }					
+*/
 			} // for
 		
 			if (isChanged)	{
-//				arPluginMessage.setContent(transform(invInfo));
 				arPluginMessage.setContent(invInfo);
 				arPluginMessage.setTime(currentTimeMillis());
 				sendInventoryInfo(arPluginMessage);
@@ -427,38 +386,12 @@ public class SupplierSideARPlugin extends ComponentPlugin
 			p.flush();
 
 			myLoggingService.shout("[SupplierSideARPlugin] "+cluster+" Size of ostream = " + ostream.size());
-//			ostream.close();
 
-/// Test purpose
-/*			
-			ByteArrayInputStream istream = new ByteArrayInputStream(ostream.toByteArray());
-			ObjectInputStream pp = new ObjectInputStream(istream);
-
-			iInfo = (InventoryInfo)pp.readObject();
-
-			istream.close();
-
-			if (iInfo != null)	{
-			
-				for (int i=0;i<iInfo.getNumberOfItems(); i++)	{
-					myLoggingService.shout("[SupplierSideARPlugin]Inventory level "+i+" , " +  iInfo.getInventoryLevel(i));
-				}
-			
-			} else {
-				myLoggingService.shout("[SupplierSideARPlugin]InventoryInfo has problem.");
-			}
-*/
-///// Test end
-		
 		}
 		catch (java.io.IOException e)
 		{
 			myLoggingService.shout("[SupplierSideARPlugin]Error 1");	
 		}
-//		catch (java.lang.ClassNotFoundException e2)
-//		{
-//			myLoggingService.shout("[SupplierSideARPlugin]Error 3");	
-//		}		
 
 		return ostream;
 
@@ -472,7 +405,6 @@ public class SupplierSideARPlugin extends ComponentPlugin
 				myLoggingService.shout("[SupplierSideARPlugin]arPluginMessage is null");
 			}
 
-//			Collection customers = getCustomerList();
 			if (customers.size() == 0)	{
 				return;
 			}
@@ -480,82 +412,21 @@ public class SupplierSideARPlugin extends ComponentPlugin
 			for (Iterator iterator = customers.iterator(); iterator.hasNext();) {
 				
 				String agent = (String) iterator.next();
-				myLoggingService.shout("[SupplierSideARPlugin]"+ cluster + " : I'd like to send message to "+agent);
-//				AttributeBasedAddress aba = new AttributeBasedAddress().getAttributeBasedAddress(community, "Role", "AdaptiveLogisticsManager");
-//				loadIndicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
-//				if (aba == null)	{
-//					myLoggingService.shout("no destination");
-//				}
-//			for (Iterator iterator = alCommunities.iterator(); iterator.hasNext();) {
-//				String community = (String) iterator.next();
-//				arPluginMessage.addTarget(new AttributeBasedAddress().getAttributeBasedAddress(community, "Role", Constants.Role.AMMUNITIONCUSTOMER));
-//				arPluginMessage.addTarget(new AttributeBasedAddress().getAttributeBasedAddress(community, "Role", "AmmunitionCustomer"));
-//			}
+//				myLoggingService.shout("[SupplierSideARPlugin]"+ cluster + " : I'd like to send message to "+agent);
 
-//			for (Iterator iterator = alCommunities.iterator(); iterator.hasNext();) {
-//				String community = (String) iterator.next();
-//				arPluginMessage.addTarget(new AttributeBasedAddress().getAttributeBasedAddress(community, "Role", Constants.Role.FUELSUPPLYCUSTOMER));
-//			}
-
-//			new AttributeBasedAddress().getAttributeBasedAddress(community, "Role", "AdaptiveLogisticsManager")
-				
-//				arPluginMessage.addTarget(AttributeBasedAddress().getAttributeBasedAddress(community, "Role", "AdaptiveLogisticsManager");
 				arPluginMessage.addTarget(SimpleMessageAddress.getSimpleMessageAddress(agent));
 			}
-//			arPluginMessage.addTarget(SimpleMessageAddress.getSimpleMessageAddress("47-FSB"));
+
 			bs.publishAdd(arPluginMessage);
-			myLoggingService.shout("[SupplierSideARPlugin]"+ cluster + ": add arPluginMessage to be sent to " + arPluginMessage.getTargets());
+//			myLoggingService.shout("[SupplierSideARPlugin]"+ cluster + ": add arPluginMessage to be sent to " + arPluginMessage.getTargets());
 			isPublishedBefore = true;
 
 		} else {
 		
-//	        arPluginMessage.setLoadStatus(loadlevel);
 			bs.publishChange(arPluginMessage);
-			myLoggingService.shout("[SupplierSideARPlugin]"+cluster + ": change inventory level to be sent to " + arPluginMessage.getTargets());
+//			myLoggingService.shout("[SupplierSideARPlugin]"+cluster + ": change inventory level to be sent to " + arPluginMessage.getTargets());
 		}	
 	}
-
-//	private Collection getCustomerList() {
-//		return ;
-//	}
-/*
-	private Collection buildCustomerList() {
-
-		Vector customerList = new Vector();
-
-		for (Enumeration et = relationSubscription.getAddedList(); et.hasMoreElements();) {
-			HasRelationships org = (HasRelationships) et.nextElement();
-	        RelationshipSchedule schedule = org.getRelationshipSchedule();
-
-		    Collection ammo_customer = schedule.getMatchingRelationships(Constants.Role.AMMUNITIONCUSTOMER); //Get a collection of ammunition customers
-//		    Collection ammo_customer = schedule.getMatchingRelationships(AMMUNITIONCUSTOMER); //Get a collection of ammunition customers
-			//Collection food_customer = schedule.getMatchingRelationships(Constants.Role.FOODCUSTOMER);
-	        Collection fuel_customer = schedule.getMatchingRelationships(Constants.Role.FUELSUPPLYCUSTOMER);
-//	        Collection fuel_customer = schedule.getMatchingRelationships(FUELSUPPLYCUSTOMER);
-		    //Collection packpol_customer = schedule.getMatchingRelationships(Constants.Role.PACKAGEDPOLSUPPLYCUSTOMER);
-			//Collection spareparts_customer = schedule.getMatchingRelationships(Constants.Role.SPAREPARTSCUSTOMER);
-			//Collection subsistence_customer = schedule.getMatchingRelationships(Constants.Role.SUBSISTENCESUPPLYCUSTOMER);
-
-            for (Iterator iter = ammo_customer.iterator(); iter.hasNext();) {
-                Relationship orgname = (Relationship) iter.next();
-                Asset subOrg = (Asset) schedule.getOther(orgname);
-                String role = schedule.getOtherRole(orgname).getName();
-                String org_name = subOrg.getClusterPG().getMessageAddress().toString();
-				customerList.add(org_name);
-            }
-		    
-            for (Iterator iter = fuel_customer.iterator(); iter.hasNext();) {
-                Relationship orgname = (Relationship) iter.next();
-                Asset subOrg = (Asset) schedule.getOther(orgname);
-                String role = schedule.getOtherRole(orgname).getName();
-                String org_name = subOrg.getClusterPG().getMessageAddress().toString();
-				customerList.add(org_name);
-            }
-		}
-
-		return customerList;
-	}
-*/
 
 	private void buildCustomerList() {
 		

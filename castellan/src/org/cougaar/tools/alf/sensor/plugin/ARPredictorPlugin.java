@@ -40,7 +40,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
         public boolean execute(Object o) {
 			if (o instanceof Task)
 			{
-				Task tempTask = (Task) o;;
+				Task tempTask = (Task) o;
 				Verb verb = tempTask.getVerb();
 				if (verb.equals("Supply"))  {		
 
@@ -83,19 +83,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 	History history = null;
 
-	// I assume here that the record of allocation result will be kept in time sequence.
-/*
-	class AllocResult implements java.io.Serializable 	{
-
-		public int success = 0;		public int end_time = 0;
-
-		public AllocResult(int end_time, int success) {
-			this.success = success;
-			this.end_time = end_time;
-		}
-
-	};
-*/
     public void setupSubscriptions() {
 
 		cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
@@ -123,17 +110,14 @@ public class ARPredictorPlugin extends ComponentPlugin {
 	    if (myBS.didRehydrate() == false) {
 			history = new History("HistoryForCustomerSidePredictor");			
 			myBS.publishAdd(history);
+		} else {
+			// this is for rehydration
+			if_history_is_null_retrieve_from_bb();
 		}
-
-//        myLoggingService.shout("ARPredictorPlugin start at " + cluster);
-        myBS.setShouldBePersisted(false);
     }
 
     public void execute() {
 	
-		// this is for rehydration
-		if_history_is_null_retrieve_from_bb();
-
 		boolean changed = checkAllocSubscription();
 		checkARPluginMessage();
 
@@ -150,27 +134,21 @@ public class ARPredictorPlugin extends ComponentPlugin {
 	private void if_history_is_null_retrieve_from_bb() {
 		
 		if (history==null)	{
-			
-			Collection c = historySubscription.getAddedCollection();
+			Collection c = myBS.query(historyPredicate);			
 			for (Iterator iter = c.iterator();iter.hasNext() ; )	{
 				history = (History) iter.next();
+				break;
 			}
 		}
 
 	}
 
-	Collection c1=null;
-	Collection c2=null;
-    Collection c3=null;
+	Collection c1=null, c2=null, c3=null;
 		
 	private boolean checkAllocSubscription() {
 
 		boolean updated = false;
        	if (!allocSubscription.isEmpty()) {
-
-//			Collection c1 = allocSubscription.getAddedCollection();
-//			Collection c2 = allocSubscription.getRemovedCollection();
-//			Collection c3 = allocSubscription.getChangedCollection();
 
 			c1 = allocSubscription.getAddedCollection();    
 			c2 = allocSubscription.getRemovedCollection();  
@@ -190,45 +168,16 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 		for (Iterator iter = c1.iterator(); iter.hasNext(); )
 		{
-//			try
-//			{
-				ARPluginMessage arPluginMessage = (ARPluginMessage)iter.next();
-				if (arPluginMessage.getAgentName().equalsIgnoreCase(cluster))	{
-					continue;					
-				}
-/*
-				ByteArrayOutputStream byteArrayInfo = arPluginMessage.getInventoryInfo();
+			ARPluginMessage arPluginMessage = (ARPluginMessage)iter.next();
+			if (arPluginMessage.getAgentName().equalsIgnoreCase(cluster))	{
+				continue;					
+			}
 
-				if (byteArrayInfo != null)	{
-	
-					ByteArrayInputStream istream = new ByteArrayInputStream(byteArrayInfo.toByteArray());
-					ObjectInputStream p = new ObjectInputStream(istream);
-	
-					iInfo = (InventoryInfo)p.readObject();
-		
-					istream.close();
-				
-					if (iInfo != null && isOutputFileOn())	{
-						myLoggingService.shout("[ARPredictorPlugin] added ARPluginMessage");
-					}
+			iInfo =	arPluginMessage.getInventoryInfo();
 
-				}
-*/
-				iInfo =	arPluginMessage.getInventoryInfo();
-
-				if (iInfo != null && isOutputFileOn())	{
-					myLoggingService.shout("[ARPredictorPlugin] added ARPluginMessage");
-				}
-
-//			}
-//			catch (java.io.IOException e)
-//			{
-//				myLoggingService.shout("[ARPredictorPlugin]Error 1");	
-//			}
-//			catch (java.lang.ClassNotFoundException e2)
-//			{
-//				myLoggingService.shout("[ARPredictorPlugin]Error 3");	
-//			}
+			if (iInfo != null && isOutputFileOn())	{
+				myLoggingService.shout("[ARPredictorPlugin] added ARPluginMessage");
+			}
 
 			if (iInfo != null && isOutputFileOn())	{
 				if (!iInfo.getAgentName().equalsIgnoreCase(cluster))
@@ -243,37 +192,14 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 		for (Iterator iter2 = c2.iterator(); iter2.hasNext(); )
 		{
-//			try
-//			{
-				ARPluginMessage arPluginMessage = (ARPluginMessage)iter2.next();
-/*
-				ByteArrayOutputStream byteArrayInfo = arPluginMessage.getInventoryInfo();
 
-				if (byteArrayInfo != null)	{
-	
-					ByteArrayInputStream istream = new ByteArrayInputStream(byteArrayInfo.toByteArray());
-					ObjectInputStream p = new ObjectInputStream(istream);
-	
-					iInfo = (InventoryInfo)p.readObject();
-		
-					istream.close();
-				}
-*/
-				iInfo =	arPluginMessage.getInventoryInfo();
+			ARPluginMessage arPluginMessage = (ARPluginMessage)iter2.next();
 
-				if (iInfo != null && isOutputFileOn())	{
-					myLoggingService.shout("[ARPredictorPlugin] added ARPluginMessage");
-				}
+			iInfo =	arPluginMessage.getInventoryInfo();
 
-//			}
-//			catch (java.io.IOException e)
-//			{
-//				myLoggingService.shout("[ARPredictorPlugin]Error 2");	
-//			}
-//			catch (java.lang.ClassNotFoundException e2)
-//			{
-//				myLoggingService.shout("[ARPredictorPlugin]Error 4");	
-//			}
+			if (iInfo != null && isOutputFileOn())	{
+				myLoggingService.shout("[ARPredictorPlugin] added ARPluginMessage");
+			}
 
 			if (isOutputFileOn())	{
 				if (iInfo != null)		{
@@ -340,8 +266,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 /////////////// Examine whethe it is a task of BulkPOL or Ammunition.
 
-//				if (!bulkOrAmmo(ti))	{		continue;	}
-
 				// nomenclature
 				String nomenclature = null;
 				if ((nomenclature = getNomenclature(ti))==null)	{		continue;		}
@@ -382,16 +306,11 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		return true;
 	}
 
-//    public void callPredictor() {
-//		predictAllocationResults();
-//    }
-
 	private int Today = 0;
 
 	private void predictAllocationResults(Collection c) 
     {
 		Today = (int) (currentTimeMillis()/ 86400000);
-//		Collection c = myBS.query(supplyTaskPredicate);  // These tasks should be after 
 
 		for (Iterator iter = c.iterator();iter.hasNext(); )
 		{
@@ -399,20 +318,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 			Allocation allocation = (Allocation) iter.next();
 			Task t = (Task) allocation.getTask();
 
-//			// How can I know which task is for other agents ?
-//			Task t = (Task) iter.next();
-/*
-			Asset asset = allocation.getAsset() ;
-			if (!(asset instanceof Organization)){
-				continue;
-//				agentName = ((Organization) asset).getMessageAddress().getAddress();
-			}
-*/
 			if (!t.getUID().getOwner().equalsIgnoreCase(cluster))	{		continue;		}
-
-			// if Task t is not BulkPOL and not Ammunition, then skip.
-
-//			if (!bulkOrAmmo(t))	{		continue;		}
 
 			// nomenclature
 			String nomenclature = null;
@@ -424,14 +330,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 			// if this task does not have the report allocationResult, then print out this. 
 			// in actual comm loss, create allocationResult.
-//			PlanElement allocation = (PlanElement) t.getPlanElement();
-//			if (allocation != null)
-//			{
-//				if (!(allocation instanceof Allocation))	{
-//					continue;
-//				}
-
-//				AllocationResult reportedResult = allocation.getReportedResult();
 				AllocationResult receivedResult = allocation.getReceivedResult();
 													
 				/// 
@@ -439,8 +337,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 				double earConfidence = estimatedResult.getConfidenceRating();
 
 				///
-
-//				if (reportedResult==null && earConfidence < 0.4 )
 				if (receivedResult==null && earConfidence < 0.4 )
 				{
 					double success = 0;
@@ -453,7 +349,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 						myLoggingService.shout("TreeSet for history of "+ nomenclature + " does not exist.");
 					}		
 
-					long start_time = (long) (t.getPreferredValue(AspectType.START_TIME) / 86400000);
 					long end_time = (long) (t.getPreferredValue(AspectType.END_TIME) / 86400000);
 
 					int tw = 0;
@@ -486,19 +381,9 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 					AspectValue [] avs = estimatedResult.getAspectValueResults(); 
 
-//			        AspectValue [] avs = new AspectValue[3];
-//					avs[0] = AspectValue.newAspectValue(AspectType.START_TIME, start_time*86400000);
-//			        avs[1] = AspectValue.newAspectValue(AspectType.END_TIME, end_time*86400000);
-//			        avs[2] = AspectValue.newAspectValue(AspectType.QUANTITY, PluginHelper.getPreferenceBestValue(t, AspectType.QUANTITY));
-
-//					AllocationResult expectedResult = rootFactory.newAllocationResult(success, successBoolean, avs);
-//					allocation.setEstimatedResult(expectedResult);
-
 					AllocationResult newReceivedResult = rootFactory.newAllocationResult(success, successBoolean, avs);
-//					allocation.setObservedResult(newReportedResult);
 					AllocationImpl allocImpl = (AllocationImpl) allocation;
 
-//					allocation.setReceivedResult(newReceivedResult);
 					allocImpl.setReceivedResult(newReceivedResult);
 
 					myBS.publishChange(allocImpl);
@@ -512,7 +397,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 						}
 					}
 				}
-//			}
 		}
     }
 
@@ -520,17 +404,14 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 		Collection c = getParameters();
 
-        Properties props = new Properties() ;
         // Iterate through the parameters
         int count = 0;
         for (Iterator iter = c.iterator() ; iter.hasNext() ;)
         {
             String s = (String) iter.next();
-			if (!s.equalsIgnoreCase("true"))
-			{
+			if (!s.equalsIgnoreCase("true"))	{
 				return false;
 			}
-//			break;
         }
 		return true;
 	}
@@ -545,9 +426,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
     private DomainService myDomainService;
     private BlackboardService myBS;
 
-    private IncrementalSubscription taskSubscription;  
-    private IncrementalSubscription allocSubscription, supplyTaskSubscription, historySubscription, arPluginMessageSubscription;
-    private IncrementalSubscription commStatusSubscription;
+    private IncrementalSubscription allocSubscription, historySubscription, arPluginMessageSubscription;
 
 	private InventoryInfo iInfo = null;
     boolean changed = false;
