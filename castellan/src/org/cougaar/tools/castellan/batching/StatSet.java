@@ -45,12 +45,12 @@ public class StatSet {
       return avg;
    }
    public String toString() {
-      return " StatSet: " + 
+      return "[ StatSet: " + 
       " Total = " + getTotal() +
       " Count = " + getCount() +
       " Average = " + getAverage() +
       " Min = " + getMin() + 
-      " Max = " + getMax();
+      " Max = " + getMax() + " ]";
    }
    
    void addDatum( long theDatum ){

@@ -33,18 +33,36 @@ public class ExecutionStats {
       myEventLog = theLog;
       myExecution = theExecution;
       myAgent = theAgent;
+      
+      boolean myPrintTest = false;
       if( !theCompletedTasks.isEmpty() ){
           processCompletedTasks( theCompletedTasks );
-          System.out.println( "ExecutionStats.constructor()" );
-          System.out.println( "# OF CompletedTasks ASSOCIATED WITH THIS ExecutionStat: " 
-                + myCompletedTasks.size() );
+          if( !myCompletedTasks.isEmpty() ){
+              myPrintTest = true;
+          }
+      }
+      if( myPrintTest ){
+          System.out.println( "\t" + "********* ExecutionStats.constructor() ********" );
+          System.out.println( "\t" + "AGENT # OF CompletedTasks ENTERED: " 
+            + theCompletedTasks.size() );
+          System.out.println( "\t" + "EXECUTION # OF CompletedTasks: " 
+            + myCompletedTasks.size() );
       }
       buildContainers();
-      System.out.println( "ExecutionStats.constructor()" );
-      System.out.println( "# OF Batches OF TASKS ASSOCIATED WITH THIS ExecutionStats: " 
+      if( !myBatches.isEmpty() ){
+          System.out.println( "\t" + "\t" + "EXECUTION # OF Batches CREATED: " 
             + myBatches.size() );
+      }
       
       collectStats();
+      if( !myBatchStats.isEmpty() ){
+          System.out.println( "\t" + "\t" + "EXECUTION # OF BatchStats CREATED: " 
+            + myBatchStats.size() );
+      }
+      if( myPrintTest ){
+          System.out.println( "\t" + "****** END: ExecutionStats.constructor() ******" );
+          System.out.println();
+      }
    }
  
    private void processCompletedTasks( ArrayList theCompletedTasks ){
@@ -59,12 +77,16 @@ public class ExecutionStats {
    }
    
    private boolean isCompletedDuringThisExecution( CompletedTask theCompletedTask ){
-      if( ( theCompletedTask.getCompletionTime() <= myExecution.getStartTime() ) ||
-          ( theCompletedTask.getCompletionTime() >= myExecution.getStopTime() ) ){
-             return false;
+      long aCompletionTime = theCompletedTask.getCompletionTime();
+      if( ( aCompletionTime >= myExecution.getStartTime() ) &&
+          ( aCompletionTime <= myExecution.getStopTime() ) ){
+              System.out.println( "\t" + "\t" + "\t" + "Task completed during this execution:" );
+              System.out.println( "\t" + "\t" + "\t" + myExecution.getStartTime() + " <= " +
+                   aCompletionTime + " <= " + myExecution.getStopTime() );                   
+              return true;
       }
       else{
-         return true;
+         return false;
       }
    }
    
@@ -106,8 +128,8 @@ public class ExecutionStats {
     **/ 
    private boolean shouldBeInThisBatch( CompletedTask theCompletedTask,
                                         CompletedTask theTaskInBatch){
-      if( theCompletedTask.getTaskLog().getTaskVerb() == 
-                  theTaskInBatch.getTaskLog().getTaskVerb() ){
+      String theVerbForThisBatch = theTaskInBatch.getTaskLog().getTaskVerb();                                      
+      if( theVerbForThisBatch.equals( theCompletedTask.getTaskLog().getTaskVerb() ) ){
         return true;
       }
       else{
@@ -186,7 +208,7 @@ public class ExecutionStats {
     **/
    public String toString(){
        if( myBatchStats.size() == 0 ){
-           return "N/A";
+           return "";
        }
        //if( getExecutionElapsedTime() == 0 ){
        //    return "N/A";

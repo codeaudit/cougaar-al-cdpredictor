@@ -30,14 +30,16 @@ public class GetTaskBatchingStats extends GetStatsCommand {
                                 PlanLogDatabase thePlanLog ){
       super( theEventLog );
       myPlanLog = thePlanLog;
+      System.out.println( "************* GetTaskBatchingStats.constructor() ************" );
+      System.out.println( "SOCIETY TOTAL # TASK LOGS: " + theTaskLogs.size() );         
       processTaskLogs( theTaskLogs );
+      System.out.println( "SOCIETY TOTAL # INCOMING TASKS LOGS: " + myIncomingTaskBoundaryLogs.size() );         
       // This should populate myIncomingTaskBoundaryLogs
       if( myIncomingTaskBoundaryLogs != null ){
           buildContainer();
-         System.out.println( "GetTaskBatchingStats.constructor " );         
-         System.out.println( "# AgentStats BUILT: " + myAgentStats.size() );
-
       }
+      System.out.println( "# AgentStats BUILT: " + myAgentStats.size() );
+      System.out.println( "*********** END GetTaskBatchingStats.constructor() *********" );
    }
    
    /** 
@@ -46,13 +48,17 @@ public class GetTaskBatchingStats extends GetStatsCommand {
    public GetTaskBatchingStats( EventLog theEventLog, Collection theTaskLogs, 
          PlanLogDatabase thePlanLog, String theAgentName ) {
       super( theEventLog );
+      myPlanLog = thePlanLog;
+      System.out.println( "************* GetTaskBatchingStats.constructor() ************" );
+      System.out.println( "SOCIETY TOTAL # TASK LOGS: " + theTaskLogs.size() );         
       processTaskLogs( theTaskLogs );
+      System.out.println( "SOCIETY TOTAL # INCOMING TASK LOGS: " + myIncomingTaskBoundaryLogs.size() );         
       // This should populate myIncomingTaskBoundaryLogs
       if( myIncomingTaskBoundaryLogs != null ){
           buildContainer( theAgentName );
-         System.out.println( "GetTaskBatchingStats.constructor " );         
-         System.out.println( "# AgentStats BUILT: " + myAgentStats.size() );
       }
+      System.out.println( "# AgentStats BUILT: " + myAgentStats.size() );
+      System.out.println( "*********** END GetTaskBatchingStats.constructor() *********" );
    }
    
    /**
@@ -75,8 +81,6 @@ public class GetTaskBatchingStats extends GetStatsCommand {
           System.out.println( "No Agent names were found, nothing was built.");
       }
       else{
-         System.out.println( "GetTaskBatchingStats.buildContainer() " );         
-         System.out.println( "# OF AgentStats BEING BUILT FOR ENTIRE SOCIETY: " + agentNames.size() );
          buildContainer( agentNames );
       }
       return;
@@ -101,17 +105,11 @@ public class GetTaskBatchingStats extends GetStatsCommand {
    */
    public void buildContainer( String theAgentName ){
       // Create an AgentStats
-      System.out.println( "GetTaskBatchingStats.buildContainer( agentName ) " );         
-      System.out.println( "AgentStats BEING BUILT FOR Agent: " + theAgentName );
       AgentStats as = new AgentStats( myEventLog, theAgentName, myPlanLog,
                                       myIncomingTaskBoundaryLogs );
       // Add the AgentStats to the collection.
       if( as != null ){
          myAgentStats.add( as );
-         System.out.println( "AgentStats WAS BUILT FOR Agent: " + theAgentName );
-      }
-      else{
-         System.out.println( "AgentStats is null, something is probably wrong.");
       }
    }
 
@@ -129,13 +127,6 @@ public class GetTaskBatchingStats extends GetStatsCommand {
             // Add to list of incoming (and source) logs
             myIncomingTaskBoundaryLogs.add( bl );
          }
-      }
-      System.out.println( "GetTaskBatchingStats.processTaskLogs:" );
-      System.out.println( "# OF INCOMING TASKS: " + myIncomingTaskBoundaryLogs.size() );
-      if( myIncomingTaskBoundaryLogs.size() == 0 ){
-          System.out.println( "getTaskBatchingStats.processTaskLogs()" );
-          System.out.println( "NO INCOMIG TASK LOGS! THIS => NOTHING TO COLLECT STATISTICS ON." );
-          myIncomingTaskBoundaryLogs = null;
       }
    }
    /**

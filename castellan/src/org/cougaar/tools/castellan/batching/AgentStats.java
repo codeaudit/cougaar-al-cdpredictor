@@ -34,13 +34,16 @@ public class AgentStats {
       myEventLog = theLog;
       myAgentName = theAgentName;
       myPlanLog = thePlanLog;
+      System.out.println();
+      System.out.println( "******* AgentStats.constructor() AGENT:" + myAgentName + "*******" );
+      System.out.println( "AGENT # OF INCOMING TASKS: " + theIncomingTaskLogs.size() );      
       processIncomingTaskLogs( theIncomingTaskLogs );
-      System.out.println( "AgentStats.constructor()" );
-      System.out.println( "# OF COMPLETED TASKS ASSOCIATED WITH THIS AgentStats: " + myCompletedTasks.size() );      
+      System.out.println( "AGENT # OF COMPLETED TASKS: " + myCompletedTasks.size() );      
       buildContainer();
-      System.out.println( "AgentStats.constructor()" );
-      System.out.println( "# OF ExecutionStats CREATED FOR THIS AgentStats: " + myExecutionStats.size() );      
+      System.out.println( "# OF ExecutionStats CREATED: " + myExecutionStats.size() );      
       collectStats();
+      System.out.println( "******* END: AgentStats.constructor() ************" );      
+      System.out.println();
    }
    
    // METHODS
@@ -71,7 +74,10 @@ public class AgentStats {
    }
             
    private boolean belongsToAgent( TaskLog theTaskLog ){
-      return( myAgentName == theTaskLog.getCluster() );
+      if( myAgentName.equals( theTaskLog.getCluster() ) ){
+          return true;
+      }
+      return false;
    }
 
    private StatSet getCompletionTime( BoundaryLog theBoundaryLog ) {
@@ -181,6 +187,8 @@ public class AgentStats {
       " EXECUTION TIME STATS " +  
       "\n" + "\t" + "\t" +
       " Total # of executions: "  + myExecutionStats.size() + 
+      "\n" + "\t" + "\t" +
+      " Total NONZERO # executions: " + myExTimes.getCount() + 
       "\n" + "\t" + "\t" +
       " Total execution time: " + myExTimes.getTotal() + 
       "\n" + "\t" + "\t" +

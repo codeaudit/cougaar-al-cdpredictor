@@ -25,13 +25,13 @@ public class CompletedTask {
    }
    
    public String toString() {
-      return "Completed Task Information: " + "\n" +
-      myTaskLog.toString() + "\n" + 
-      "Task completion time: \n" + 
-      "# of descendants: " + myCompletionTimeStat.getCount() + "\n" +
-      "MIN Time = " + myCompletionTimeStat.getMin() + "\n" +
-      "MAX TIME = " + myCompletionTimeStat.getMax() + "\n" +
-      "AVG Time = " + myCompletionTimeStat.getAverage() + "\n";
+      return "\n" + "\t" + "Completed Task Information: " + 
+      "\n" + "\t" + myTaskLog.toString() + "\n" + 
+      "# of descendants: " + myCompletionTimeStat.getCount() + 
+      "\n" + "\t" + "Task completion time: \n" + 
+      "\n" + "\t" + "\t" + "MIN Time = " + myCompletionTimeStat.getMin() + 
+      "\n" + "\t" + "\t" + "MAX TIME = " + myCompletionTimeStat.getMax() +
+      "\n" + "\t" + "\t" + "AVG Time = " + myCompletionTimeStat.getAverage() + "\n";
    }
    
    String getAgentName() {

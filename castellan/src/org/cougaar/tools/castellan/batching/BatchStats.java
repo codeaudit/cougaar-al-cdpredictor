@@ -43,7 +43,8 @@ public class BatchStats {
    }
    
    public String toString() {
-      TaskLog aTaskLog = (TaskLog)myBatch.get(0);
+      CompletedTask ct = (CompletedTask)myBatch.get(0);
+      TaskLog aTaskLog = ct.getTaskLog();
       String aTaskVerb = aTaskLog.getTaskVerb();
       return "TASK BATCH COMPLETION TIME STATS: " + "\n" + 
       "Batch on task with verb: " + aTaskVerb + "\n" +
