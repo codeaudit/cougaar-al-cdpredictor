@@ -63,8 +63,10 @@ public class AgentDisplayPanel extends JFrame {
         }
 
         public void setData( Collection data ) {
-            relays.clear();
-            relays.addAll( data ) ;
+            synchronized ( relays ) {
+                relays.clear();
+                relays.addAll( data ) ;
+            }
             for (Iterator iterator = listeners.iterator(); iterator.hasNext();) {
                 TableModelListener l = (TableModelListener) iterator.next();
                 l.tableChanged( new TableModelEvent( this ) );
@@ -72,7 +74,10 @@ public class AgentDisplayPanel extends JFrame {
         }
 
         public Object getValueAt(int rowIndex, int columnIndex) {
-            Object r = relays.get(rowIndex) ;
+            Object r = null ;
+            synchronized ( relays ) {
+                r = relays.get(rowIndex) ;
+            }
             if ( r instanceof SourceBufferRelay ) {
                 SourceBufferRelay sb = (SourceBufferRelay) r ;
                 switch (columnIndex) {
