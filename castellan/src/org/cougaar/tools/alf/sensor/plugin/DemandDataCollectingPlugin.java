@@ -93,6 +93,10 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 //							}
 						}
 					}
+					else if (verb.equals("ForecastDemand"))
+					{
+						return true;
+					}
 				}
 				return false; 	
 			} 
@@ -149,8 +153,8 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 	long nextTime = 0;
 	long offsetTime = -1;  // Actual runtime
-//	long baseTime = 13005; // August 10th 2005 
-	long baseTime = 12974; // July 10th 2005 
+	long baseTime = 13005; // August 10th 2005 
+//	long baseTime = 12974; // July 10th 2005 
 	boolean oplan_is_not_detected = true;
 
 	java.io.BufferedWriter rst = null;
@@ -169,7 +173,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 		try
 		{
-			rst = new java.io.BufferedWriter ( new java.io.FileWriter(cluster+System.currentTimeMillis()+".txt", true ));
+			rst = new java.io.BufferedWriter ( new java.io.FileWriter("$CIP/"+cluster+System.currentTimeMillis()+".txt", true ));
 		}
 		catch (java.io.IOException ioexc)
 	    {
@@ -255,7 +259,8 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 		} 
 		else 
 		{*/
-		    long nowTime = (currentTimeMillis()/ 86400000) - baseTime; // long nowTime = System.currentTimeMillis()-offsetTime;
+//		    long nowTime = (currentTimeMillis()/ 86400000) - baseTime; // long nowTime = System.currentTimeMillis()-offsetTime;
+		    long nowTime = currentTimeMillis()/ 86400000; // long nowTime = System.currentTimeMillis()-offsetTime;
 			checkTaskSubscription(nowTime, taskSubscription);
 //			checkPeSubscription(nowTime, planelementSubscription);
 
@@ -343,7 +348,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				{
 					oftype = (String) pp.getIndirectObject();
 				} else {
-					//myLoggingService.shout ("null Prepositional Phrase" );
+					myLoggingService.shout ("null Prepositional Phrase" );
 					continue;
 				}
 
@@ -459,7 +464,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 					end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000) - baseTime;
 //					end_time2 = ti.getPreference(AspectType.END_TIME).getScoringFunction().getBest().getValue();
 						
-					if (v.equals("Supply"))
+					if (v.equals("Supply")||v.equals("ForecastDemand"))
 					{
 						qty = ti.getPreferredValue(AspectType.QUANTITY);
 					} 

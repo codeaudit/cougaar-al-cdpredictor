@@ -143,7 +143,7 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 		{
 		System.out.println("TimestampService for"+" "+sensorname+" "+"in"+" "+cluster+" "+"not available");
 		}
-		as = getAlarmService() ;
+		as = getAlarmService();
         if(as==null){
 	           System.out.println("\n"+cluster+" ["+sensorname+"]: AlarmService is NOT available.\n"); 
         }
