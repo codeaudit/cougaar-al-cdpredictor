@@ -26,6 +26,18 @@ public abstract class MeasurementPoint implements java.io.Serializable
     public Iterator getMeasurements() {
         return history.iterator() ;
     }
+    
+    public Iterator getMeasurements(int lastN)
+    {
+		//LinkedList recentHistory = new LinkedList();
+		LinkedList recentHistory=(LinkedList) history.clone();
+		if ( recentHistory.size() > lastN ) {
+					while ( recentHistory.size() > lastN ) {
+						recentHistory.removeFirst() ;
+					}
+				}
+		return recentHistory.iterator();	
+    }
 
     public synchronized void addMeasurement( Record m ) {
         history.add( m ) ;
@@ -67,7 +79,7 @@ public abstract class MeasurementPoint implements java.io.Serializable
         this.maxSize = maxSize;
         if ( history.size() > maxSize ) {
             while ( history.size() > maxSize ) {
-                history.removeLast() ;
+                history.removeFirst() ;
             }
         }
     }
