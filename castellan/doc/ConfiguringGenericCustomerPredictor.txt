@@ -1,19 +1,22 @@
 Configuring Generic Customer Predictor Plugins and Predictor Servlet 
 
+Add the following line in LDMDomain.ini file in CIP/configs/common
+predictor = org.cougaar.tools.castellan.ldm.PredictorDomain
+
 Create recipes in csmart. 
 
-1) Specific Insertion: predictorDataPlugin
-	Class Name: org.cougaar.tools.alf.sensor.plugin.predictorDataPlugin
-	Component Name: predictorDataPlugin
+1) Specific Insertion: PredictorDataPlugin
+	Class Name: org.cougaar.tools.alf.sensor.plugin.PredictorDataPlugin
+	Component Name: PredictorDataPlugin
 	Component Priority: COMPONENT
 	No. of Arguments: 0
 	Target Component Selection Query: recipeQueryAllAgents
 	Type of Insertion:  plugin
 
 
-2) Specific Insertion: predictorPlugin
-	Class Name: org.cougaar.tools.alf.sensor.plugin.predictorPlugin
-	Component Name: predictorPlugin
+2) Specific Insertion: PredictorPlugin
+	Class Name: org.cougaar.tools.alf.sensor.plugin.PredictorPlugin
+	Component Name: PredictorPlugin
 	Component Priority: COMPONENT
 	No. of Arguments: 0
 	Target Component Selection Query: recipeQueryAllAgents
@@ -22,8 +25,8 @@ Create recipes in csmart.
 
 For the Predictor Turn OFF Servlet
 
-3) Specific Insertion: predictorServlet
-	Class Name: org.cougaar.tools.alf.sensor.servlet.predictorServlet
+3) Specific Insertion: PredictorServlet
+	Class Name: org.cougaar.tools.alf.sensor.servlet.PredictorServlet
 	Component Name:	predictorServlet
 	Component Priority: COMPONENT
 	Number of Arguments: 0
@@ -31,9 +34,9 @@ For the Predictor Turn OFF Servlet
 	Type of Insertion:  plugin
 
 
-To view the servlet and perform the "Turn Off" action:
+To view the servlet:
 
 1) Go to http://localhost:8800/
 2) Click on the NCA agent
 3) Click on the /$NCA/predictor servlet link
-4) Just hit the "Turn OFF Predictor" Button to switch off the predictor in all agents
+4) "Toggle to Communication Loss" First click: stops communication and Second click: resumes communication back

@@ -1133,26 +1133,28 @@ public class PredictorPlugin extends ComponentPlugin {
             for (int i = 0; i < arraylist.size(); i++) {
                 Hashtable new_hash = (Hashtable) arraylist.get(i);
                 //long current_day = (currentTimeMillis() / 86400000) - 13005;
-                long current_day = currentTimeMillis() / 86400000;
-                myLoggingService.shout(" Current Day " + current_day + " cluster " + cluster);
+                long current_day = (currentTimeMillis() / 86400000) + 4;
+                //myLoggingService.shout(" Current Day " + current_day + " cluster " + cluster);
                 for (int j = 1; j <= new_hash.size(); j++) {
                     Vector vt = (Vector) new_hash.get(new Integer(j));
                     String customer = vt.elementAt(1).toString();
                     String supply_class = vt.elementAt(2).toString();
+                    String item_class = vt.elementAt(5).toString();
                     long hash_day = new Long(vt.elementAt(3).toString()).longValue();
-                    myLoggingService.shout(" Supplier " + cluster + " Customer " + customer + " Supply Class " + supply_class + " Hash_day " + hash_day);
+                    //myLoggingService.shout(" Supplier " + cluster + " Customer " + customer + " Supply Class " + supply_class + "Item "+item_class+ " Hash_day " + hash_day);
                     if (current_day == hash_day) {
-                        /* double pre_qty = 0;
+                         double pre_qty = 0;
                          if (j == 1) {
                              pre_qty = 0;
                          } else {
                              Vector vtb = (Vector) new_hash.get(new Integer(j - 1));
                              pre_qty = new Double(vtb.elementAt(4).toString()).doubleValue();
-                         } */
+                         }
+                        //Vector vt1 = (Vector) new_hash.get(new Integer(j - 1));
                         Vector vt1 = (Vector) new_hash.get(new Integer(j + 1));
-                        double pred_qty = new Double(vt1.elementAt(4).toString()).doubleValue();
+                        //double pred_qty = new Double(vt1.elementAt(4).toString()).doubleValue();
                         double prev_qty = new Double(vt.elementAt(4).toString()).doubleValue();
-                        double avg_qty = (0.9 * prev_qty) + (0.1 * pred_qty);
+                        double avg_qty = (0.8 * prev_qty) + (0.2 * pre_qty);
                         myLoggingService.shout("Supplier: " + cluster + " Customer: " + customer +
                                 " Supply Class " + supply_class + " Prediction for Day " + (current_day + 1) + " Quantity is " + avg_qty);
                         try {
@@ -1179,6 +1181,7 @@ public class PredictorPlugin extends ComponentPlugin {
                             NewTask new_task = getNewTask(vt1);
                             if (new_task != null) {
                                 myBS.publishAdd(new_task);
+                                disposition(new_task);
                                 //myLoggingService.shout("New Task ADDED");
                             }
                         }
@@ -1191,7 +1194,7 @@ public class PredictorPlugin extends ComponentPlugin {
 
             alarm = new TriggerFlushAlarm(currentTimeMillis() + 86400000);
             as.addAlarm(alarm);
-            myLoggingService.shout("Alarm");
+            //myLoggingService.shout("Alarm");
         } else
             return;
     }
@@ -1202,7 +1205,7 @@ public class PredictorPlugin extends ComponentPlugin {
         NewTask nt = pf.newTask();
 
         //Verb new_verb = new Verb("ForecastDemand");
-        Verb new_verb = new Verb("Supply");
+        Verb new_verb = new Verb("ForecastDemand");
         nt.setVerb(new_verb);
 
         NewPrepositionalPhrase npp = pf.newPrepositionalPhrase();
@@ -1247,7 +1250,7 @@ public class PredictorPlugin extends ComponentPlugin {
         as.setUID(newuid);
 
   		NewTypeIdentificationPG ntipg = (NewTypeIdentificationPG) as.getTypeIdentificationPG();
-        ntipg.setNomenclature(v.elementAt(6).toString());
+        ntipg.setNomenclature(v.elementAt(5).toString());
 
         nt.setDirectObject(as);
 
@@ -1261,7 +1264,7 @@ public class PredictorPlugin extends ComponentPlugin {
         PlanningFactory pf = (PlanningFactory) myDomainService.getFactory("planning");
         NewTask nt = pf.newTask();
 
-        Verb new_verb = new Verb("Supply");
+        Verb new_verb = new Verb("ForecastDemand");
         nt.setVerb(new_verb);
 
         NewPrepositionalPhrase npp = pf.newPrepositionalPhrase();
