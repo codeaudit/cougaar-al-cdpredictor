@@ -47,9 +47,9 @@
 		<copy todir="staging/doc/Logistics/psu/castellan/">
 			<fileset dir="doc"/>
 		</copy>
-		<signjar jar="${jar}" keystore="/home/build/signingCA_keystore" alias="privileged" storepass="keystore"/>
-		<signjar jar="data/libs/matlib.jar" keystore="/home/build/signingCA_keystore" alias="privileged" storepass="keystore"/>
-		<signjar jar="data/libs/jgl3.1.0.jar" keystore="/home/build/signingCA_keystore" alias="privileged" storepass="keystore"/>
+		<signjar jar="${jar}" keystore="/var/build/signingCA_keystore" alias="privileged" storepass="keystore"/>
+		<signjar jar="data/libs/matlib.jar" keystore="/var/build/signingCA_keystore" alias="privileged" storepass="keystore"/>
+		<signjar jar="data/libs/jgl3.1.0.jar" keystore="/var/build/signingCA_keystore" alias="privileged" storepass="keystore"/>
 		<copy file="${jar}" todir="staging/lib"/>
 		<copy file="test/configs/newminitestconfig/PlanEventLogConfig.xml" todir="staging/configs/common/"/>
 		<copy todir="staging/sys">
