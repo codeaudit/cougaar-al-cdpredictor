@@ -87,8 +87,8 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 	UnaryPredicate historyPredicate	= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof History;   }    };
 
-	class History
-	{
+	class History implements java.io.Serializable {
+
 		HashMap listOfSubItem;
 		String name = null;
 		public History(String name) {	// this name is for identification
@@ -114,7 +114,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		}
 	};
 
-	private class DateComparator implements Comparator {
+	private class DateComparator implements Comparator, java.io.Serializable {
 		
 		public int compare(Object o1, Object o2) {
 		    if (o1 == o2) return 0;
@@ -139,8 +139,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 	History history = null;
 
 	// I assume here that the record of allocation result will be kept in time sequence.
-	class AllocResult
-	{
+	class AllocResult implements java.io.Serializable 	{
 
 		public int success = 0;		public int end_time = 0;
 
