@@ -1,0 +1,5 @@
+#Castellan settings
+#Wed Oct 24 18:02:41 EDT 2001
+dotPath=/mnt/shared/ISAT/waj/gv1.7c/bin/dot
+tempPath=/usr/local/isat/temp
+dbPath=jdbc:mysql://192.168.1.130/?user=ultralog
