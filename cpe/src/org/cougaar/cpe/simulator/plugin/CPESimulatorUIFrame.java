@@ -2,13 +2,20 @@ package org.cougaar.cpe.simulator.plugin;
 
 import org.cougaar.cpe.model.WorldState;
 import org.cougaar.cpe.model.VGWorldConstants;
+import org.cougaar.cpe.model.WorldMetrics;
+import org.cougaar.cpe.model.MeasuredWorldMetrics;
 import org.cougaar.cpe.ui.WorldDisplayPanel;
+import org.cougaar.cpe.unittests.MetricsPanel;
+import org.cougaar.tools.techspecs.qos.MeasurementPoint;
+import org.cougaar.tools.techspecs.qos.TimePeriodMeasurementPoint;
+import org.cougaar.tools.techspecs.qos.TimePeriodMeasurement;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import java.io.File;
+import java.io.*;
+import java.util.Iterator;
 
 public class CPESimulatorUIFrame extends JFrame {
     private CPESimulatorPlugin plugin;
@@ -18,13 +25,21 @@ public class CPESimulatorUIFrame extends JFrame {
     JMenuItem miConfigure;
     JMenuItem miStart;
     private JMenuItem miDumpMeasurementPoints;
+    private MetricsPanel metricsGraphPanel;
 
     public CPESimulatorUIFrame( String agentName, CPESimulatorPlugin plugin ) {
         super( "World State " + agentName ) ;
         this.agentName = agentName ;
 
+        JTabbedPane mainPanel = new JTabbedPane() ;
+        mainPanel.addTab( "World", displayPanel = new WorldDisplayPanel( ws ) ); ;
+
+        metricsGraphPanel = new MetricsPanel( ws ) ;
+        mainPanel.addTab( "Metrics", metricsGraphPanel ); ;
+
         getContentPane().setLayout( new BorderLayout() );
-        getContentPane().add( displayPanel = new WorldDisplayPanel( ws ) ) ;
+        getContentPane().add( mainPanel  ) ;
+
 
         JMenuBar mb = new JMenuBar() ;
         setJMenuBar( mb );
@@ -75,6 +90,73 @@ public class CPESimulatorUIFrame extends JFrame {
             File f = fc.getSelectedFile() ;
             plugin.setSaveMPOutDir( f.getPath() );
             plugin.doDumpMeasurementPoints();
+
+            dumpLocalMetrics( f ) ;
+        }
+    }
+
+    private void dumpLocalMetrics(File f)
+    {
+        WorldMetrics wm = ws.getDefaultMetric() ;
+        if ( wm instanceof MeasuredWorldMetrics ) {
+            // Now, dump each of the measurement points.
+            MeasuredWorldMetrics mwm = (MeasuredWorldMetrics) wm ;
+            synchronized ( mwm ) {
+                dumpTimePeriodMeasurements( f, (TimePeriodMeasurementPoint) mwm.getEntryRate() ) ;
+                dumpTimePeriodMeasurements( f, (TimePeriodMeasurementPoint) mwm.getKills() ) ;
+                dumpTimePeriodMeasurements( f, (TimePeriodMeasurementPoint) mwm.getPenalties() ) ;
+                dumpTimePeriodMeasurements( f, (TimePeriodMeasurementPoint) mwm.getViolations() ) ;
+                dumpTimePeriodMeasurements( f, (TimePeriodMeasurementPoint) mwm.getAttrition() ) ;
+            }
+        }
+    }
+
+    private void dumpTimePeriodMeasurements(File f, TimePeriodMeasurementPoint mp)
+    {
+        File newFile = new File( f, mp.getName() + ".csv" ) ;
+        try
+        {
+            FileOutputStream fos = new FileOutputStream( newFile ) ;
+            PrintWriter pw = new PrintWriter( fos ) ;
+            Iterator iter = mp.getMeasurements() ;
+            while (iter.hasNext())
+            {
+                TimePeriodMeasurement measurement = (TimePeriodMeasurement) iter.next();
+                pw.print( measurement.getStartTime() );
+                if ( iter.hasNext() ) {
+                    pw.print( ",") ;
+                }
+            }
+            pw.println();
+            iter = mp.getMeasurements() ;
+            while (iter.hasNext())
+            {
+                TimePeriodMeasurement measurement = (TimePeriodMeasurement) iter.next();
+                pw.print( measurement.getEndTime() );
+                if ( iter.hasNext() ) {
+                    pw.print( ",") ;
+                }
+            }
+            pw.println();
+            iter = mp.getMeasurements() ;
+            while (iter.hasNext())
+            {
+                TimePeriodMeasurement measurement = (TimePeriodMeasurement) iter.next();
+                pw.print( measurement.getValue() );
+                if ( iter.hasNext() ) {
+                    pw.print( ",") ;
+                }
+            }
+            pw.close();
+            fos.close();
+        }
+        catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
         }
     }
 
@@ -97,6 +179,7 @@ public class CPESimulatorUIFrame extends JFrame {
     public void setWorldState(WorldState ws) {
         this.ws = ws;
         displayPanel.setWorldState( ws );
+        metricsGraphPanel.setWorldState( ws );
     }
 
     public class RefreshThread extends Thread {

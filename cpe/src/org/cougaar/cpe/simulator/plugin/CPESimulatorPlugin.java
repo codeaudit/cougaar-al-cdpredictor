@@ -12,6 +12,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.cougaar.cpe.agents.messages.*;
 import org.cougaar.cpe.agents.Constants;
+import org.cougaar.cpe.agents.plugin.WorldStateReference;
 import org.cougaar.cpe.model.*;
 import org.cougaar.cpe.model.events.CPEEventListener;
 import org.cougaar.cpe.model.events.CPEEvent;
@@ -55,6 +56,7 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
     private String targetGeneratorConfigFile;
     private CPEEventListener worldEventListener;
     private ArrayList worldEvents = new ArrayList();
+    private WorldStateReference refToWorldState;
 
     protected void execute() {
         // First, check to see if there are any new client relays.
@@ -207,6 +209,9 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                         else if ( measurementPoint instanceof TimestampMeasurementPoint ) {
                             dumpTimestampMeasurements( ( TimestampMeasurementPoint ) measurementPoint, fos );
                         }
+                        else if ( measurementPoint instanceof TimePeriodMeasurementPoint ) {
+                            dumpTimePeriodMeasurements( ( TimePeriodMeasurementPoint ) measurementPoint, fos ) ;
+                        }
                         fos.flush();
                         fos.close();
                     }
@@ -243,6 +248,41 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
             }
 
         }
+    }
+
+    private void dumpTimePeriodMeasurements(TimePeriodMeasurementPoint mp, FileOutputStream fos)
+    {
+        Iterator iter = mp.getMeasurements() ;
+        PrintWriter pw = new PrintWriter( fos ) ;
+        while (iter.hasNext())
+        {
+            TimePeriodMeasurement measurement = (TimePeriodMeasurement) iter.next();
+            pw.print( measurement.getStartTime() );
+            if ( iter.hasNext() ) {
+                pw.print( ",") ;
+            }
+        }
+        pw.println();
+        iter = mp.getMeasurements() ;
+        while (iter.hasNext())
+        {
+            TimePeriodMeasurement measurement = (TimePeriodMeasurement) iter.next();
+            pw.print( measurement.getEndTime() );
+            if ( iter.hasNext() ) {
+                pw.print( ",") ;
+            }
+        }
+        pw.println();
+        iter = mp.getMeasurements() ;
+        while (iter.hasNext())
+        {
+            TimePeriodMeasurement measurement = (TimePeriodMeasurement) iter.next();
+            pw.print( measurement.getValue() );
+            if ( iter.hasNext() ) {
+                pw.print( ",") ;
+            }
+        }
+        pw.close();
     }
 
     /**
@@ -522,6 +562,15 @@ public class CPESimulatorPlugin extends ComponentPlugin implements MessageSink {
                    worldEvents.add( e ) ;
                 }
             });
+
+            // Now, add some measurements.
+            MeasuredWorldMetrics metrics =
+                    new MeasuredWorldMetrics( "Metrics", referenceWorldState, 40000 ) ;
+            referenceWorldState.setDefaultMetric( metrics );
+
+            // Publish this to the BB.
+            refToWorldState = new WorldStateReference( "WorldState", referenceWorldState ) ;
+            getBlackboardService().publishAdd( refToWorldState );
 
             // Add one to measure and track the data for display purposes.
 

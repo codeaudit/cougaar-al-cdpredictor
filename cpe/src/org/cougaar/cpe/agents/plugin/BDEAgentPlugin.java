@@ -674,6 +674,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 				(BNAggregate) referenceZoneWorld.getAggUnitEntity(unitId);
 			agg.setZonePlan(zonePlan);
 		}
+        getBlackboardService().publishChange(worldStateRef);
 
 		plans = zonePlanner.getPlans(true);
 
