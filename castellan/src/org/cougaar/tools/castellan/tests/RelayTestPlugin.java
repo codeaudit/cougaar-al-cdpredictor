@@ -79,6 +79,7 @@ public class RelayTestPlugin extends ComponentPlugin {
             iaom.setValue( new Integer( count%2 ) );
             count++ ;
             bs.publishChange( mt ) ;
+            bs.publishChange( iaom ) ;
             bs.closeTransaction();
         }
 
