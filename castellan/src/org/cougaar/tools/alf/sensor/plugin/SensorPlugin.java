@@ -19,8 +19,15 @@
  * </copyright>
  */
 
-
+// Hong : Begin
 package org.cougaar.tools.alf.sensor.plugin;
+
+import org.cougaar.tools.alf.sensor.TheSensor;
+import org.cougaar.core.adaptivity.InterAgentOperatingMode;
+import org.cougaar.core.agent.ClusterIdentifier;
+import org.cougaar.core.adaptivity.OMCRangeList;
+import org.cougaar.tools.castellan.planlog.DBEventLog;
+// Hong : End
 
 import org.cougaar.core.plugin.*;
 import org.cougaar.core.service.*;
@@ -32,26 +39,36 @@ import org.cougaar.tools.castellan.ldm.*;
 import org.cougaar.tools.castellan.server.ServerBlackboardMTImpl;
 import org.cougaar.tools.castellan.planlog.PDUBuffer;
 import org.cougaar.tools.castellan.planlog.InMemoryEventLog;
-import org.cougaar.tools.castellan.planlog.DBEventLog;
+import org.cougaar.tools.castellan.planlog.PersistentEventLog;
 import org.cougaar.tools.castellan.pdu.PDU;
 import org.cougaar.tools.castellan.pdu.EventPDU;
-import org.cougaar.tools.alf.sensor.TheSensor;
-import org.cougaar.core.adaptivity.InterAgentOperatingMode;
-import org.cougaar.core.agent.ClusterIdentifier;
-import org.cougaar.core.adaptivity.OMCRangeList;
 
-import java.util.Iterator;
-import java.util.Collection;
-import java.util.Properties;
-
-/**
- *
- * @author  Yunho Hong
- * @version
- */
+import java.util.*;
 
 public class SensorPlugin extends ComponentPlugin
 {
+
+    /**
+     * Thread used to periodically flush the buffer.
+     */
+    class FlushThread extends Thread {
+
+        public void run ()
+        {
+            while ( true ) {
+                try {
+                    Thread.sleep( 2000 );
+                }
+                catch ( InterruptedException e ) {
+                }
+
+                flushBuffer() ;
+            }
+        }
+
+        long delay = 2000 ;
+    }
+
     class TriggerFlushAlarm implements PeriodicAlarm
     {
         public TriggerFlushAlarm(long expTime)
@@ -73,9 +90,7 @@ public class SensorPlugin extends ComponentPlugin
         public void expire()
         {
             expired = true;
-		getBlackboardService().openTransaction();
             flushBuffer();
-		getBlackboardService().closeTransaction();
         }
 
         public boolean hasExpired()
@@ -99,7 +114,7 @@ public class SensorPlugin extends ComponentPlugin
     /**
      * Extracts received log messages.
      */
-    UnaryPredicate logMessagePredicate = new UnaryPredicate()
+    protected UnaryPredicate logMessagePredicate = new UnaryPredicate()
     {
         public boolean execute(Object o)
         {
@@ -115,7 +130,7 @@ public class SensorPlugin extends ComponentPlugin
     /**
      * Extracts received log messages.
      */
-    UnaryPredicate pduBufferPredicate = new UnaryPredicate()
+    protected UnaryPredicate pduBufferPredicate = new UnaryPredicate()
     {
         public boolean execute(Object o)
         {
@@ -128,11 +143,13 @@ public class SensorPlugin extends ComponentPlugin
         ServiceBroker broker = getServiceBroker();
         log = (LoggingService) broker.getService(this, LoggingService.class, null);
 
+		// Hong : Begin
+		String fbtype = null;
         bs = getBlackboardService();
+		// Hong : End
+
         pduBufferSubscription = (IncrementalSubscription) bs.subscribe(pduBufferPredicate);
         Collection c = getParameters();
-
-		String fbtype = null; // this represents falling behind sensor type.
 
         Properties props = new Properties() ;
         // Iterate through the parameters
@@ -158,20 +175,23 @@ public class SensorPlugin extends ComponentPlugin
             }
             else if ( count == 4 ) {
                 props.put( "password", s ) ;
-            }            
+            } // Hong : Begin
 			else if ( count == 5 ) {  // Specify type of falling behind sensor, "LookupTable" or "SVs" 
 				fbtype = s;
-            }
+            } // Hong : End
+
             count++;
         }
 
         // Create event logs.
-        System.out.println("LogServerPlugin:: Hostname=" + props.getProperty("dbpath") + ",username=" + props.getProperty("user") ) ;
+        System.out.println("SensorPlugin:: Hostname=" + props.getProperty("dbpath") + ",username=" + props.getProperty("user") ) ;
         if (logToMemory)
         {
-		  // instantiate a falling behind sensor
+		  // Hong : Begin
+          // instantiate a falling behind sensor
           System.out.println( "SensorPlugin instantiate sensor " + fbtype);
    		  sensor = new TheSensor(this, fbtype);	
+		  // Hong : End
         }
 
         if (logToDatabase)
@@ -179,29 +199,59 @@ public class SensorPlugin extends ComponentPlugin
             String databaseName = getDatabaseName();
             try
             {
+				// Hong : Begin
                 DBLog = new DBEventLog(databaseName, props);
+				// Hong : End
             }
             catch (Exception e)
             {
-                if (log.isWarnEnabled())
+                if (log.isErrorEnabled())
                 {
                     log.error("Could not open \"" + databaseName + "\" persistent database for writing.");
                 }
+                System.out.println("Could not open database for writing.");
                 System.out.println(e);
                 e.printStackTrace();
             }
             log.info( "Opened " + databaseName + " for writing." );
-            System.out.println( "LogServerPlugin::Opened " + databaseName + " for writing." );
+            System.out.println( "SensorPlugin::Opened " + databaseName + " for writing." );
         }
 
-        AlarmService as = getAlarmService() ;
-        as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
-
+        //AlarmService as = getAlarmService() ;
+        //as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
+        flushThread = new FlushThread() ;
+        flushThread.start();
     }
 
     protected String getDatabaseName()
     {
-        return getClusterIdentifier().cleanToString() + currentTimeMillis();
+        Date d = new Date( System.currentTimeMillis() ) ;
+        // Hard code EST for now.
+        String[] ids = TimeZone.getAvailableIDs(-5 * 60 * 60 * 1000);
+        SimpleTimeZone est = new SimpleTimeZone(-5 * 60 * 60 * 1000, ids[0]);
+        GregorianCalendar calendar = new GregorianCalendar( est ) ;
+        calendar.setTime( d );
+        int dom = calendar.get( Calendar.DAY_OF_MONTH ) ;
+        int moy = calendar.get( Calendar.MONTH ) ;
+        int y = calendar.get( Calendar.YEAR ) ;
+        int hod = calendar.get( Calendar.HOUR_OF_DAY ) ;
+        int min = calendar.get( Calendar.MINUTE ) ;
+
+        StringBuffer buf = new StringBuffer() ;
+        if ( moy < 10 ) {
+            buf.append( '0' ) ;
+        }
+        buf.append( moy ) ;
+        if ( dom < 10 ) {
+            buf.append( '0' ) ;
+        }
+        buf.append( dom ) ;
+        buf.append( y ) ;
+        buf.append( '_' ) ;
+        buf.append( hod ) ;
+        buf.append( min ) ;
+
+        return getBindingSite().getAgentIdentifier().cleanToString() + buf.toString() ;
     }
 
     public void execute()
@@ -236,8 +286,9 @@ public class SensorPlugin extends ComponentPlugin
                     {
                         for (Iterator iter = buffer.getIncoming() ; iter.hasNext() ;)
                         {
-  					        sensor.add((PDU) iter.next());		// Falling behind sensor 2 by Hong
-						}
+							// Hong : Begin
+                            sensor.add((PDU) iter.next());		// Falling behind sensor 2 by Hong
+                        }
                     }
                     if (logToDatabase)
                     {
@@ -245,6 +296,7 @@ public class SensorPlugin extends ComponentPlugin
                         {
                             for (Iterator iter = buffer.getIncoming() ; iter.hasNext() ;)
                             {
+								// Hong : Begin
                                 DBLog.add((PDU) iter.next());
                             }
                         }
@@ -253,8 +305,10 @@ public class SensorPlugin extends ComponentPlugin
                 buffer.clearIncoming();
             }
         }
+
     }
 
+	// Hong : Begin
     public void publishAdd(InterAgentOperatingMode a) {
 
 		bs.publishAdd(a);
@@ -268,7 +322,8 @@ public class SensorPlugin extends ComponentPlugin
 
     public UIDService getUIDService() {
 
-	 return (UIDService) getServiceBroker().getService(this, UIDService.class, null);
+		return (UIDService) getServiceBroker().getService(this, UIDService.class, null);
+
     }
 
 	public ConfigFinder obtainConfigFinder() {
@@ -277,19 +332,17 @@ public class SensorPlugin extends ComponentPlugin
 
 	}
 
-    String databaseName = null;
-    boolean logToMemory = true, logToDatabase = false;
-
+	BlackboardService bs;
     DBEventLog DBLog;
-    PDUBuffer buffer;
-    LoggingService log ;
-    IncrementalSubscription pduBufferSubscription;
+	TheSensor sensor;
+	// Hong : End
 
-	// Feedback
-	// Yunho and Hari's Loadforecaster and Falling behind sensor
-   TheSensor sensor;		
-//  InterAgentOperatingMode[] psu_fb;
-//   InterAgentOperatingMode[] psu_lf3;
-//   int[] prev_state;
-   BlackboardService bs;
+    protected FlushThread flushThread ;
+    protected String databaseName = null;
+    protected boolean logToMemory = false, logToDatabase = false;
+    protected InMemoryEventLog memoryLog;
+    protected PersistentEventLog persistentLog;
+    protected PDUBuffer buffer;
+    protected LoggingService log ;
+    protected IncrementalSubscription pduBufferSubscription;
 }
