@@ -1,3 +1,4 @@
+echo off
 set CASTELLANHOME=C:\cvslocal\hydra
 set LIBPATH=%COUGAAR_INSTALL_PATH%/lib/castellan.jar;
 set LIBPATH=%LIBPATH%;%COUGAAR_INSTALL_PATH%/lib/core.jar;
