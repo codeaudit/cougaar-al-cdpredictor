@@ -204,7 +204,8 @@ public class PredictorDataPlugin extends ComponentPlugin {
           alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
           as.addAlarm(alarm);
 					Asset as = task.getDirectObject();
-					String item_name = as.getTypeIdentificationPG().getNomenclature();
+					//String item_name = as.getTypeIdentificationPG().getNomenclature();
+					String item_name = as.getTypeIdentificationPG().getTypeIdentification();
 					CustomerRoleKey crk = new CustomerRoleKey(owner, comp);
 					HashMap inner_hashmap = (HashMap) hashmap.get(crk);
 					ArrayList valuesList = (ArrayList)inner_hashmap.get(item_name);
@@ -271,6 +272,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 			if (processedMap!= null) {
 				myLoggingService.shout("DemandModelPublished "+processedMap.size());
 				myBlackBoardService.publishChange(phm);
+				if(alarm!= null) alarm.cancel();
 			}
 		long end = System.currentTimeMillis();
 			myLoggingService.shout("executeAlarm() method end time " +  new Date(end)

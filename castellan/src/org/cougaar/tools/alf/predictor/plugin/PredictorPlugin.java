@@ -43,6 +43,7 @@ import java.util.*;
 import java.io.PrintWriter;
 import java.io.BufferedWriter;
 
+
 public class PredictorPlugin extends ComponentPlugin {
 
 	private LoggingService myLoggingService;
@@ -143,7 +144,7 @@ public class PredictorPlugin extends ComponentPlugin {
 			else {
 				rehydrate_flag = true;
 				retrieveExecutionDataListFromBB();
-				if (hashmap == null) retrievePlanningDataListFromBB();
+				if (hashmap == null)	retrievePlanningDataListFromBB();
 			}
 		} else {
 			//Put the subscriptions here for a different algorithm (Moving average, Support Vector) implementation
@@ -202,7 +203,7 @@ public class PredictorPlugin extends ComponentPlugin {
 
 	public void printMapDetails(HashMap hashmap){
 		for (Iterator iterator = hashmap.values().iterator(); iterator.hasNext();) {
-			HashMap hashMap = (HashMap) iterator.next();
+			HashMap hashMap = (HashMap)iterator.next();
 			for (Iterator iterator1 = hashMap.keySet().iterator(); iterator1.hasNext();) {
 				String itemname = (String) iterator1.next();
 				if(itemname.equalsIgnoreCase("JP8")) {
@@ -304,7 +305,8 @@ public class PredictorPlugin extends ComponentPlugin {
 				String customer = (String) task.getPrepositionalPhrase("For").getIndirectObject();
 				String supplyclass = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
 				Asset as = task.getDirectObject();
-				String item_name = as.getTypeIdentificationPG().getNomenclature();
+				//String item_name = as.getTypeIdentificationPG().getNomenclature();
+				String item_name = as.getTypeIdentificationPG().getTypeIdentification();
 				addAsset(as);
 				if(task.getUID().getOwner().equalsIgnoreCase("Prediction")) System.out.println("Is a Prediction Task: "+task.getUID());
 				if(as!= null) {
@@ -346,12 +348,14 @@ public class PredictorPlugin extends ComponentPlugin {
 	}
 
 	public void addAsset(Asset as) {
-		String itemname = as.getTypeIdentificationPG().getNomenclature();
+		//String itemname = as.getTypeIdentificationPG().getNomenclature();
+		String itemname = as.getTypeIdentificationPG().getTypeIdentification();
 		boolean isPresent = false;
 		if (asset_list.isEmpty())	asset_list.add(as);
 		else {
 			for (int i = 0; i < asset_list.size(); i++) {
-				String test = ((Asset) asset_list.get(i)).getTypeIdentificationPG().getNomenclature();
+				//String test = ((Asset) asset_list.get(i)).getTypeIdentificationPG().getNomenclature();
+				String test = ((Asset) asset_list.get(i)).getTypeIdentificationPG().getTypeIdentification();
 				if (test.equalsIgnoreCase(itemname) == true) {
 					isPresent = true;
 					break;
@@ -368,7 +372,8 @@ public class PredictorPlugin extends ComponentPlugin {
 	public Asset getAsset(String itemName) {
 		for (int i = 0; i < asset_list.size(); i++) {
 			Asset asset = (Asset) asset_list.get(i);
-			String item_name = asset.getTypeIdentificationPG().getNomenclature();
+			//String item_name = asset.getTypeIdentificationPG().getNomenclature();
+			String item_name = asset.getTypeIdentificationPG().getTypeIdentification();
 			if (item_name.equalsIgnoreCase(itemName)) return asset;
 		}
 		return null;
@@ -545,28 +550,28 @@ public class PredictorPlugin extends ComponentPlugin {
 										} */
 										//double finalPredictionQuantity = 0.7 * quantity + 0.2 * firstDataPoint + 0.1 * secondDataPoint + 0.05 * thirdDataPoint;
 										double finalPredictionQuantity = quantity;
-										if (((int) pred_gap / 86400000) == 1) {
-											commitmentTime = getPredictionCommitmentDate() + 3 * 86400000;
-											endTime = commitmentTime + 86400000;
-											Values v = new Values(commitmentTime, endTime, finalPredictionQuantity);
-											NewTask new_task = getNewTask(customerRoleKey.getCustomerName(), customerRoleKey.getRoleName(),
-																				 item_name, v);
-											myBS.publishAdd(new_task);
-											if(item_name.equalsIgnoreCase("JP8"))
-											myLoggingService.shout(cluster + ": NEW TASK ADDED PPOUTPUT1" + new_task);
-											number_of_prediction_items++;
-											break;
-										} else {
-											commitmentTime = getPredictionCommitmentDate() + 4 * 86400000;
-											endTime = commitmentTime + 86400000;
-											Values v = new Values(commitmentTime, endTime, finalPredictionQuantity);
-											NewTask new_task = getNewTask(customerRoleKey.getCustomerName(), customerRoleKey.getRoleName(),
-																				 item_name, v);
-											myBS.publishAdd(new_task);
-											if(item_name.equalsIgnoreCase("JP8"))
-											myLoggingService.shout(cluster + ": NEW TASK ADDED PPOUTPUT" + new_task);
-											number_of_prediction_items++;
-											break;
+										if(finalPredictionQuantity!= -1) {
+											if (((int) pred_gap / 86400000) == 1) {
+												commitmentTime = getPredictionCommitmentDate() + 3 * 86400000;
+												endTime = commitmentTime + 86400000;
+												Values v = new Values(commitmentTime, endTime, finalPredictionQuantity);
+												NewTask new_task = getNewTask(customerRoleKey.getCustomerName(), customerRoleKey.getRoleName(),
+																					 item_name, v);
+												myBS.publishAdd(new_task);
+												myLoggingService.shout(cluster + ": NEW TASK ADDED PPOUTPUT1" + new_task);
+												number_of_prediction_items++;
+												break;
+											} else {
+												commitmentTime = getPredictionCommitmentDate() + 4 * 86400000;
+												endTime = commitmentTime + 86400000;
+												Values v = new Values(commitmentTime, endTime, finalPredictionQuantity);
+												NewTask new_task = getNewTask(customerRoleKey.getCustomerName(), customerRoleKey.getRoleName(),
+																					 item_name, v);
+												myBS.publishAdd(new_task);
+												myLoggingService.shout(cluster + ": NEW TASK ADDED PPOUTPUT" + new_task);
+												number_of_prediction_items++;
+												break;
+											}
 										}
 									} else break;
 								} else break;
@@ -618,7 +623,7 @@ public class PredictorPlugin extends ComponentPlugin {
 				boolean foundAsset = false;
 				for (Iterator iterator1 = map.keySet().iterator(); iterator1.hasNext();) {
 					String itemname = (String) iterator1.next();
-					if(itemname.equalsIgnoreCase(itemName)){
+					if(itemname.equalsIgnoreCase(itemName)) {
 						ArrayList valuesList = (ArrayList)map.get(itemName);
 						Values value = (Values)valuesList.get(0);
 						asset = value.getAsset();
@@ -631,7 +636,7 @@ public class PredictorPlugin extends ComponentPlugin {
 						foundAsset = true;
 						break;
 					}
-				} if(foundAsset)break;
+				} if(foundAsset)	break;
 			}
 		}
 		return nt;
