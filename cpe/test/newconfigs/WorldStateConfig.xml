@@ -13,6 +13,12 @@
       <DeltaT value="5"/>
       <SimulationDuration value="36000000"/>
       <AutoResupply value="true"/>
+      <AttritionFactor value="1"/>
+      <KillFactor value="15"/>
+      <PenaltyFactor value="5"/>
+      <ViolationFactor value="50"/>
+      <FuelConsumptionFactor value="0.2"/>
+      <AmmoConsumptionFactor value="0"/>
       <MetricsIntegrationPeriod value="5000"/>
   </settings>
 </WorldStateConfig>
