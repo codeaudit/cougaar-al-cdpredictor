@@ -9,6 +9,7 @@ import com.axiom.lib.util.DoubleArray;
 import org.cougaar.tools.techspecs.qos.DelayMeasurementPoint;
 import org.cougaar.tools.techspecs.qos.DelayMeasurement;
 import org.cougaar.tools.techspecs.qos.TimestampMeasurement;
+import org.cougaar.tools.techspecs.qos.MeasurementPoint;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.ChartFactory;
@@ -21,7 +22,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.Iterator;
 
-public class DelayPlotPanel2 extends JPanel implements GraphPanel {
+public class DelayPlotPanel2 extends JPanel implements MPObserver {
     private long[] timeArray;
     private long[] values;
     private long baseTime = 0 ;
@@ -63,6 +64,11 @@ public class DelayPlotPanel2 extends JPanel implements GraphPanel {
         panel = new ChartPanel( chart ) ;
         add( BorderLayout.CENTER, panel ) ;
         add( BorderLayout.SOUTH, infoLabel ) ;
+    }
+
+    public MeasurementPoint getMeasurementPoint()
+    {
+        return dmp ;
     }
 
     public long getBaseTime() {
