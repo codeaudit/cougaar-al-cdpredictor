@@ -174,6 +174,10 @@ public class ControlMeasurement extends MeasurementImpl implements Cloneable {
 		//returns null only if the array is null
 		return null;
 	}
+	
+	public long getTimeStamp(){
+		return timeStamp;
+	}
 
 	protected double opTempo;
 	protected long timeStamp;
