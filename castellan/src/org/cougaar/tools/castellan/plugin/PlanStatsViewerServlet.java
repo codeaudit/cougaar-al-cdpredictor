@@ -2,6 +2,7 @@ package org.cougaar.tools.castellan.plugin;
 
 import org.cougaar.core.servlet.*;
 import org.cougaar.util.UnaryPredicate;
+import org.cougaar.planning.ldm.plan.Task;
 
 import javax.servlet.http.*;
 import java.io.IOException;
@@ -38,6 +39,22 @@ public class PlanStatsViewerServlet extends HttpServlet  {
                 return false ;
             }
         }) ;
+
+        // Count up the tasks.
+        Collection c2 = bss.queryBlackboard( new UnaryPredicate() {
+            public boolean execute(Object o) {
+                if ( o instanceof Task ) {
+                    return true ;
+                }
+                return false ;
+            }
+        } ) ;
+        int taskCount = 0 ;
+        for ( Iterator i2 = c2.iterator();i2.hasNext();) {
+            i2.next() ;
+            taskCount++ ;
+        }
+
         bss.getBlackboardService().closeTransaction();
 
         PlanLogStats stats = null ;
@@ -126,6 +143,12 @@ public class PlanStatsViewerServlet extends HttpServlet  {
         out.println( "       <td ># Tasks seen at execute method<br>" ) ;
         out.println( "       </td>" ) ;
         out.println( "       <td >" + stats.getNumTasksSeenDebug() + "<br>" ) ;
+        out.println( "       </td>" ) ;
+        out.println( "     </tr>" ) ;
+        out.println( "     <tr>" ) ;
+        out.println( "       <td ># Tasks seen through query<br>" ) ;
+        out.println( "       </td>" ) ;
+        out.println( "       <td >" + taskCount + "<br>" ) ;
         out.println( "       </td>" ) ;
         out.println( "     </tr>" ) ;
         out.println( "" ) ;
