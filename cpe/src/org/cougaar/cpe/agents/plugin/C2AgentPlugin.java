@@ -380,7 +380,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     public void DoUpdateWorldStateTimer( TimerEvent te ) {
         log.shout( getAgentIdentifier() + " updating world state to superior.");
         gmrt.sendMessage( superior.getMessageAddress(),
-                new UnitStatusUpdateMessage( null, ( WorldStateModel ) perceivedWorldState.clone()) ) ;
+                new BNStatusUpdateMessage( getAgentIdentifier().getAddress(), ( WorldStateModel ) perceivedWorldState.clone()) ) ;
     }
 
     public void planAndDistribute() {
