@@ -850,10 +850,10 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 //			TODO NG: Need ET (update)
 			long endTime1 = System.currentTimeMillis();
 
-						updateUnitStatusDelayMP.addMeasurement(
+			updateProcessMP.addMeasurement(
 							new DelayMeasurement(
-								"updateUnitStatusDelayMP",
-								"updateUnitStatusDelayMP",
+								"ProcessUpdateBN",
+								"ProcessUpdateBN",
 								null,
 								startTime1,
 								endTime1));
