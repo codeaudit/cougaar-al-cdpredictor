@@ -22,6 +22,8 @@ import org.cougaar.core.service.UIDService;
 import org.cougaar.core.relay.Relay;
 import org.cougaar.core.agent.service.alarm.Alarm;
 import java.io.Serializable;
+import org.cougaar.cpe.agents.messages.ControlMessage;
+import org.cougaar.core.adaptivity.OperatingModeCondition;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -57,6 +59,13 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 				return false;
 			}
 		});
+		
+		opModeCondSubscription = (IncrementalSubscription) getBlackboardService().subscribe( new UnaryPredicate() {
+					public boolean execute(Object o) {
+						return o instanceof OperatingModeCondition ;
+					}
+				}) ;
+		
 	}
 
 	/**
@@ -136,7 +145,7 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 										- delayMeasurement.getTimestamp();
 								total_delay[4][0] += delay;
 								total_delay[4][1]++;
-								System.out.println("DELAY " + delay);
+								//System.out.println("DELAY " + delay);
 								typeOfDelayMeasurement = 4;
 							}
 						}
@@ -192,6 +201,8 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 			measurement();
 		}
 		findRelay();
+		receiveMessage(relayFromSuperior);
+		publishOpModeChange(null);
 	}
 
 	public void measurement() {
@@ -255,6 +266,9 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 		}
 	}
 
+	/*
+	 * sends a control message 'msg' to superior
+	 */
 	private void sendMessage(Object msg) {
 		boolean wasOpen = true;
 		if (!getBlackboardService().isTransactionOpen()) {
@@ -272,6 +286,52 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 			getBlackboardService().closeTransaction();
 		}
 	}
+	
+	/*
+	 * receives a control parameter set from superior
+	 */
+	private Object receiveMessage(ControlTargetBufferRelay ctbr)
+	{
+		if (ctbr!=null)
+		{
+			Object[] o = (ctbr.clearIncoming());
+			if (o.length>0){
+				if (o[0] instanceof ControlMessage)
+					System.out.println(((ControlMessage)o[0]).getControlParameter("BN1Replan"));
+				return o[0];
+			}							
+		}
+		return null;
+	}
+	
+	private void publishOpModeChange(Object opmode) {
+			boolean wasOpen = true;
+			if (!getBlackboardService().isTransactionOpen()) {
+				wasOpen = false;
+				getBlackboardService().openTransaction();
+			}
+			
+		
+			//use the changed opmode and publish it
+			Collection opModeCollection = opModeCondSubscription.getCollection();
+			Iterator iter = opModeCollection.iterator();
+			while (iter.hasNext()) {
+				OperatingModeCondition omc = (OperatingModeCondition) iter.next();
+			if (omc.getName().equals("ReplanPeriod"))
+			{
+				//change it to new value
+				omc.setValue(new Integer(70000));
+				System.out.println("Operating mode changed");	
+			}
+								
+			}
+			
+
+			if (getBlackboardService().isTransactionOpen() && !wasOpen) {
+				getBlackboardService().closeTransaction();
+			}
+			
+		}
 
 	public class MeasurementAlarm implements Alarm {
 		private boolean expired;
@@ -316,9 +376,13 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 
 	LoggingService logger;
 	ArrayList measurementPoints = new ArrayList();
+	ArrayList opModes = new ArrayList();
 	long baseTime = 0;
 	IncrementalSubscription measurementPointSubscription,
-		controlTargetRelaySubscription;
+		controlTargetRelaySubscription,
+		opModeCondSubscription;
 	private boolean started = false;
 	ControlTargetBufferRelay relayFromSuperior;
+	HashMap h = new HashMap();
+
 }
