@@ -1,0 +1,9 @@
+<CPConfig>
+   <actions>
+       <BDEReplanPeriod value="2" />
+       <BDEPlanningDepth value="7" />
+       <BDEPlanningBreadth value="50" />
+       <BDEPlanningDelay value="1" />
+       <BDEUpdateStatusNIU value="0" />
+   </actions>
+</CPConfig>

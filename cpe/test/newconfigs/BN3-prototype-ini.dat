@@ -1,0 +1,9 @@
+[Prototype]     MilitaryOrganization
+        
+[UIC]           "UIC/BN3"
+
+[Relationship]
+Superior        "BDE1"    ""
+
+[ClusterPG]
+MessageAddress	MessageAddress "BN3"

@@ -1,0 +1,2 @@
+java -server -cp .;%CLASSPATH%;%COUGAAR_INSTALL_PATH%\lib\core.jar;%COUGAAR_INSTALL_PATH%\lib\glm.jar;%COUGAAR_INSTALL_PATH%\lib\planning.jar;%COUGAAR_INSTALL_PATH%\lib\util.jar -mx768m vgworld.unittests.VGSimulator
+pause

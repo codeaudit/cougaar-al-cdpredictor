@@ -1,0 +1,9 @@
+[Prototype]     MilitaryOrganization
+        
+[UIC]           "UIC/BDE1"
+
+[ClusterPG]
+MessageAddress   MessageAddress "BDE1"
+
+[OrganizationPG]
+Roles                Collection<Role>   "Headquarters"

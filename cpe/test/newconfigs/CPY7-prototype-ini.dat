@@ -1,0 +1,12 @@
+[Prototype]     MilitaryOrganization
+        
+[UIC]           "UIC/CPY7"
+
+[Relationship]
+Superior        "BN3"    ""
+
+[ClusterPG]
+MessageAddress	MessageAddress "CPY7"
+
+[OrganizationPG]
+Roles                Collection<Role>   "Combat"

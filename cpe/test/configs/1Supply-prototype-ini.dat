@@ -1,0 +1,17 @@
+[Prototype]     MilitaryOrganization
+        
+[UIC]           "UIC/1Supply"
+
+[Relationship]
+Superior        "1BDE"    ""
+Supporting      "1CP"    "SupplyProvider"
+Supporting      "2CP"    "SupplyProvider"
+Supporting      "3CP"    "SupplyProvider"
+Supporting      "4CP"    "SupplyProvider"
+
+[ClusterPG]
+MessageAddress	MessageAddress "1Supply"
+
+[OrganizationPG]
+Roles                Collection<Role>   "SupplyProvider"
+

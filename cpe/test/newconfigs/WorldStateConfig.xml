@@ -1,0 +1,16 @@
+<WorldStateConfig>
+  <settings>
+      <BoardWidth value="36"/>
+      <BoardHeight value="25"/>
+      <PenaltyHeight value="4"/>
+      <NumberOfBNUnits value="3"/>
+      <NumberOfCPYUnitsPerBN value="3"/>
+      <ZoneGridSize value="2.0"/>
+      <RecoveryHeight value="-1.5"/>
+      <NumberOfSupplyUnits value="1"/>
+      <NumberOfSupplyVehicles value="8"/>
+      <InitialNumberOfTargets value="3"/>
+      <DeltaT value="5"/>
+      <SimulationDuration value="36000000"/>
+  </settings>
+</WorldStateConfig>

@@ -1,0 +1,9 @@
+[Prototype]     MilitaryOrganization
+        
+[UIC]           "UIC/1BN"
+
+[Relationship]
+Superior        "1BDE"    ""
+
+[ClusterPG]
+MessageAddress	MessageAddress "1BN"

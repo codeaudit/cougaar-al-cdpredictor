@@ -1,0 +1,17 @@
+<CPConfig>
+   <actions>
+       <CPYUpdateStatusNIU value="2000" />
+       <CPYUpdateManueverPlanNIU value="1500" />
+       <CPYUpdateTimerPeriod value="30000" />
+       <BNReplanTimerPeriod value="60000" />
+       <BNUpdateStatusNIU value="500" />
+       <BNPlanningDepth value="3" />
+       <BNPlanningBreadth value="20" />
+       <BNPlanningDelay value="10000" />
+       <BDEReplanPeriod value="4" />
+       <BDEPlanningDepth value="6" />
+       <BDEPlanningBreadth value="60" />
+       <BDEPlanningDelay value="1" />
+       <SupplyProcessManuverPlanNIU value="2500" />
+   </actions>
+</CPConfig>

@@ -1,0 +1,6 @@
+[Prototype]     Organization
+        
+[UIC]           "UIC/WorldState"
+
+[ClusterPG]
+MessageAddress	MessageAddress "WorldState"

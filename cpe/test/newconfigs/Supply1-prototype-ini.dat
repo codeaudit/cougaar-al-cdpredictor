@@ -1,0 +1,22 @@
+[Prototype]     MilitaryOrganization
+        
+[UIC]           "UIC/Supply1"
+
+[Relationship]
+Superior        "BDE1"    ""
+Supporting      "CPY1"    "SupplyProvider"
+Supporting      "CPY2"    "SupplyProvider"
+Supporting      "CPY3"    "SupplyProvider"
+Supporting      "CPY4"    "SupplyProvider"
+Supporting      "CPY5"    "SupplyProvider"
+Supporting      "CPY6"    "SupplyProvider"
+Supporting      "CPY7"    "SupplyProvider"
+Supporting      "CPY8"    "SupplyProvider"
+Supporting      "CPY9"    "SupplyProvider"
+
+[ClusterPG]
+MessageAddress	MessageAddress "Supply1"
+
+[OrganizationPG]
+Roles                Collection<Role>   "SupplyProvider"
+

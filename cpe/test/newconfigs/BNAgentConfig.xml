@@ -1,0 +1,9 @@
+<CPConfig>
+   <actions>
+       <BNReplanTimerPeriod value="60000" />
+       <BNUpdateStatusNIU value="500" />
+       <BNPlanningDepth value="6" />
+       <BNPlanningBreadth value="60" />
+       <BNPlanningDelay value="20000" />
+   </actions>
+</CPConfig>
