@@ -126,12 +126,12 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
             Organization subOrg = (Organization) newSubordinates.get(i) ;
             if ( gmrt.getRelay( subOrg.getMessageAddress() ) == null ) {
                 gmrt.addRelay( subOrg.getMessageAddress() ) ;
-                System.out.println(getAgentIdentifier() + " adding relay to subordinate "
+                logger.shout( getAgentIdentifier() + " adding relay to subordinate "
                         + subOrg.getMessageAddress() );
             }
 
             if ( subOrg.getOrganizationPG().inRoles( Role.getRole("Combat") ) ) {
-                System.out.println( getAgentIdentifier() + ":: ADDING subordinate combat organization " + subOrg);
+                logger.info( getAgentIdentifier() + " ADDING subordinate combat organization " + subOrg);
                 subordinateCombatOrganizations.put( subOrg.getMessageAddress().getAddress(), subOrg ) ;
                 subordinatesAdded = true ;
             }
@@ -354,30 +354,40 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
     }
 
     protected void doConfigure( ConfigureMessage cm ) {
-        logger.shout( " CONFIGURING " + getAgentIdentifier() );
+        logger.shout( " CONFIGURING " + getAgentIdentifier() + " with subordinates " + subordinateCombatOrganizations );
         referenceZoneWorld = ( ZoneWorld ) cm.getWorldStateModel() ;
 
         worldStateRef = new WorldStateReference( "ZoneWorld", referenceZoneWorld ) ;
         getBlackboardService().publishAdd( worldStateRef );
 
         ArrayList aggEntities = new ArrayList() ;
+
         for (int i=0;i<referenceZoneWorld.getNumAggUnitEntities();i++) {
             BNAggregate agg = (BNAggregate) referenceZoneWorld.getAggUnitEntity( i ) ;
+
             // System.out.println("Initialize aggregrate with " + agg.getCurrentZone() + " zone.");
             aggEntities.add( agg.getId() ) ;
             IndexedZone currentZone = (IndexedZone) agg.getCurrentZone() ;
+            ZoneTask t = new ZoneTask( referenceZoneWorld.getTime(), deltaTPerPlanningPhase * referenceZoneWorld.getDeltaTInMS(),
+                                       currentZone, currentZone ) ;
+            Plan p = new Plan( t ) ;
+            agg.setZonePlan( p );
 
             // Make configuration message and send it to the subordinate.
-            ZoneTask t = new ZoneTask( referenceZoneWorld.getTime(), deltaTPerPlanningPhase * referenceZoneWorld.getDeltaTInMS(),
-                                       referenceZoneWorld.getIntervalForZone( currentZone ), referenceZoneWorld.getIntervalForZone( currentZone ) ) ;
-            Plan p = new Plan(t) ;
-            ZoneScheduleMessage msg = new ZoneScheduleMessage( p ) ;
             if ( subordinateCombatOrganizations.get( agg.getId() ) == null ) {
                 logger.warn( "Subordinate unit with id=" + agg.getId() + " not found as subordinate." );
             }
             else {
-                gmrt.sendMessage( MessageAddress.getMessageAddress( agg.getId() ),
-                        msg );
+                // Send a configuration message but translate the current zone information.
+                ZoneWorld zw = new ZoneWorld( referenceZoneWorld, referenceZoneWorld.getZoneGridSize()) ;
+                zw.addAggUnitEntity( agg = (BNAggregate) agg.clone() );
+                t = new ZoneTask( referenceZoneWorld.getTime(), deltaTPerPlanningPhase * referenceZoneWorld.getDeltaTInMS(),
+                                           referenceZoneWorld.getIntervalForZone( currentZone ), referenceZoneWorld.getIntervalForZone( currentZone ) ) ;
+                p = new Plan(t) ;
+                agg.setZonePlan( p );
+                agg.setCurrentZone( referenceZoneWorld.getIntervalForZone( currentZone ));
+
+                gmrt.sendMessage( MessageAddress.getMessageAddress( agg.getId() ), new ConfigureMessage( zw ) );
             }
         }
 
@@ -451,6 +461,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
         zonePlanner.plan( referenceZoneWorld, getPlanningDelay() * deltaTPerPlanningPhase * referenceZoneWorld.getDeltaTInMS() );
         Object[][] plans = zonePlanner.getPlans( false ) ;
 
+        // Just update all the zone plans without merging?
         for (int i = 0; i < plans.length; i++) {
             Object[] plan = plans[i];
             String unitId = (String) plan[0] ;

@@ -30,6 +30,8 @@ import org.cougaar.cpe.util.StandardAlarm;
 import org.cougaar.cpe.util.CPUConsumer;
 import org.cougaar.cpe.util.ConfigParserUtils;
 import org.cougaar.cpe.planning.zplan.ZoneTask;
+import org.cougaar.cpe.planning.zplan.ZoneWorld;
+import org.cougaar.cpe.planning.zplan.BNAggregate;
 import org.cougaar.tools.techspecs.events.MessageEvent;
 import org.cougaar.tools.techspecs.events.TimerEvent;
 
@@ -138,6 +140,9 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         if ( o instanceof MessageEvent ) {
             MessageEvent cm = (MessageEvent) o ;
             Relay r = (Relay) subordinateRelays.get( cm.getSource().getAddress() ) ;
+            if ( cm.getSource().equals( superior.getMessageAddress() ) ) {
+                processMessageFromSuperior( cm );
+            }
             if ( r != null ) {
                 processMessagesFromSubordinates( cm );
             }
@@ -228,7 +233,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
             String s = (String)measurementPointNames.get(i);
             mp[i]  = new TimestampMeasurementPoint( (String) measurementPointNames.get(i) ) ;
             //getBlackboardService().publishAdd( mp[i] );
-            System.out.println( getAgentIdentifier() + ":: DEBUG:: Created " + mp[i] );
+            log.debug( getAgentIdentifier() + ":: DEBUG:: Created " + mp[i] );
         }
 
         // Make the measurement points based on the operating mode conditions.
@@ -264,7 +269,10 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
              // NOTE The unit entities have to be cloned because they retain the old manuever plan information
              // and the old state.  The WorldState UnitStatusUpdateMessage does not provide them.
              if ( perceivedWorldState == null ) {
-                 setPerceivedWorldState( wsum.getWorldState() ) ;
+                 log.warn( "Unexpected null perceived world state. Should be configured!");
+                 perceivedWorldState = new ZoneWorld( wsum.getWorldState(), 2 ) ;
+                 perceivedWorldStateRef.setState( perceivedWorldState );
+                 getBlackboardService().publishChange( perceivedWorldStateRef );
              }
              else {
                  processUpdateFromWorldStateAgent( wsum);
@@ -300,13 +308,6 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         WorldStateUtils.mergeWorldStateWithReference( perceivedWorldState, newSensedWorldState );
         perceivedWorldState.setTime( newSensedWorldState );
 
-        getBlackboardService().publishChange( perceivedWorldStateRef );
-    }
-
-
-    protected void setPerceivedWorldState( WorldStateModel model ) {
-        perceivedWorldState = model ;
-        perceivedWorldStateRef.setState( model );
         getBlackboardService().publishChange( perceivedWorldStateRef );
     }
 
@@ -556,10 +557,29 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     }
 
     protected void processMessageFromSuperior( MessageEvent message ) {
+        System.out.println("Processing message from superior " + message );
         if ( message instanceof ZoneScheduleMessage ) {
             ZoneScheduleMessage zoneScheduleMessage = (ZoneScheduleMessage) message ;
             mergeZoneSchedule( zoneScheduleMessage.getSchedule() ) ;
         }
+        else if ( message instanceof ConfigureMessage ) {
+            doConfigure( (ConfigureMessage) message ) ;
+        }
+    }
+
+    private void doConfigure(ConfigureMessage message)
+    {
+        perceivedWorldState = (ZoneWorld) message.getWorldStateModel() ;
+        System.out.println("Configuring with " + perceivedWorldState );
+
+        perceivedWorldStateRef.setState( perceivedWorldState );
+        BNAggregate agg = (BNAggregate) perceivedWorldState.getAggUnitEntity( getAgentIdentifier().getAddress() ) ;
+        if ( agg != null ) {
+            if ( agg.getZonePlan() != null ) {
+                zoneSchedule = agg.getZonePlan() ;
+            }
+        }
+        getBlackboardService().publishChange( perceivedWorldStateRef );
     }
 
     private void mergeZoneSchedule( Plan p ) {
@@ -627,6 +647,14 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
             }
 
             zoneSchedule = new Plan( newTasks ) ;
+        }
+
+        if ( perceivedWorldState instanceof ZoneWorld ) {
+            ZoneWorld zw = (ZoneWorld) perceivedWorldState ;
+            BNAggregate agg = (BNAggregate) zw.getAggUnitEntity( getAgentIdentifier().getAddress() ) ;
+            if ( agg != null ) {
+                agg.setZonePlan( zoneSchedule );
+            }
         }
     }
 
@@ -768,6 +796,10 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
             }
         }) ;
 
+        // Make the perceived world state reference and publish to the black board.
+        perceivedWorldStateRef = new WorldStateReference( "PerceivedWorldState", null) ;
+        getBlackboardService().publishAdd( perceivedWorldStateRef );
+
         makeOperatingModeConditions();
 
         makeMeasurementPoints();
@@ -807,9 +839,6 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         getBlackboardService().publishAdd( planningDepthCondition ) ;
         getBlackboardService().publishAdd( planningBreadthCondition ) ;
         getBlackboardService().publishAdd( replanPeriodCondition );
-
-        perceivedWorldStateRef = new WorldStateReference( "PerceivedWorldState", null) ;
-        getBlackboardService().publishAdd( perceivedWorldStateRef );
 
         updateStatePeriodCondition = new OperatingModeCondition( "UpdateStatePeriod", updateStateConditionList  ) ;
         updateStatePeriodCondition.setValue( updateStateConditionList.getAllowedValues()[0].getMin() );
@@ -1029,7 +1058,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
     private boolean lockBlackboardWhilePlanning = true;
 
-    private org.cougaar.cpe.model.WorldStateModel perceivedWorldState ;
+    private ZoneWorld perceivedWorldState ;
     private WorldStateReference perceivedWorldStateRef ;
 
     public MessageAddress getAgentIdentifier() {
