@@ -109,7 +109,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         String status = LoadIndicator.NORMAL_LOAD;
         long tevent_time, pevent_time;
 
-        if (allocationSubscription.size()<2) return;
+        if (allocationSubscription.size()<3) return;
         
         queue = new long[2][2*allocationSubscription.size()];
         long min_task_time = Long.MAX_VALUE, max_task_time = Long.MIN_VALUE;
@@ -131,7 +131,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
             }
         }
         
-        if (valid < 2) {
+        if (valid < 3) {
             return;
         }
         
