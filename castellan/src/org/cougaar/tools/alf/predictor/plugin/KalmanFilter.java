@@ -170,18 +170,20 @@ public class KalmanFilter implements java.io.Serializable {
 					if(apriorEstimateInnerMap!= null) {
 						ArrayList apriorEstList = (ArrayList)apriorEstimateInnerMap.get(itemName);
 						boolean endTimeFound = false;
-						for(int i=0; i < apriorEstList.size();i++) {
-							KFValues aPriorValue = (KFValues)apriorEstList.get(i);
-							if(aPriorValue.getEndTime()==endTime) {
-								double error = aPriorValue.getQuantity() - quantity;
-								double aPostEstimate = aPriorValue.getQuantity() + 0.5 * error;
-								aPostEstList.add(new KFValues(endTime, aPostEstimate, error, 0.5));
-								if(itemName.equalsIgnoreCase("JP8")){
-									System.out.println("KFApostEst: "+" Item JP8 "+" "
-											+new java.util.Date(endTime)+" "+quantity+" "+error);
+						if(apriorEstList!= null) {
+							for(int i=0; i < apriorEstList.size();i++) {
+								KFValues aPriorValue = (KFValues)apriorEstList.get(i);
+								if(aPriorValue.getEndTime()==endTime) {
+									double error = aPriorValue.getQuantity() - quantity;
+									double aPostEstimate = aPriorValue.getQuantity() + 0.5 * error;
+									aPostEstList.add(new KFValues(endTime, aPostEstimate, error, 0.5));
+									if(itemName.equalsIgnoreCase("JP8")){
+										System.out.println("KFApostEst: "+" Item JP8 "+" "
+												+new java.util.Date(endTime)+" "+quantity+" "+error);
+									}
+									endTimeFound = true;
+									break;
 								}
-								endTimeFound = true;
-								break;
 							}
 						}
 						if(!endTimeFound) {
