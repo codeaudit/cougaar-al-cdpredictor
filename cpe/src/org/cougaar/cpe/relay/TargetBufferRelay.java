@@ -82,7 +82,10 @@ public class TargetBufferRelay implements Relay.Target, Serializable {
     }
 
     public String toString() {
-        return "<Target Buffer, source=" + getSource() + ">" ;
+        return "<Target Buffer, source=" + getSource() + ", #outgoing=" + getBufferSize() +
+                ",queries=" + getNumUpdates() + ",numReceived=" + getNumReceived() +
+                ",numSent= " + getNumSent()+ "> ";
+
     }
 
     public void setUID(UID uid) {
