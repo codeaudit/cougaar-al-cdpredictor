@@ -47,7 +47,10 @@ public class Predictor implements java.io.Serializable {
 		this.demandHistoryManager = demandHistoryManager;
 	}
 
-	public	void openLoggingFile(String predictorName) {
+	public void openLoggingFile(String predictorName) {
+		
+		if (!predictorPlugin.isOutputFileOn())	{		return;		}
+
 		String dir = System.getProperty("org.cougaar.workspace");
         // the Result file in workspace.
         try {
@@ -59,6 +62,8 @@ public class Predictor implements java.io.Serializable {
 
 	public void write(String output) {
 
+		if (!predictorPlugin.isOutputFileOn())	{		return;		}
+
         try {
            rst.write(output);
         } catch (java.io.IOException ioexc) {
@@ -67,8 +72,10 @@ public class Predictor implements java.io.Serializable {
 	}
 
 	public void flush() {
-
-        try {
+		
+		if (!predictorPlugin.isOutputFileOn())	{		return;		}
+        
+		try {
            rst.flush();
         } catch (java.io.IOException ioexc) {
            myLoggingService.error("can't write file, io error");

@@ -7,7 +7,6 @@ import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.service.*;
 import org.cougaar.core.util.UID;
 import org.cougaar.glm.ldm.Constants;
-//import org.cougaar.logistics.servlet.CommStatus;
 import org.cougaar.logistics.plugin.inventory.TaskUtils;
 import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.asset.Asset;
@@ -32,10 +31,12 @@ import java.util.*;
 public class DemandHistoryForAnItem implements java.io.Serializable {
 
 	public long leadTime = 0; 
+	public long commitmentTime = 0;
 	public MaintainedItem maintainedItem = null; 
 	public String itemName = null;
 	public String ofType = null;
-	private boolean setLeadTime = false;
+	private boolean leadTimeSet = false;
+	private boolean commitmentDateSet = false;
 	private LoggingService myLoggingService;
 
 	public TreeMap demandHistory = null;	
@@ -49,9 +50,20 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 //		dateHistory = new TreeSet(new DateComparator());
 	}	
 
-	public boolean didSetLeadTime()			{     return setLeadTime;		}
+	public boolean didSetLeadTime()			{     return leadTimeSet;			}
+	public boolean didSetCommitmentDate()	{     return commitmentDateSet;		}
 
 	public long getLeadTime(long today)		{     
+
+		if (demandHistory==null)	{
+			myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : " + itemName + " has null demandHistory");		
+			return 1;
+		}
+
+		if (demandHistory.size()==0)	{
+			myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : " + itemName + " has zero number of demandHistory");		
+			return 1;
+		}
 
 		Long tempEndDate = (Long) demandHistory.firstKey();
 
@@ -61,12 +73,15 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 //	public void setLeadTime(long leadTime)	{	this.leadTime = leadTime;	setLeadTime = true; }
 	public void setLeadTime(long leadTime)	{	this.leadTime = leadTime;	}
 
+	// CommitmentDate has a day difference from end date.
+	public void setCommitmentTime(long commitmentTime)	{	this.commitmentTime = commitmentTime;	commitmentDateSet = true; }
+	public long getCommitmentTime()						{		return commitmentTime;		}
+	
 //	public void addDemandData(long date, double quantity, long currentTime) {
 	public void addDemandData(long date, double quantity) {	
 
 		Long dateInLong = new Long(date);
 //		Long currentTimeInLong = new Long(currentTime);
-
 //		dateHistory.add(currentTimeInLong);
 
 		UnitDemand unitDemand = (UnitDemand) demandHistory.get(dateInLong);
@@ -80,15 +95,16 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 		demandHistory.put(dateInLong,unitDemand);
 
 		// DEBUG
-		myLoggingService.shout("[HONG]DemandHistoryForAnItem : after adding. "+ quantity+ " "+itemName+" for "+date+" at " + System.currentTimeMillis());
+/*
+		myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : after adding. "+ quantity+ " "+itemName+" for "+date+" at " + System.currentTimeMillis());
 
 		Collection dump = (Collection) demandHistory.values();
 
 		for (Iterator iter = dump.iterator();iter.hasNext() ; ){
 				UnitDemand unitDemand2 = (UnitDemand) iter.next();
-				myLoggingService.shout("[HONG]DemandHistoryForAnItem : " + unitDemand2.date + "," + unitDemand2.quantity);
+				myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : " + unitDemand2.date + "," + unitDemand2.quantity);
 		}
-
+*/
 	}
 
 //	public boolean removeDemandData(long date, double quantity, long currentTime) {
@@ -101,27 +117,27 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 		UnitDemand unitDemand = (UnitDemand) demandHistory.get(dateInLong);
 
 		if (unitDemand == null)		{
-
-			myLoggingService.shout("[HONG]DemandHistoryForAnItem : Unknown Demand was tried to be removed. "+ quantity+ " "+itemName+" for "+date+" at " + System.currentTimeMillis());
+/*
+			myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : Unknown Demand was tried to be removed. "+ quantity+ " "+itemName+" for "+date+" at " + System.currentTimeMillis());
 			
-			myLoggingService.shout("[HONG]DemandHistoryForAnItem : Does it exist ? " +  demandHistory.containsKey(dateInLong));
+			myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : Does it exist ? " +  demandHistory.containsKey(dateInLong));
 
-			myLoggingService.shout("[HONG]DemandHistoryForAnItem : Keys");
+			myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : Keys");
 
 			Collection dump1 = (Collection) demandHistory.keySet() ;
 
 			for (Iterator iter = dump1.iterator();iter.hasNext() ; ){
 				Long key = (Long) iter.next();
-				myLoggingService.shout("[HONG]DemandHistoryForAnItem : key = " + key);
+				myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : key = " + key);
 			}
 
 			Collection dump = (Collection) demandHistory.values();
 
 			for (Iterator iter = dump.iterator();iter.hasNext() ; ){
 				UnitDemand unitDemand2 = (UnitDemand) iter.next();
-				myLoggingService.shout("[HONG]DemandHistoryForAnItem : " + unitDemand2.date + "," + unitDemand2.quantity);
+				myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : " + unitDemand2.date + "," + unitDemand2.quantity);
 			}
-
+*/
 			return false;
 
 		} else {
@@ -139,15 +155,16 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 //		setLeadTime(tempEndDate.longValue()- currentTime);
 
 		// DEBUG
-		myLoggingService.shout("[HONG]DemandHistoryForAnItem : after removing. "+ quantity+ " "+itemName+" for "+date+" at " + System.currentTimeMillis());
+/*
+		myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : after removing. "+ quantity+ " "+itemName+" for "+date+" at " + System.currentTimeMillis());
 
 		Collection dump = (Collection) demandHistory.values();
 
 		for (Iterator iter = dump.iterator();iter.hasNext() ; ){
 				UnitDemand unitDemand2 = (UnitDemand) iter.next();
-				myLoggingService.shout("[HONG]DemandHistoryForAnItem : " + unitDemand2.date + "," + unitDemand2.quantity);
+				myLoggingService.shout("[PREDICTOR]DemandHistoryForAnItem : " + unitDemand2.date + "," + unitDemand2.quantity);
 		}
-
+*/
 		return true;
 	}
 	
@@ -161,12 +178,12 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 			
 		Collection recordCollection = demandHistory.values();
 
-		for (Iterator iter = recordCollection.iterator();iter.hasNext() && tw < 4; )
+		for (Iterator iter = recordCollection.iterator();iter.hasNext() && tw < timeWindow; )
 		{
 			tw++;
 			UnitDemand unitDemand = (UnitDemand)iter.next();
 			if (prev_date > 0 )	{
-				interval +=  prev_date - unitDemand.date;
+				interval +=  (prev_date - unitDemand.date);
 			}
 
 			if (most_recent_date ==0)	{
@@ -175,15 +192,37 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 
 			prev_date = unitDemand.date;
 			sumOfQuantity += unitDemand.quantity;
+			myLoggingService.shout("[PREDICTOR]averagePast : "+unitDemand.date+","+unitDemand.quantity+","+targetDate+","+itemName);	// for Debug
 		}
 		
 		if (tw >1)	{
-			if ((int)Math.floor(interval/(tw-1)) + most_recent_date > targetDate)
-			{
+			if ((int)Math.floor(interval/(tw-1)) + most_recent_date > targetDate)	{
 				return 0;
 			}
 		} 
 
+		return sumOfQuantity/tw;
+	}
+
+
+	public double averagePast(long timeWindow) {
+
+		boolean notFound = true;
+		UnitDemand tempUnitDemand = null;
+		double sumOfQuantity = 0; 
+		int tw = 0;
+			
+		Collection recordCollection = demandHistory.values();
+
+		for (Iterator iter = recordCollection.iterator();iter.hasNext() && tw < timeWindow; )
+		{
+			tw++;
+			UnitDemand unitDemand = (UnitDemand)iter.next();
+
+			sumOfQuantity += unitDemand.quantity;
+			myLoggingService.shout("[PREDICTOR]averagePast : "+unitDemand.date+","+unitDemand.quantity+","+itemName);	// for Debug
+		}
+		
 		return sumOfQuantity/tw;
 	}
 
@@ -195,14 +234,14 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 		Collection recordCollection = demandHistory.values();
 
 		if (recordCollection.size() <=1 )	{
-			return 0;
+			return 1;
 		}
 
 		for (Iterator iter = recordCollection.iterator();iter.hasNext(); )
 		{
 			UnitDemand unitDemand = (UnitDemand)iter.next();
 			if (prev_date> 0 )	{
-				interval +=  prev_date - unitDemand.date;
+				interval +=  (prev_date - unitDemand.date);
 			}
 
 			if (most_recent_date ==0)	{
@@ -297,13 +336,52 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 		return maintainedItem;
 	}
 
+	public long getMaxEndTimeInHistory() {
+	
+		if (demandHistory.size()==0)
+		{
+			return -1;
+		}
+		Long tempEndDate = (Long) demandHistory.firstKey();
+//		if (tempEndDate == null)	{
+//			return -1;
+//		}	
+		return tempEndDate.longValue();
+	}
+
+	public long getAverageInterval() {
+
+		long interval = 0, prev_date =0;
+		int tw = 0;
+
+		Collection recordCollection = demandHistory.values();
+
+		if (recordCollection.size() <=1 )	{
+			return 1;
+		}
+
+		for (Iterator iter = recordCollection.iterator();iter.hasNext(); )
+		{
+			UnitDemand unitDemand = (UnitDemand)iter.next();
+			if (prev_date> 0 )	{
+				interval +=  prev_date - unitDemand.date;
+			}
+
+			prev_date = unitDemand.date;
+			tw++;
+		}
+
+		return (long) Math.floor(interval/(tw-1));
+	}
+
 	private class UnitDemand
 	{
-		public long date = 0;
+		public long date = 0;			// end date
+		public long commitmentdate = 0;	// commitment date
 		public double quantity = 0;
-
+		
 		public UnitDemand(long date, double quantity) {
-			this.date = date; this.quantity = quantity;
+			this.date = date; this.quantity = quantity; 
 		}
 	};
 
@@ -325,7 +403,5 @@ public class DemandHistoryForAnItem implements java.io.Serializable {
 		    else 
 				return 0;
 		}
-
     }
-
 }

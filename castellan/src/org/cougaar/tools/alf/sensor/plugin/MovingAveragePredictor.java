@@ -44,7 +44,11 @@ public class MovingAveragePredictor extends Predictor {
 	}
 
 	// forecast for all customer agent and publish forecasted data.
-	public void forecast(long today) {
+	public void forecast(long commlossday, long today) {	
+
+		// for continuous forecasting, I assume the current day when Plugin actually is as commloss day and forecast for the next day.
+		// here, today is actually next day only in the context of testing.
+		// In actual run, today will be the actual current day.
 		
 		Collection customers = demandHistoryManager.getCustomerCollection(); // key list of agent demand 		
 
@@ -52,30 +56,74 @@ public class MovingAveragePredictor extends Predictor {
 		{
 			DemandPerAgent customer = (DemandPerAgent) iter.next();
 
-			Collection historyOfItems = customer.getHistoryOfItems();
+			Collection historyOfType = customer.getHistoryOfType();
 
-			for (Iterator iterItem = historyOfItems.iterator();iterItem.hasNext() ; )
+			for (Iterator iterType = historyOfType.iterator();iterType.hasNext(); )
 			{
-				DemandHistoryForAnItem demandHistoryForAnItem = (DemandHistoryForAnItem) iterItem.next();
-				long leadTime = demandHistoryForAnItem.getLeadTime(today);	
-				// assuming comm loss day is yester day.
-				long timeWidnow = 3;
-				double expectedDemand = demandHistoryForAnItem.averagePast(timeWidnow,today+leadTime);
-				if (expectedDemand > 0 )
+				DemandHistoryPerType types = (DemandHistoryPerType) iterType.next();
+
+				long leadTime = types.getLeadTime(commlossday);
+
+				Collection historyOfItems = types.getHistoryOfItems();
+			  
+				for (Iterator iterItem = historyOfItems.iterator();iterItem.hasNext() ; )
 				{
-					// Here the forecasted demands are publishes as Tasks.
-					// customer, item, end_date, qty
-//					predictorPlugin.generateAndPublish(customer.getName(), demandHistoryForAnItem.getOfType(), demandHistoryForAnItem.getMaintainedItem(),today+leadTime, expectedDemand); 
+					DemandHistoryForAnItem demandHistoryForAnItem = (DemandHistoryForAnItem) iterItem.next();
+
+					myLoggingService.shout("[PREDICTOR:MovingAveragePredictor]"+demandHistoryForAnItem.getName());
+
+					// in actual commloss, this will be replaced with today + leadtime.
+//					long nextEstimeatedEndTime = demandHistoryForAnItem.nextEstimatedEndtime();
+					long maxEndTimeInHistory = demandHistoryForAnItem.getMaxEndTimeInHistory();	 // if -1, then there's no history.
+			        long averageInterval = demandHistoryForAnItem.getAverageInterval();	// it sometimes return 1. 
+																						// it means that it is actually 1 or there is not sufficient data to determine interval.
+
+					if (maxEndTimeInHistory == -1) 	{	// if -1, then there's no history. Then, we cannot forecast for this item.
+						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] currently no histroy!!");
+						continue;
+					}
+
+					// assuming comm loss day is yester day.
+					long timeWidnow = 3;
+					double expectedDemand = demandHistoryForAnItem.averagePast(timeWidnow);
 					
-//			        myLoggingService.shout("WRITE " + customer.getName()+", "+demandHistoryForAnItem.getOfType()+", "+demandHistoryForAnItem.getName()+", "+today+"\t"+(today+leadTime)+", "+expectedDemand);
-					write(customer.getName()+"\t"+demandHistoryForAnItem.getOfType()+"\t"+demandHistoryForAnItem.getName()+"\t"+today+"\t"+(today+leadTime)+"\t"+expectedDemand+"\n");
+					long expectedNextEndTime = maxEndTimeInHistory+averageInterval;
+					long minimumAllowableEndtime = commlossday + leadTime - averageInterval;
+					if ( expectedNextEndTime < minimumAllowableEndtime)
+					{
+						long diff = minimumAllowableEndtime-expectedNextEndTime;
+						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] There is a difference between expected next demand time and allowable period.");
+						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] expected end time, required minimum end time, difference "
+													+expectedNextEndTime+","+minimumAllowableEndtime+","+diff);
+						// find the time point
+						int t = (int) Math.ceil(diff/averageInterval);
+						long newExpectedNextEndTime = expectedNextEndTime+t*averageInterval;
+						
+						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] expected end time which is greater than required minimum end time = "+newExpectedNextEndTime);
+						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] expected demand = " + expectedDemand);
+
+					} else {
+
+						write(customer.getName()+"\t"+demandHistoryForAnItem.getOfType()+"\t"+demandHistoryForAnItem.getName()+"\t"+today+"\t"+expectedNextEndTime+"\t"+expectedDemand+"\t"+commlossday+"\t"+leadTime+"\n");
+						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor]"+expectedNextEndTime+","+expectedDemand+","+demandHistoryForAnItem.getName()+","+today+","+commlossday+","+leadTime);	
+
+					}
+
+/*					this is for the case in which actual comm loss happens and time continous progress
+					
+					if (((today + leadTime - maxEndTimeInHistory)%averageInterval)== 0)	{
+						write(customer.getName()+"\t"+demandHistoryForAnItem.getOfType()+"\t"+demandHistoryForAnItem.getName()+"\t"+today+"\t"+expectedNextEndTime+"\t"+expectedDemand+"\t"+demandHistoryForAnItem.getCommitmentTime()+"\n");						
+						predictorPlugin.generateAndPublish(String customer, String ofType, MaintainedItem maintainedItem, long end_time, double quantity, long today, long commitmentTime);
+					} else {
+						// print out zero.
+						write(customer.getName()+"\t"+demandHistoryForAnItem.getOfType()+"\t"+demandHistoryForAnItem.getName()+"\t"+today+"\t"+expectedNextEndTime+"\t"+expectedDemand+"\t"+demandHistoryForAnItem.getCommitmentTime()+"\n");						
+					}
+*/
 				}
 			}
 		}
 		flush();
 	}	
-	
-
 }
 
 	

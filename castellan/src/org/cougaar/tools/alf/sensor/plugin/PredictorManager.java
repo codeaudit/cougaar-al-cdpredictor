@@ -65,11 +65,11 @@ public class PredictorManager implements java.io.Serializable {
 	}
 
 	/////////////	 
-	public void forecast(long today) {
+	public void forecast(long commLossDay, long today) {
 
-		movingAverage.forecast(today);
+		movingAverage.forecast(commLossDay,today);
 		if (cluster.equalsIgnoreCase("123-MSB"))	{
-			sVM.forecast(today);
+			sVM.forecast(commLossDay,today);
 		}
 
 	}

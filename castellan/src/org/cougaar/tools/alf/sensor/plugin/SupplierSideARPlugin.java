@@ -30,8 +30,6 @@ import org.cougaar.logistics.plugin.inventory.InventoryPolicy;
 import org.cougaar.logistics.plugin.inventory.LogisticsInventoryPG;
 import org.cougaar.glm.ldm.Constants;
 
-import org.w3c.dom.Element;
-import org.w3c.dom.Document;
 import java.util.*;
 import java.util.Iterator;
 import java.util.Collection;
@@ -72,20 +70,7 @@ public class SupplierSideARPlugin extends ComponentPlugin
         public long getExpirationTime() {
             return expTime;
         }
-/*
-        public void expire() {
-//            expired = true;
-			reset(currentTimeMillis());
-			myBS.signalClientActivity(); 
-			myLoggingService.shout("CALL PREDICTOR IN PERIODICALARM AT "+currentTimeMillis()/86400000);	
-			called = true;
-//			myBS.openTransaction();
-//			callPredictor();
-//				myBS.closeTransaction();
 
-//			cancel();
-        }
-*/
         public void expire() {
             expired = true;
 			bs.signalClientActivity(); 
@@ -224,7 +209,7 @@ public class SupplierSideARPlugin extends ComponentPlugin
 	    inventoryPolicySubscription = (IncrementalSubscription) bs.subscribe(new InventoryPolicyPredicate("Ammunition"));
 //		logisticsOPlanSubscription	= (IncrementalSubscription) bs.subscribe(new LogisticsOPlanPredicate());
 //	    inventorySubscription		= (IncrementalSubscription) bs.subscribe(new InventoryPredicate("Ammunition"));
-		relationSubscription = (IncrementalSubscription) bs.subscribe(relationPredicate);
+		relationSubscription		= (IncrementalSubscription) bs.subscribe(relationPredicate);
 
 		String dir = System.getProperty("org.cougaar.workspace");
 		
@@ -250,7 +235,8 @@ public class SupplierSideARPlugin extends ComponentPlugin
 
 		// making a message
 		InventoryInfo iInfo = new InventoryInfo(30,cluster,currentTimeMillis());
-		arPluginMessage = new ARPluginMessage(transform(iInfo),cluster,uidservice.nextUID());
+//		arPluginMessage = new ARPluginMessage(transform(iInfo),cluster,uidservice.nextUID());
+		arPluginMessage = new ARPluginMessage(iInfo,cluster,uidservice.nextUID());
 		arPluginMessage.setTime(currentTimeMillis());
 		sendInventoryInfo(arPluginMessage);
 
@@ -371,12 +357,11 @@ public class SupplierSideARPlugin extends ComponentPlugin
 			    }					
 			} // for
 		
-			if (isChanged)
-			{
-				arPluginMessage.setContent(transform(invInfo));
+			if (isChanged)	{
+//				arPluginMessage.setContent(transform(invInfo));
+				arPluginMessage.setContent(invInfo);
 				arPluginMessage.setTime(currentTimeMillis());
 				sendInventoryInfo(arPluginMessage);
-				//bs.publishChange(arPluginMessage);
 			}
 	}
 
@@ -384,8 +369,7 @@ public class SupplierSideARPlugin extends ComponentPlugin
 
 		Integer index = (Integer) itemIndex.get(nomenclature);
 
-		if (index!=null)
-		{
+		if (index!=null)	{
 			return index.intValue();
 		} 
 
@@ -489,8 +473,7 @@ public class SupplierSideARPlugin extends ComponentPlugin
 			}
 
 //			Collection customers = getCustomerList();
-			if (customers.size() == 0)
-			{
+			if (customers.size() == 0)	{
 				return;
 			}
 

@@ -20,7 +20,6 @@ import org.cougaar.planning.ldm.plan.*;
 import org.cougaar.util.ConfigFinder;
 import org.cougaar.util.UnaryPredicate;
 import org.cougaar.glm.plugins.TaskUtils;
-// import org.cougaar.logistics.servlet.CommStatus;
 import org.cougaar.logistics.plugin.inventory.MaintainedItem;
 
 import java.io.ByteArrayInputStream;
@@ -161,23 +160,25 @@ public class ARPredictorPlugin extends ComponentPlugin {
         myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null);
 
 //		commStatusSubscription	= (IncrementalSubscription) myBS.subscribe(commStatusPredicate);
-		allocSubscription				= (IncrementalSubscription) myBS.subscribe(allocPredicate);			//	subscribe to allocation 
+		allocSubscription				= (IncrementalSubscription) myBS.subscribe(allocPredicate);		//	subscribe to allocation 
         arPluginMessageSubscription		= (IncrementalSubscription) myBS.subscribe(arPluginMessagePredicate);
-//		historySubscription		= (IncrementalSubscription) myBS.subscribe(historyPredicate);
+		historySubscription				= (IncrementalSubscription) myBS.subscribe(historyPredicate);	// for rehydration
 
-		history = new History("HistoryForCustomerSidePredictor");
+		if((OutputFileOn=getParametersWhichTurnsOnOrOffOutputFile())) {
 
+			String dir = System.getProperty("org.cougaar.workspace");
+            // Result file
+            try {
+               rst = new java.io.BufferedWriter(new java.io.FileWriter(dir+"/"+ cluster + System.currentTimeMillis()/300000 + ".ar.txt", true));
+            } catch (java.io.IOException ioexc) {
+               System.err.println("can't write file, io error");
+            }
 
-		String dir = System.getProperty("org.cougaar.workspace");
-        // Result file
-        try {
-           rst = new java.io.BufferedWriter(new java.io.FileWriter(dir+"/"+ cluster + System.currentTimeMillis()/300000 + ".ar.txt", true));
-        } catch (java.io.IOException ioexc) {
-           System.err.println("can't write file, io error");
-        }
+		}
 
 	    if (myBS.didRehydrate() == false) {
-			
+			history = new History("HistoryForCustomerSidePredictor");			
+			myBS.publishAdd(history);
 		}
 
         myLoggingService.shout("ARPredictorPlugin start at " + cluster);
@@ -187,6 +188,8 @@ public class ARPredictorPlugin extends ComponentPlugin {
     public void execute() {
 	
 		// this is for rehydration
+		if_history_is_null_retrieve_from_bb();
+
 		boolean changed = checkAllocSubscription();
 		checkARPluginMessage();
 //		boolean commLost = checkComm();
@@ -227,6 +230,19 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		return status;
 	}
 */
+
+	private void if_history_is_null_retrieve_from_bb() {
+		
+		if (history==null)	{
+			
+			Collection c = historySubscription.getAddedCollection();
+			for (Iterator iter = c.iterator();iter.hasNext() ; )	{
+				history = (History) iter.next();
+			}
+		}
+
+	}
+
     private boolean checkAllocSubscription() {
 
 		boolean updated = false;
@@ -250,13 +266,13 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 		for (Iterator iter = c1.iterator(); iter.hasNext(); )
 		{
-			try
-			{
+//			try
+//			{
 				ARPluginMessage arPluginMessage = (ARPluginMessage)iter.next();
 				if (arPluginMessage.getAgentName().equalsIgnoreCase(cluster))	{
 					continue;					
 				}
-
+/*
 				ByteArrayOutputStream byteArrayInfo = arPluginMessage.getInventoryInfo();
 
 				if (byteArrayInfo != null)	{
@@ -268,22 +284,29 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		
 					istream.close();
 				
-					if (iInfo != null)	{
+					if (iInfo != null && isOutputFileOn())	{
 						myLoggingService.shout("[ARPredictorPlugin] added ARPluginMessage");
 					}
 
 				}
-			}
-			catch (java.io.IOException e)
-			{
-				myLoggingService.shout("[ARPredictorPlugin]Error 1");	
-			}
-			catch (java.lang.ClassNotFoundException e2)
-			{
-				myLoggingService.shout("[ARPredictorPlugin]Error 3");	
-			}
+*/
+				iInfo =	arPluginMessage.getInventoryInfo();
 
-			if (iInfo != null)	{
+				if (iInfo != null && isOutputFileOn())	{
+					myLoggingService.shout("[ARPredictorPlugin] added ARPluginMessage");
+				}
+
+//			}
+//			catch (java.io.IOException e)
+//			{
+//				myLoggingService.shout("[ARPredictorPlugin]Error 1");	
+//			}
+//			catch (java.lang.ClassNotFoundException e2)
+//			{
+//				myLoggingService.shout("[ARPredictorPlugin]Error 3");	
+//			}
+
+			if (iInfo != null && isOutputFileOn())	{
 				if (!iInfo.getAgentName().equalsIgnoreCase(cluster))
 				{
 					for (int i=0;i<iInfo.getNumberOfItems(); i++)	{
@@ -296,9 +319,10 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 		for (Iterator iter2 = c2.iterator(); iter2.hasNext(); )
 		{
-			try
-			{
+//			try
+//			{
 				ARPluginMessage arPluginMessage = (ARPluginMessage)iter2.next();
+/*
 				ByteArrayOutputStream byteArrayInfo = arPluginMessage.getInventoryInfo();
 
 				if (byteArrayInfo != null)	{
@@ -310,15 +334,22 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		
 					istream.close();
 				}
-			}
-			catch (java.io.IOException e)
-			{
-				myLoggingService.shout("[ARPredictorPlugin]Error 2");	
-			}
-			catch (java.lang.ClassNotFoundException e2)
-			{
-				myLoggingService.shout("[ARPredictorPlugin]Error 4");	
-			}
+*/
+				iInfo =	arPluginMessage.getInventoryInfo();
+
+				if (iInfo != null && isOutputFileOn())	{
+					myLoggingService.shout("[ARPredictorPlugin] added ARPluginMessage");
+				}
+
+//			}
+//			catch (java.io.IOException e)
+//			{
+//				myLoggingService.shout("[ARPredictorPlugin]Error 2");	
+//			}
+//			catch (java.lang.ClassNotFoundException e2)
+//			{
+//				myLoggingService.shout("[ARPredictorPlugin]Error 4");	
+//			}
 
 			if (iInfo != null)	{
 				if (!iInfo.getAgentName().equalsIgnoreCase(cluster))
@@ -329,9 +360,6 @@ public class ARPredictorPlugin extends ComponentPlugin {
 				}				
 			}
 		}
-
-
-
 	}
 
 	private boolean updateHistory(Collection addedAllocation, Collection removedAllocation, Collection changedAllocation, long nowTime)	{
@@ -344,6 +372,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		if (addedAllocation!=null)		{		reflectAllocationIntoHistory(addedAllocation,	today);		}
 		if (changedAllocation!=null)	{		reflectAllocationIntoHistory(changedAllocation,	today);		}
 
+		myBS.publishChange(history);	// for rehydration.
 		return updated;
 	}
 
@@ -393,7 +422,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 				// Search 
 				TreeMap subitem = history.getHistory(nomenclature);
 
-				if (subitem == null) {		
+				if (subitem == null && isOutputFileOn()) {		
 					myLoggingService.shout("TreeSet for history of "+ nomenclature + " could not be created !!");
 					continue;		
 				}		
@@ -455,7 +484,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 			PlanElement allocation = (PlanElement) t.getPlanElement();
 			if (allocation != null)
 			{
-				if (!(allocation  instanceof Allocation))	{
+				if (!(allocation instanceof Allocation))	{
 					continue;
 				}
 
@@ -512,17 +541,42 @@ public class ARPredictorPlugin extends ComponentPlugin {
 					AllocationResult expectedResult = rootFactory.newAllocationResult(success, successBoolean, avs);
 					allocation.setEstimatedResult(expectedResult);
 					myBS.publishChange(allocation);
-
-					try {
-						rst.write(Today+"\t"+t.getUID()+"\t"+nomenclature+"\t"+successOrNot+"\t"+success+"\t"+end_time+"\n");
-						rst.flush();
-			        } catch (java.io.IOException ioexc) {
-						System.err.println("can't write file, io error");
+					if (isOutputFileOn())	{
+						try {
+							rst.write(Today+"\t"+t.getUID()+"\t"+nomenclature+"\t"+successOrNot+"\t"+success+"\t"+end_time+"\n");
+							rst.flush();
+			            } catch (java.io.IOException ioexc) {
+							System.err.println("can't write file, io error");
+						}
 					}
 				}
 			}
 		}
     }
+
+	private	boolean getParametersWhichTurnsOnOrOffOutputFile() {
+
+		Collection c = getParameters();
+
+        Properties props = new Properties() ;
+        // Iterate through the parameters
+        int count = 0;
+        for (Iterator iter = c.iterator() ; iter.hasNext() ;)
+        {
+            String s = (String) iter.next();
+			if (!s.equalsIgnoreCase("true"))
+			{
+				return false;
+			}
+//			break;
+        }
+		return true;
+	}
+
+	public boolean isOutputFileOn() {
+
+		return OutputFileOn;
+	}
 
 	private String cluster;
     private LoggingService myLoggingService;
@@ -537,6 +591,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
     boolean changed = false;
     int today = -1;
 
+	private boolean OutputFileOn = true;
     long nextTime = 0;
     java.io.BufferedWriter rst = null;
    

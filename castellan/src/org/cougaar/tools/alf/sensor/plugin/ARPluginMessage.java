@@ -21,14 +21,16 @@ public class ARPluginMessage extends RelayAdapter {
   public int num_of_tasks;
   private long time;
 
-  private ByteArrayOutputStream byteArrayOutputStream = null;
-  
+//  private ByteArrayOutputStream byteArrayOutputStream = null;
+  private InventoryInfo byteArrayOutputStream = null;
+
   private String agentName = null;
   private String myReportingSensorClassName = null;
   private String myLoadStatus = null;
   private transient String myToString = null;
 
-  public ARPluginMessage(ByteArrayOutputStream byteArrayOutputStream , String agentName, UID uid) {
+//  public ARPluginMessage(ByteArrayOutputStream byteArrayOutputStream , String agentName, UID uid) {
+  public ARPluginMessage(InventoryInfo byteArrayOutputStream , String agentName, UID uid) {
     super();
 	this.byteArrayOutputStream = byteArrayOutputStream;
     this.agentName = agentName;
@@ -47,11 +49,15 @@ public class ARPluginMessage extends RelayAdapter {
 	return time;
   }
 
-  public void setContent(ByteArrayOutputStream byteArrayOutputStream ) {
+  public void setContent(InventoryInfo byteArrayOutputStream ) {
 	this.byteArrayOutputStream = byteArrayOutputStream;
   }
 
-  public ByteArrayOutputStream getInventoryInfo() {
+//  public ByteArrayOutputStream getInventoryInfo() {
+//	return byteArrayOutputStream;
+//  } 
+
+  public InventoryInfo getInventoryInfo() {
 	return byteArrayOutputStream;
   } 
 

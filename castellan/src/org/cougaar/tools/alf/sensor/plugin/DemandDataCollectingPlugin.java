@@ -27,8 +27,6 @@ import org.cougaar.glm.ldm.asset.SupplyClassPG;
 import org.cougaar.logistics.plugin.inventory.InventoryPolicy;
 import org.cougaar.logistics.plugin.inventory.LogisticsInventoryPG;
 
-import org.w3c.dom.Element;
-import org.w3c.dom.Document;
 import java.util.*;
 import java.util.Iterator;
 import java.util.Collection;
@@ -196,11 +194,16 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 	long baseTime = 13005; // August 10th 2005 
 //	long baseTime = 12974; // July 10th 2005 
 	boolean oplan_is_not_detected = true;
+	
+	boolean OutputFileOn = true;
 
 	java.io.BufferedWriter rstTask = null, rstPE = null, rst = null, rstInv=null;
 	LoggingService myLoggingService = null;
 
     public void setupSubscriptions()   {
+
+		OutputFileOn = getParametersWhichTurnsOnOrOffOutputFile();
+		if (!isOutputFileOn())	{		return;		}
 
         bs = getBlackboardService();
 		cluster = agentId.toString(); // the cluster where this Plugin is running.
@@ -237,6 +240,8 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 	
 	public void execute()
     {
+		if (!isOutputFileOn())	{		return;		}
+
         Iterator iter;
 
 //		long nowTime = (currentTimeMillis()/ 86400000) - baseTime; // long nowTime = System.currentTimeMillis()-offsetTime;
@@ -246,8 +251,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 		checkPeSubscription(nowTime/86400000, planelementSubscription);
 
 		Collection c = bs.query(new InventoryPredicate("Ammunition"));
-		if (c!=null)
-		{
+		if (c!=null)	{
 			printInventory(c.size(), c.iterator(), "added",nowTime);
 		}
 
@@ -545,14 +549,22 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 						}
 	
 				UID uid = ti.getUID();
-			
+
+				long commitmentTime = 0;
+
+				Date commitmentDate = ti.getCommitmentDate();
+
+				if (commitmentDate != null)		{
+					commitmentTime = commitmentDate.getTime()/86400000;					
+				} 
+
 				try
 				{
 //					rst.write(typeOfPlanElement+","+refill+","+oftype+","+modifier+","+nowTime+","+ checkingTime+","+uid.toString() + ","+v.toString()+","+agentName+","+rarsuccess +","+ rarConfidence+","+ earsuccess +","+ earConfidence+"\n");
 					rst.write(typeOfPlanElement+"\t"+refill+"\t"+oftype+"\t"+modifier+"\t"+nowTime+"\t"+ checkingTime+"\t"+uid.toString() + "\t"
 								+ v.toString()+"\t"+nomenclature+"\t"+qty+"\t"+rate+"\t"+start_time+"\t"+end_time+"\t"+agentName+"\t"+rarsuccess +"\t"
 								+ rarConfidence +"\t"+ rarQuantity+"\t"+rarEndTime+"\t"+earsuccess +"\t"+ earConfidence+"\t"
-								+ earQuantity +"\t"+earEndTime+"\t"+ti.getUID().getOwner() +"\t"+ cluster+"\n");
+								+ earQuantity +"\t"+earEndTime+"\t"+ti.getUID().getOwner() +"\t"+ cluster+"\t"+ commitmentTime+"\n");
 					rst.flush();
 				}
 				catch (java.io.IOException ioexc)
@@ -602,7 +614,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				String rarsuccess=" ",earsuccess=" ";
 				AllocationResult rar=null, ear=null;
 				double rarQuantity = 0;	long rarEndTime = 0;
-				double earQuantity = 0;	long earEndTime = 0;
+				double earQuantity = 0;	long earEndTime = 0; long commitmentTime = 0;
 				String agentName = "";
 
 //				start_time = (long) (ti.getPreferredValue(AspectType.START_TIME) / 86400000) - baseTime;
@@ -612,13 +624,17 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 //				end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000) - baseTime;
 				end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000);
 //				end_time2 = ti.getPreference(AspectType.END_TIME).getScoringFunction().getBest().getValue();
-					
-				if (v.equals("Supply")||v.equals("ForecastDemand"))
-				{
+				
+				Date commitmentDate = ti.getCommitmentDate();
+
+				if (commitmentDate != null)		{
+					commitmentTime = commitmentDate.getTime()/86400000;					
+				} 
+
+				if (v.equals("Supply")||v.equals("ForecastDemand"))		{
 					qty = ti.getPreferredValue(AspectType.QUANTITY);
 				} 
-				else if (v.equals("ProjectSupply"))
-				{
+				else if (v.equals("ProjectSupply"))		{
 					AspectRate aspectrate = (AspectRate) ti.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue(); 
 
 					if (oftype.equals("BulkPOL"))
@@ -680,7 +696,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 					rst.write("task\t"+refill+"\t"+oftype+"\t"+modifier+"\t"+nowTime+"\t"+ checkingTime+"\t"+ uid.toString()+"\t"+v.toString()
 								 +"\t"+nomenclature+"\t"+qty+"\t"+rate+"\t"+start_time+"\t"+ end_time+"\t"+agentName+"\t"+rarsuccess +"\t"+ rarConfidence
 								 +"\t"+ rarQuantity+"\t"+rarEndTime+"\t"+earsuccess+"\t"+ earConfidence+"\t"
-								 +earQuantity+"\t"+earEndTime+"\t"+ti.getUID().getOwner() +"\t"+ cluster+"\n");
+								 +earQuantity+"\t"+earEndTime+"\t"+ti.getUID().getOwner() +"\t"+ cluster+"\t"+ commitmentTime+"\n");
 
 					rst.flush();
 				}
@@ -689,5 +705,27 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 					System.err.println ("can't write file, io error" );
 			    }					
 			} // for
+	}
+
+	private	boolean getParametersWhichTurnsOnOrOffOutputFile() {
+
+		Collection c = getParameters();
+
+        Properties props = new Properties() ;
+        // Iterate through the parameters
+        int count = 0;
+        for (Iterator iter = c.iterator() ; iter.hasNext() ;)
+        {
+            String s = (String) iter.next();
+			if (!s.equalsIgnoreCase("true"))	{
+				return false;
+			}
+//			break;
+        }
+		return true;
+	}
+
+	public boolean isOutputFileOn() {
+		return OutputFileOn;
 	}
 }

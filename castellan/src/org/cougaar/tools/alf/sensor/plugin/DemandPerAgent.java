@@ -7,7 +7,6 @@ import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.service.*;
 import org.cougaar.core.util.UID;
 import org.cougaar.glm.ldm.Constants;
-//import org.cougaar.logistics.servlet.CommStatus;
 import org.cougaar.logistics.plugin.inventory.TaskUtils;
 import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.asset.Asset;
@@ -32,8 +31,7 @@ import java.util.*;
 public class DemandPerAgent implements java.io.Serializable 
 {
 	String agentName = null;		
-	//		ArrayList demandHistoryFromACustomer = null; // this ArrayList has DemandHistoryForAnItem. In the future, I will change this into HashMap.
-	HashMap demandHistoryFromACustomer = null;
+	HashMap demandHistoryPerType = null;
 	LoggingService myLoggingService = null;
 	long tempLeadTime = 0;
 	long tempToday = 0;
@@ -41,93 +39,71 @@ public class DemandPerAgent implements java.io.Serializable
 	public DemandPerAgent(String agentName,LoggingService myLoggingService) {
 		this.agentName = agentName;
 		this.myLoggingService = myLoggingService;
-		demandHistoryFromACustomer = new HashMap();
+		demandHistoryPerType = new HashMap();
 	}
 
 	public void addDemandData(Task task, long today) {
 
-		MaintainedItem maintainedItem = null;
-		String nomenclature = null;
 		String ofType = null;
-		PrepositionalPhrase pp0 = task.getPrepositionalPhrase("OfType");
-		PrepositionalPhrase pp = task.getPrepositionalPhrase("Maintaining");
+		PrepositionalPhrase pp = task.getPrepositionalPhrase("OfType");
 	
-		if (pp != null && pp0 != null)	{
-			ofType	=	(String) pp0.getIndirectObject();
-			maintainedItem = (MaintainedItem) pp.getIndirectObject();
-			nomenclature = maintainedItem.getNomenclature();
+		if (pp != null)	{
+			ofType	=	(String) pp.getIndirectObject();
 		} else {
 			myLoggingService.shout ("DemandPerAgent : null Prepositional Phrase Maintaining" );
 			return;
 		}
 
-		DemandHistoryForAnItem demandHistoryForAnItem = (DemandHistoryForAnItem)demandHistoryFromACustomer.get(nomenclature);
+		DemandHistoryPerType demandHistoryOfCertainType = (DemandHistoryPerType)demandHistoryPerType.get(ofType);
 
-		if (demandHistoryForAnItem == null)	{
-			demandHistoryForAnItem = new DemandHistoryForAnItem(ofType,maintainedItem,myLoggingService);
+		if (demandHistoryOfCertainType == null)	{
+			demandHistoryOfCertainType = new DemandHistoryPerType(ofType, myLoggingService);
 		}
 
-		long end_time = (long) (task.getPreferredValue(AspectType.END_TIME) / 86400000);
-		double qty = task.getPreferredValue(AspectType.QUANTITY);
-
-//		if (!demandHistoryForAnItem.didSetLeadTime())	{
-//		if (!demandHistoryForAnItem.didSetLeadTime())	{
-//			demandHistoryForAnItem.setLeadTime(end_time-today);
-//		}
-		
-		myLoggingService.shout ("[PSU]DemandPerAgent : ADD\t"+task.getUID().toString());
-
-//		demandHistoryForAnItem.addDemandData(end_time,qty,today);
-		demandHistoryForAnItem.addDemandData(end_time,qty);
-		demandHistoryFromACustomer.put(nomenclature,demandHistoryForAnItem);
+		demandHistoryOfCertainType.addDemandData(task);		//////////////////////
+		demandHistoryPerType.put(ofType,demandHistoryOfCertainType);
 	}
 
 	public void removeDemandData(Task task) {
 
-		String nomenclature = null;
-		PrepositionalPhrase pp = task.getPrepositionalPhrase("Maintaining");
+		String ofType = null;
+		PrepositionalPhrase pp = task.getPrepositionalPhrase("OfType");
 
-		if (pp != null)
-		{
-			nomenclature = ((MaintainedItem) pp.getIndirectObject()).getNomenclature();
+		if (pp != null)	{
+			ofType	=	(String) pp.getIndirectObject();
 		} else {
 			myLoggingService.shout ("DemandPerAgent : null Prepositional Phrase Maintaining" );
 			return;
 		}
 
-		DemandHistoryForAnItem demandHistoryForAnItem = (DemandHistoryForAnItem)demandHistoryFromACustomer.get(nomenclature);
+		DemandHistoryPerType demandHistoryOfCertainType = (DemandHistoryPerType)demandHistoryPerType.get(ofType);
 
-		if (demandHistoryForAnItem == null)
+		if (demandHistoryOfCertainType == null)
 		{
-			myLoggingService.shout ("DemandPerAgent : you tried to remove an unrecorded task "+nomenclature +" in "+agentName);
+			myLoggingService.shout ("DemandPerAgent : you tried to remove an unrecorded task "+ofType +" in "+agentName);
 			return; 
 		}
 
-		int end_time = (int) (task.getPreferredValue(AspectType.END_TIME) / 86400000);
-		double qty = task.getPreferredValue(AspectType.QUANTITY);
-
-		myLoggingService.shout ("[PSU]DemandPerAgent : REMOVE\t"+task.getUID().toString());
-//		demandHistoryForAnItem.removeDemandData(end_time,qty,today);
-		if (!demandHistoryForAnItem.removeDemandData(end_time,qty))	{
-			myLoggingService.shout ("[HONG]DemandPerAgent : you tried to remove a task of "+nomenclature +" in "+agentName );
+		if (!demandHistoryOfCertainType.removeDemandData(task))	{
+			myLoggingService.shout ("[HONG]DemandPerAgent : you tried to remove a task of "+ofType +" in "+agentName );
 		}
 	}
 
-	public double averagePast(int timeWindow, int targetDate, String nomenclature) {
+	public double averagePast(int timeWindow, int targetDate, String nomenclature, String type) {
 
-		DemandHistoryForAnItem demandHistoryForAnItem = (DemandHistoryForAnItem)demandHistoryFromACustomer.get(nomenclature);
+		DemandHistoryPerType demandHistoryOfCertainType = (DemandHistoryPerType)demandHistoryPerType.get(type);
 
-		if (demandHistoryForAnItem == null)
+		if (demandHistoryOfCertainType == null)
 		{
-			myLoggingService.shout ("DemandPerAgent : you tried to get past history for unknown item." );
+			myLoggingService.shout ("DemandPerAgent : you tried to get past history for unknown type." );
 			return -1; 
 		}
 
-		return demandHistoryForAnItem.averagePast(timeWindow, targetDate);
+		return demandHistoryOfCertainType.averagePast(timeWindow, targetDate,nomenclature);
 	}
 
-	public Collection getHistoryOfItems()	{
-		return demandHistoryFromACustomer.values();
+	public Collection getHistoryOfType()	{
+		return demandHistoryPerType.values();
 	}
 
 	public String getName() {

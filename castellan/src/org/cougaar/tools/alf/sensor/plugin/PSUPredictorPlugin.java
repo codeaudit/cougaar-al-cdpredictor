@@ -33,6 +33,8 @@ import java.util.*;
 public class PSUPredictorPlugin extends ComponentPlugin {
 
 	boolean called = false;
+	boolean OutputFileOn = true;
+
     class TriggerFlushAlarm implements PeriodicAlarm {
 
         public TriggerFlushAlarm(long expTime) {
@@ -116,7 +118,6 @@ public class PSUPredictorPlugin extends ComponentPlugin {
 
 ////////
 
-
     public void setupSubscriptions() {
 
 		cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
@@ -127,6 +128,9 @@ public class PSUPredictorPlugin extends ComponentPlugin {
         myUIDService = (UIDService) getBindingSite().getServiceBroker().getService(this, UIDService.class, null);
         servletSubscription = (IncrementalSubscription) myBS.subscribe(servletPredicate);
         as = (AlarmService) getBindingSite().getServiceBroker().getService(this, AlarmService.class, null);
+
+		OutputFileOn = getParametersWhichTurnsOnOrOffOutputFile();
+		myLoggingService.shout("OutputFileOn = " + OutputFileOn ); // for Debug
 
 		if (selectedPredictor == KalmanFilter) {
 /*
@@ -152,6 +156,7 @@ public class PSUPredictorPlugin extends ComponentPlugin {
 	        if (myBS.didRehydrate() == false) {
 				demandHistoryManager = new DemandHistoryManager(myLoggingService);
 				predictorManager.setDemandHistoryManager(demandHistoryManager);
+				myBS.publishAdd(demandHistoryManager);
 	        }
 			////// PSU end
         }
@@ -159,8 +164,8 @@ public class PSUPredictorPlugin extends ComponentPlugin {
         myLoggingService.shout("PSUPredictorPlugin start at " + cluster);
         myBS.setShouldBePersisted(false);
 
-		alarm = new TriggerFlushAlarm(currentTimeMillis());
-        as.addAlarm(alarm);
+//		alarm = new TriggerFlushAlarm(currentTimeMillis());
+//       as.addAlarm(alarm);
     }
 
 	public void callPredictor() {
@@ -260,16 +265,19 @@ public class PSUPredictorPlugin extends ComponentPlugin {
 			read_DemandHistoryManager_class_from_BB_if_it_is_null();  // for rehydration of DemandHistoryManager.
 
 			boolean updated = updateDemandHistory();
-			
+
+			// for rehydration
+			if (updated)	{
+				myBS.publishChange(demandHistoryManager);
+			}
+
 			// This will be used only after communication loss. However, we cannot emulate communication loss as of now. 
 			// Each day, alarm call this execution so that predictor could predict the demand of next day after lead time.
 			if (Rantime != (long) currentTimeMillis() / 86400000)		{
 
 				alarm = new TriggerFlushAlarm(currentTimeMillis()+86400000);
 				as.addAlarm(alarm);
-
 				Rantime = (long) currentTimeMillis() / 86400000;
-
 			}
 
 			if (called)		{
@@ -336,13 +344,13 @@ public class PSUPredictorPlugin extends ComponentPlugin {
 		// Depending on item, forecased time point and commitment time is different.
 		// All the details are processed in this class.
         myLoggingService.shout("PREDICTORMANAGER.FORCAST AT " + today);
-		predictorManager.forecast(today);
+		predictorManager.forecast(today,today+1);	// the first today is commLossDay.
     }
 
 	/// PSU
-	public void generateAndPublish(String customer, String ofType, MaintainedItem maintainedItem, long end_time, double quantity, long today) {
+	public void generateAndPublish(String customer, String ofType, MaintainedItem maintainedItem, long end_time, double quantity, long today, long commitmentTime) {
 
-		NewTask nt = getNewTask(customer, ofType, maintainedItem, end_time, quantity, today);
+		NewTask nt = getNewTask(customer, ofType, maintainedItem, end_time, quantity, today, commitmentTime);
 		myBS.publishAdd(nt);
 		myLoggingService.shout(cluster + ": Task added " + nt);
  		disposition(nt);
@@ -350,7 +358,7 @@ public class PSUPredictorPlugin extends ComponentPlugin {
 	}
 
 	/// PSU
-    public NewTask getNewTask(String customer, String ofType, MaintainedItem maintainedItem, long day, double qty, long Today) {
+    public NewTask getNewTask(String customer, String ofType, MaintainedItem maintainedItem, long day, double qty, long Today, long commitmentTime) {
 
         PlanningFactory pf = (PlanningFactory) myDomainService.getFactory("planning");
         NewTask nt = pf.newTask();
@@ -394,6 +402,9 @@ public class PSUPredictorPlugin extends ComponentPlugin {
         Preference np1 = pf.newPreference(av1.getAspectType(), ScoringFunction.createStrictlyAtValue(av1));
         nt.addPreference(np1);
 
+        Date commitmentDate = new Date((day-commitmentTime)* 86400000);		
+		nt.setCommitmentDate(commitmentDate);
+		
 		return nt;
 
     }
@@ -427,6 +438,32 @@ public class PSUPredictorPlugin extends ComponentPlugin {
 	
  	}
 
+	/// PSU
+	private	boolean getParametersWhichTurnsOnOrOffOutputFile() {
+
+		Collection c = getParameters();
+
+        Properties props = new Properties() ;
+        // Iterate through the parameters
+        int count = 0;
+        for (Iterator iter = c.iterator() ; iter.hasNext() ;)
+        {
+            String s = (String) iter.next();
+	        myLoggingService.shout("arguement = " + s);
+			if (!s.equalsIgnoreCase("true"))
+			{
+				return false;
+			}
+//			break;
+        }
+		return true;
+	}
+
+	/// PSU
+	public boolean isOutputFileOn() {
+
+		return OutputFileOn;
+	}
 
     private String cluster;
     private LoggingService myLoggingService;
