@@ -108,7 +108,7 @@ public class PSUFBSensor1Plugin extends ComponentPlugin
 		myBlackboardService.setShouldBePersisted(false);
 		
 		if (myTimestampService == null) {
-            System.out.println("\n"+cluster+" ["+sensorname+"]: TimestampService is not available.\n");
+            System.out.println("\n"+cluster+" ["+sensorname+"]: TimestampService is NOT available.\n");
         }
 		
     }
@@ -118,7 +118,13 @@ public class PSUFBSensor1Plugin extends ComponentPlugin
     {
 
 		if (myTimestampService == null) {
-            return;
+            myTimestampService = (BlackboardTimestampService) getBindingSite().getServiceBroker().getService(this, BlackboardTimestampService.class, null);
+            if (myTimestampService == null) {
+                return;
+            }
+            else {
+                System.out.println("\n"+cluster+" ["+sensorname+"]: TimestampService is available.\n");
+            }
         }
         
         Iterator iter;
