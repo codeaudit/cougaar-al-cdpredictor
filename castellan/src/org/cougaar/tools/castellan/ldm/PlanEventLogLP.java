@@ -528,7 +528,7 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
             // Add the pdu to the buffer, synchronizing along the way.
             synchronized ( buffer ) {
                 // Check to see if nobody is at home.
-                if ( buffer.getSize() > 350000 ) {
+                if ( buffer.getIncomingSize() > 350000 ) {
 
                     buffer.clearIncoming();
                 }

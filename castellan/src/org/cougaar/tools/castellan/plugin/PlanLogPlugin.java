@@ -28,6 +28,7 @@ import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.service.BlackboardTimestampService;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.BlackboardService;
+import org.cougaar.core.service.UIDService;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.blackboard.*;
 import org.cougaar.core.util.UniqueObject;
@@ -81,7 +82,6 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
             expired = true ;
             BlackboardService bs = getBlackboardService() ;
             bs.openTransaction();
-            mtImpl.conditionalFlush();
             mtImpl.execute();
             bs.closeTransaction();
         }
@@ -121,15 +121,19 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
             ServiceBroker broker = getServiceBroker() ;
             bts = ( BlackboardTimestampService ) broker.getService( this, BlackboardTimestampService.class, null ) ;
             allElements = ( IncrementalSubscription ) getBlackboardService().subscribe( allPredicate ) ;
-            mtImpl = new BlackboardBufferClientMTImpl( config, getBlackboardService() ) ;
+
+            // Make a new
+            UIDService service = ( UIDService ) broker.getService( this, UIDService.class, null ) ;
+            mtImpl = new RelayClientMTImpl( config, getBlackboardService(), service.nextUID(), getBindingSite().getAgentIdentifier() ) ;
             mtImpl.setPDUSink( this );
+
             buffer = new PDUBuffer() ;
             getBlackboardService().publishAdd( buffer ) ;
 
             // Declare myself immediately.
             DeclarePDU pdu =
                new DeclarePDU( config.getNodeIdentifier(),
-                               getClusterIdentifier().cleanToString(),
+                               getBindingSite().getAgentIdentifier().cleanToString(),
                                System.currentTimeMillis(), currentTimeMillis() ) ;
             sendMessage( pdu );
 
@@ -238,12 +242,12 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         }
 
         if ( config.getLogCluster() == null ) {
-            System.out.println( "Warning:: No configuration information found for " + getClusterIdentifier() ) ;
+            System.out.println( "Warning:: No configuration information found for agent " + getBindingSite().getAgentIdentifier() ) ;
         }
         else {
-            if ( config.getLogCluster().equals( getClusterIdentifier().toString() ) ) {
+            if ( config.getLogCluster().equals( getBindingSite().getAgentIdentifier().cleanToString() ) ) {
             // DEBUG
-                System.out.println( "Setting " + getClusterIdentifier() + " as server." );
+                System.out.println( "Setting " + getBindingSite().getAgentIdentifier().cleanToString() + " as server." );
                 config.setServer( true );
             }
         }
@@ -640,7 +644,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
      */
     protected void sendMessage( PDU pdu ) {
         // Publish this to the LogMessageBuffer
-        // System.out.println("SENDING " + pdu );
+        System.out.print("S+");
         mtImpl.sendMessage( pdu );
     }
 
@@ -710,7 +714,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
     protected PlanLogConfig config ;
     protected PDUBuffer buffer ;
-    protected BlackboardBufferClientMTImpl mtImpl ;
+    protected ClientMessageTransport mtImpl ;
     protected HashMap allocationToBooleanMap = new HashMap();
     protected HashMap allocationToARMap = new HashMap();
     protected ArrayList messages = new ArrayList(4);

@@ -210,7 +210,7 @@ public class PSULogServerPlugin extends ComponentPlugin
             synchronized (buffer)
             {
                 // Now, flush out the buffer into an InMemoryEventLog object
-                if (buffer.getSize() > 0)
+                if (buffer.getIncomingSize() > 0)
                 {
                     if (logToMemory)
                     {

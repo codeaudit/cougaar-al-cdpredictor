@@ -156,7 +156,7 @@ public class FallingBehindSensorPlugin extends ComponentPlugin
             synchronized (buffer)
             {
                 // Now, flush out the buffer into an FallingBehindSensor object
-                if (buffer.getSize() > 0)
+                if (buffer.getIncomingSize() > 0)
                 {
 			  int i;
                     PDU pdu;
