@@ -101,7 +101,7 @@ public class QueueingModel extends ComponentPlugin {
 	 */
 	public double[][] getMeanDelay(long currentTime, int period) {
 		double[][] avg_delays = new double[7][2];
-		long[][] total_delay = new long[7][3];
+		double[][] total_delay = new double[7][3];
 
 		Iterator iter = null;
 		int count = 0;
@@ -174,7 +174,7 @@ public class QueueingModel extends ComponentPlugin {
 						if (total_delay[ii][1] > 0) {
 
 							avg_delays[ii][0] =
-								total_delay[ii][0] / total_delay[ii][1];
+								(double)(total_delay[ii][0] / total_delay[ii][1]);
 						} else {
 
 							avg_delays[ii][0] = -1;
@@ -282,7 +282,7 @@ public class QueueingModel extends ComponentPlugin {
 				"\n *------------------CALCULATING DELAY-------------* @"
 					+ this.getAgentIdentifier());
 			double[][] stats = consolidateDelays(true);
-			matlab(stats);
+			//matlab(stats);
 
 		} catch (Exception e) {
 			e.printStackTrace();

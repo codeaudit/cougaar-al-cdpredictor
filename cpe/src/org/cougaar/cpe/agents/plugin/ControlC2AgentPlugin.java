@@ -68,7 +68,7 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 	public double[][] getMeanDelay(long currentTime, int period) {
 		double[][] avg_delays = new double[7][2];
 		Iterator iter = null;
-		long[][] total_delay = new long[7][3];
+		double[][] total_delay = new double[7][3];
 		int count = 0;
 		if (period == 0)
 			return null;
@@ -136,7 +136,7 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 										- delayMeasurement.getTimestamp();
 								total_delay[4][0] += delay;
 								total_delay[4][1]++;
-								//System.out.println("DELAY " + delay);
+								System.out.println("DELAY " + delay);
 								typeOfDelayMeasurement = 4;
 							}
 						}
@@ -149,7 +149,7 @@ public class ControlC2AgentPlugin extends ComponentPlugin {
 						if (total_delay[ii][1] > 0) {
 
 							avg_delays[ii][0] =
-								total_delay[ii][0] / total_delay[ii][1];
+								(double) (total_delay[ii][0] / total_delay[ii][1]);
 						} else {
 							avg_delays[ii][0] = -1;
 						}
