@@ -106,7 +106,8 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
     }
 
     public String toString() {
-        return ("< Source Buffer, target=" + getTargets() + ", source= " + source + ", #outgoing=" + outgoing.size() + "> " );
+        return ("< Source Buffer, target=" + getTargets() + ", source= " + source + ", #outgoing=" + outgoing.size() +
+                ",queries=" + getNumQueries() + ",numReceived=" + getNumReceived() + ",numSent= " + getNumSent()+ "> " );
     }
 
     public Set getTargets() {
@@ -129,7 +130,7 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
         return isOutgoingChanged;
     }
 
-    public Object getContent() {
+    public synchronized Object getContent() {
         // System.out.println("SourceBufferRelay::getContent() called on " + this );
         Object[] c = outgoing.toArray() ;
         outgoing.clear();
@@ -165,7 +166,7 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
         return result;
     }
 
-    public void addOutgoing( Serializable o ) {
+    public synchronized void addOutgoing( Serializable o ) {
         outgoing.add( o ) ;
         if (o instanceof MessageEvent) {
             MessageEvent cmsg = (MessageEvent) o;
