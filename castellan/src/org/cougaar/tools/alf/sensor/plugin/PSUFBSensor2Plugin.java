@@ -29,12 +29,14 @@ import org.cougaar.core.service.*;
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.util.UID;
-import org.cougaar.core.agent.ClusterIdentifier;
+//import org.cougaar.core.agent.ClusterIdentifier; Changed by Himanshu
+import org.cougaar.core.agent.*; //Added by Himanshu
+import org.cougaar.core.mts.MessageAddress;//Added by Himanshu
 import org.cougaar.core.adaptivity.OMCRangeList;
 import org.cougaar.core.service.community.CommunityService;
 import org.cougaar.core.util.UniqueObject;
-import org.cougaar.core.util.XMLize;
-import org.cougaar.core.util.XMLizable;
+//import org.cougaar.core.util.XMLize; Changed by Himanshu
+//import org.cougaar.core.util.XMLizable; Changed by Himanshu
 import org.cougaar.util.*;
 import org.cougaar.multicast.AttributeBasedAddress;
 import org.cougaar.planning.ldm.plan.*;
@@ -108,7 +110,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 
 		bts = ( BlackboardTimestampService ) getServiceBroker().getService( this, BlackboardTimestampService.class, null ) ;
         bs = getBlackboardService();
-		cluster = getBindingSite().getAgentIdentifier().toString();
+		cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
 
 	    fbresult = new String[3];
 	    fbresult[0] = LoadIndicator.NORMAL_LOAD; // normal
@@ -296,7 +298,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 							for (Iterator iterator = alCommunities2.iterator(); iterator.hasNext();) {
 						        String community = (String) iterator.next();
 								StartIndicator tindicator = new StartIndicator(cluster, uidservice.nextUID(), starttime, 10);
-								tindicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
+								tindicator.addTarget(new AttributeBasedAddress().getAttributeBasedAddress(community, "Role", "AdaptiveLogisticsManager"));
 								bs.publishAdd(tindicator);
 								System.out.println(getAgentIdentifier().toString() + ": adding StartIndicator to be sent to " + tindicator.getTargets());
 							}
@@ -538,7 +540,7 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 				}
 				for (Iterator iterator = internalState.alCommunities.iterator(); iterator.hasNext();) {
 					String community = (String) iterator.next();
-					AttributeBasedAddress aba = new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager");
+					AttributeBasedAddress aba = new AttributeBasedAddress().getAttributeBasedAddress(community, "Role", "AdaptiveLogisticsManager");
 //					loadIndicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
 					if (aba == null)
 					{

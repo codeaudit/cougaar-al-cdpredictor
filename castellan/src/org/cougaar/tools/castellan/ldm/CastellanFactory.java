@@ -28,11 +28,14 @@ package org.cougaar.tools.castellan.ldm;
 import org.cougaar.core.domain.*;
 import org.cougaar.core.service.*;
 import org.cougaar.core.agent.*;
+import org.cougaar.planning.ldm.*; //Himanshu
+import org.cougaar.core.mts.*;
 
 public class CastellanFactory implements Factory
 {
-    protected ClusterIdentifier selfClusterId;
-    protected UIDServer myUIDServer;
+    //protected ClusterIdentifier selfClusterId;   //Himanshu
+    protected MessageAddress selfClusterId;   //Himanshu
+    protected UIDServer myUIDServer;         //Himanshu
 
     /**
      * @see #getNumberOfEvents()
@@ -46,14 +49,17 @@ public class CastellanFactory implements Factory
     public CastellanFactory() { }
 
     public CastellanFactory(LDMServesPlugin ldm) {
-      RootFactory rf = ldm.getFactory();
+      //RootFactory rf = ldm.getFactory(); // Himanshu
+        PlanningFactory rf = (PlanningFactory) ldm.getFactory(); // Himanshu
       //rf.addAssetFactory(
       //    new org.cougaar.tools.csmart.runtime.ldm.asset.AssetFactory());
       //rf.addPropertyGroupFactory(
       //    new org.cougaar.tools.csmart.runtime.ldm.asset.PropertyGroupFactory());
 
-      ClusterServesPlugin cspi = (ClusterServesPlugin)ldm;
-      selfClusterId = cspi.getClusterIdentifier();
-      myUIDServer = ((ClusterContext)ldm).getUIDServer();
+        //ClusterServesPlugin cspi = (ClusterServesPlugin)ldm;
+        //selfClusterId = cspi.getClusterIdentifier();    //Himanshu
+        selfClusterId = ldm.getMessageAddress();    //Himanshu
+        //myUIDServer = ((ClusterContext)ldm).getUIDServer();    //Himanshu
+        myUIDServer = ldm.getUIDServer();  //Himanshu
     }
 }

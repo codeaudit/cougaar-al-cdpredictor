@@ -24,23 +24,26 @@
   */
 package org.cougaar.tools.castellan.ldm;
 
-import org.cougaar.core.domain.LogicProvider;
 import org.cougaar.core.domain.EnvelopeLogicProvider;
 import org.cougaar.core.domain.MessageLogicProvider;
-import org.cougaar.core.domain.LogPlanLogicProvider;
 import org.cougaar.core.blackboard.EnvelopeTuple;
-import org.cougaar.core.blackboard.LogPlanServesLogicProvider;
-import org.cougaar.core.agent.ClusterServesLogicProvider;
-import org.cougaar.planning.ldm.plan.Directive;
+import org.cougaar.core.blackboard.Directive;
 import org.cougaar.tools.castellan.plugin.LogMessageBuffer;
+import org.cougaar.core.mts.*;
+import org.cougaar.core.domain.*;
+import org.cougaar.core.relay.*;
+import org.cougaar.core.domain.RootPlan;
+//import org.cougaar.planning.ldm.LogPlan;
+//import org.cougaar.planning.ldm.PlanningFactory;
+import org.cougaar.planning.ldm.lps.*;
 
 import java.util.Collection;
 import java.util.ArrayList;
 
-public class PlanLogLP extends LogPlanLogicProvider implements EnvelopeLogicProvider, MessageLogicProvider {
+public class PlanLogLP extends RelayLP implements EnvelopeLogicProvider, MessageLogicProvider {
 
-    public PlanLogLP(LogPlanServesLogicProvider provider, ClusterServesLogicProvider provider1) {
-        super(provider, provider1);
+    public PlanLogLP(RootPlan rootPlan, MessageAddress provider1) {
+        super(rootPlan, provider1);
     }
 
     public void init() {
@@ -62,7 +65,7 @@ public class PlanLogLP extends LogPlanLogicProvider implements EnvelopeLogicProv
                 clearIncoming();
                 ArrayList outgoing = buffer.getOutgoing() ;
                 for ( int i=0;i<outgoing.size();i++) {
-                    logplan.sendDirective( ( LogMessage ) outgoing.get(i) );
+                    rootPlan.sendDirective( ( LogMessage ) outgoing.get(i) );
                 }
                 buffer.clearOutgoing();
             }
@@ -98,4 +101,6 @@ public class PlanLogLP extends LogPlanLogicProvider implements EnvelopeLogicProv
 
     protected ArrayList incoming = new ArrayList( 10 ) ;
     protected LogMessageBuffer buffer ;
+    protected RootPlan rootPlan;
 }
+

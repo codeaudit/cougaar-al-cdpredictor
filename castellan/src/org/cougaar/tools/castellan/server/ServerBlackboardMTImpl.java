@@ -33,9 +33,9 @@ import org.cougaar.core.service.*;
 import org.cougaar.core.agent.*;
 import org.cougaar.core.blackboard.*;
 import org.cougaar.util.*;
-
+import org.cougaar.core.mts.MessageAddress;   //Himanshu
 import java.util.*;
-
+import java.lang.*;
 /**
  * This is a single threaded MT impl.
  */
@@ -133,8 +133,10 @@ public class ServerBlackboardMTImpl implements ServerMessageTransport
         }
         // No batching.  Just wrap and add to the blacboard.
         WrappedPDUMessage pm = new WrappedPDUMessage(pdu) ;
-        pm.setDestination( new ClusterIdentifier( pdu.getDestination() ) );
+        //pm.setDestination( new ClusterIdentifier( pdu.getDestination() ) );    //Himanshu
+        pm.setDestination(MessageAddress.getMessageAddress(pdu.getDestination()));  //Himanshu
         blackboardService.publishAdd( pm ) ;
+
     }
 
     IncrementalSubscription unreadLogMessages ;

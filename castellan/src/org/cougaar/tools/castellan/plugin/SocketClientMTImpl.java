@@ -8,6 +8,7 @@ import org.cougaar.tools.castellan.util.* ;
 import org.cougaar.core.plugin.* ;
 import org.cougaar.core.agent.*;
 import org.cougaar.util.* ;
+import org.cougaar.core.mts.*;
 
 //import com.ibm.xml.parser.Parser;
 
@@ -161,7 +162,7 @@ public class SocketClientMTImpl implements ClientMessageTransport {
         }
     }
 
-    public SocketClientMTImpl( ConfigFinder cf, ClusterIdentifier clusterIdentifier, PlanMonitorPlugIn newPlugIn) {
+    public SocketClientMTImpl( ConfigFinder cf, MessageAddress clusterIdentifier, PlanMonitorPlugIn newPlugIn) {
         this.plugIn = newPlugIn ;
         //this.cluster = newCluster ;
         this.configFinder = cf ;
@@ -383,5 +384,6 @@ public class SocketClientMTImpl implements ClientMessageTransport {
     protected ObjectOutputStream sout ;
     protected ObjectInputStream sin ;
     protected ConfigFinder configFinder;
-    protected ClusterIdentifier clusterIdentifier ;
+    //protected ClusterIdentifier clusterIdentifier ;
+    protected MessageAddress clusterIdentifier ;
 }

@@ -1,6 +1,7 @@
 package org.cougaar.tools.castellan.plugin;
 
 import org.cougaar.core.servlet.*;
+import org.cougaar.planning.servlet.*;  //Himanshu
 import org.cougaar.util.UnaryPredicate;
 import org.cougaar.planning.ldm.plan.Task;
 
@@ -80,7 +81,7 @@ public class PlanStatsViewerServlet extends HttpServlet  {
         out.println( "</head>" ) ;
         out.println( "<body>" ) ;
 
-        out.println( "<h1 align=\"center\">Plan Log Stats for " + bss.getAgentIdentifier().cleanToString() + " </h1>" ) ;
+        out.println( "<h1 align=\"center\">Plan Log Stats for " + bss.getAgentIdentifier().toString() + " </h1>" ) ;  //Himanshu
         out.println( "<br>" ) ;
 
         out.println( "<table cellpadding=\"2\" cellspacing=\"1\" border=\"1\" width=\"80%\"" ) ;

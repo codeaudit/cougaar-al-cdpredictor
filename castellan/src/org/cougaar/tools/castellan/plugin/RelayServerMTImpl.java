@@ -35,7 +35,7 @@ import org.cougaar.tools.castellan.server.ServerMessageTransport;
 import org.cougaar.core.service.BlackboardService;
 import org.cougaar.core.service.UIDService;
 import org.cougaar.core.relay.Relay;
-import org.cougaar.core.agent.ClusterIdentifier;
+import org.cougaar.core.mts.*;
 import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.util.UID;
@@ -177,7 +177,8 @@ public class RelayServerMTImpl implements ServerMessageTransport {
 
     private void sendWrappedMessage(PDU pdu) {
         WrappedPDUMessage msg = new WrappedPDUMessage(pdu);
-        msg.setDestination( new ClusterIdentifier( pdu.getDestination() ) );
+        //msg.setDestination( new ClusterIdentifier( pdu.getDestination() ) );
+        msg.setDestination(MessageAddress.getMessageAddress(pdu.getDestination() ) );
         // Send using the relay.
         sendOutgoing( msg );
     }

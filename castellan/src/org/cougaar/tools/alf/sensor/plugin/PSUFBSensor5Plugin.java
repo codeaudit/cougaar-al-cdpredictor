@@ -31,8 +31,8 @@ import org.cougaar.core.util.UID;
 import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.core.service.community.CommunityService;
 import org.cougaar.core.service.*;
-import org.cougaar.core.util.XMLize;
-import org.cougaar.core.util.XMLizable;
+//import org.cougaar.core.util.XMLize; Changed by Himanshu
+//import org.cougaar.core.util.XMLizable; Changed by Himanshu
 import org.cougaar.util.*;
 import org.cougaar.multicast.AttributeBasedAddress;
 import org.cougaar.planning.ldm.plan.*;
@@ -106,7 +106,7 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
     public void setupSubscriptions()   {
 
         bs = getBlackboardService();
-		cluster = getBindingSite().getAgentIdentifier().toString();
+		cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
 
 		internalStateSubscription 	= (IncrementalSubscription) bs.subscribe(internalStatePredicate);
 		loadIndicatiorSubscription 	= (IncrementalSubscription) bs.subscribe(loadIndicatiorPredicate);
@@ -370,7 +370,7 @@ public class PSUFBSensor5Plugin extends ComponentPlugin
 			loadIndicator = new LoadIndicator(this.getClass(), cluster, uidservice.nextUID(), loadlevel);
 			for (Iterator iterator = internalState.alCommunities.iterator(); iterator.hasNext();) {
 				String community = (String) iterator.next();
-				loadIndicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
+				loadIndicator.addTarget(new AttributeBasedAddress().getAttributeBasedAddress(community, "Role", "AdaptiveLogisticsManager"));
 				bs.publishAdd(loadIndicator);
 			}
 		} else {

@@ -26,6 +26,7 @@ import org.cougaar.core.plugin.*;
 import org.cougaar.core.service.*;
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.component.ServiceBroker;
+import org.cougaar.core.service.AgentIdentificationService;
 import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.util.*;
 import org.cougaar.tools.castellan.ldm.*;
@@ -160,6 +161,7 @@ public class LogServerPlugin extends ComponentPlugin
     {
         ServiceBroker broker = getServiceBroker();
         log = (LoggingService) broker.getService(this, LoggingService.class, null);
+        ais = (AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null);
 
         BlackboardService bs = getBlackboardService();
         pduBufferSubscription = (IncrementalSubscription) bs.subscribe(pduBufferPredicate);
@@ -262,7 +264,7 @@ public class LogServerPlugin extends ComponentPlugin
         }
         buf.append( min ) ;
 
-        return getBindingSite().getAgentIdentifier().cleanToString() + buf.toString() ;
+        return ais.getName() + buf.toString() ;
     }
 
     public void unload ()
@@ -341,6 +343,7 @@ public class LogServerPlugin extends ComponentPlugin
     protected FlushThread flushThread ;
     protected String databaseName = null;
     protected boolean logToMemory = false, logToDatabase = false;
+    protected AgentIdentificationService ais;
     protected InMemoryEventLog memoryLog;
     protected PersistentEventLog persistentLog;
     protected PDUBuffer buffer;

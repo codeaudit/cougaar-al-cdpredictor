@@ -28,7 +28,7 @@ import org.cougaar.tools.castellan.pdu.*;
 import org.cougaar.tools.castellan.analysis.*;
 import org.cougaar.tools.castellan.pspace.search.GraphSearch;
 import org.cougaar.tools.castellan.pspace.search.SimpleSearch;
-import org.cougaar.core.agent.Cluster;
+import org.cougaar.core.agent.*;
 
 import java.util.*;
 

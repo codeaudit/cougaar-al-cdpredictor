@@ -33,7 +33,9 @@ import org.cougaar.tools.alf.sensor.plugin.*;
 // import org.cougaar.tools.alf.sensor.TheLoadForecaster;
 
 import org.cougaar.core.adaptivity.InterAgentOperatingMode;
-import org.cougaar.core.agent.ClusterIdentifier;
+//import org.cougaar.core.agent.ClusterIdentifier; Changed by Himanshu
+import org.cougaar.core.agent.*; //Added by Himanshu
+import org.cougaar.core.mts.MessageAddress;//Added by Himanshu
 import org.cougaar.core.plugin.*;
 import org.cougaar.core.service.*;
 import org.cougaar.core.adaptivity.OMCRangeList;

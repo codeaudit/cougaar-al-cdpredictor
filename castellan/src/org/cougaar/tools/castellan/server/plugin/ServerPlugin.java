@@ -26,6 +26,7 @@ package org.cougaar.tools.castellan.server.plugin;
 
 import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.component.ServiceBroker;
+import org.cougaar.core.service.AgentIdentificationService;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.BlackboardService;
 import org.cougaar.tools.castellan.plugin.RelayServerMTImpl;
@@ -128,7 +129,7 @@ public class ServerPlugin extends ComponentPlugin implements PDUSink {
             Object[] buffers = c.toArray() ;
             if ( buffers.length > 1 ) {
                 if ( log != null && log.isWarnEnabled() ) {
-                    log.warn( "More than one PDU buffer created for agent \"" + getBindingSite().getAgentIdentifier() + "\". Using first." );
+                    log.warn( "More than one PDU buffer created for agent \"" + ais.getMessageAddress() + "\". Using first." );
                 }
             }
             buffer = ( PDUBuffer ) buffers[0] ;
@@ -163,4 +164,5 @@ public class ServerPlugin extends ComponentPlugin implements PDUSink {
     protected PDUBuffer buffer ;
     protected RelayServerMTImpl impl ;
     protected FlushThread flushThread ;
+    protected AgentIdentificationService ais;
 }

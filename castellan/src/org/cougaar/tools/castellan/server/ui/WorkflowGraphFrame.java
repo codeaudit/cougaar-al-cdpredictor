@@ -27,6 +27,7 @@ public class WorkflowGraphFrame extends GraphFrame implements LogReferenceEventL
 
         if ( ul != null ) {
 
+            cluster = ul.getCluster();
         }
     }
 
@@ -38,6 +39,7 @@ public class WorkflowGraphFrame extends GraphFrame implements LogReferenceEventL
         if ( element instanceof Node ) {
             Node n = ( Node ) element ;
             int id = -1 ;
+
             try {
                 id = Integer.parseInt( n.getName() ) ;
             }
@@ -45,7 +47,7 @@ public class WorkflowGraphFrame extends GraphFrame implements LogReferenceEventL
 
             }
             if ( id != -1 ) {
-               BoundaryVerbTaskAggregate bvtl = observer.getTaskAggregate( id )  ;
+               BoundaryVerbTaskAggregate bvtl = observer.getTaskAggregate( id, null, cluster, null, null )  ;
                 if ( bvtl != null ) {
                     //System.out.println( "Selected " + bvtl );
                     int location = splitPane.getDividerLocation() ;
@@ -56,5 +58,6 @@ public class WorkflowGraphFrame extends GraphFrame implements LogReferenceEventL
         }
     }
 
-    AgentLoadObserver observer ;
+    AgentLoadObserver observer;
+    protected String cluster;
 }

@@ -34,7 +34,8 @@ import org.cougaar.tools.castellan.ldm.PlanLogConfig;
 import org.cougaar.core.service.BlackboardService;
 import org.cougaar.core.service.UIDService;
 import org.cougaar.core.relay.Relay;
-import org.cougaar.core.agent.ClusterIdentifier;
+import org.cougaar.core.mts.*;
+//import org.cougaar.core.agent.ClusterIdentifier;
 import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.util.UID;
@@ -48,14 +49,14 @@ import java.io.*;
  */
 public class RelayClientMTImpl implements ClientMessageTransport {
 
-    public RelayClientMTImpl( PlanLogConfig config, BlackboardService bs, UID uid, ClusterIdentifier source, PlanLogStats stats ) {
+    public RelayClientMTImpl( PlanLogConfig config, BlackboardService bs, UID uid, MessageAddress source, PlanLogStats stats ) {
         this.bs = bs;
         this.config = config ;
         this.source = source ;
         this.stats = stats ;
 
         buffer = new SourceBufferRelay( uid,
-                        new ClusterIdentifier( config.getLogCluster() ), source ) ;
+                        MessageAddress.getMessageAddress( config.getLogCluster() ), source ) ;
         bs.publishAdd( buffer ) ;
 
         try {
@@ -160,8 +161,8 @@ public class RelayClientMTImpl implements ClientMessageTransport {
 
     private void sendOutgoing( LogMessage msg ) {
         // System.out.println("RelayClientMTImpl:");
-        msg.setSourceAgent( source.cleanToString() );
-        msg.setDestination( new ClusterIdentifier( config.getLogCluster() ) );
+        msg.setSourceAgent( source.toString() );
+        msg.setDestination( MessageAddress.getMessageAddress( config.getLogCluster() ) );
         buffer.addOutgoing( msg ) ;
         if ( stats != null ) {
             stats.setNumMsgsSent( stats.getNumMsgsSent() + 1 ) ;
@@ -223,7 +224,7 @@ public class RelayClientMTImpl implements ClientMessageTransport {
     protected PlanLogConfig config ;
     protected SourceBufferRelay buffer ;
 
-    protected ClusterIdentifier source ;
+    protected MessageAddress source ;
 
     protected ByteArrayOutputStream bas = new ByteArrayOutputStream( maxBatchSize ) ;
     protected ObjectOutputStream oos ;

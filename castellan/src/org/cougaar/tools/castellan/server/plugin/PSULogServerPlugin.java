@@ -29,6 +29,7 @@ import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.util.*;
 import org.cougaar.tools.castellan.ldm.*;
+import org.cougaar.core.service.AgentIdentificationService;
 import org.cougaar.tools.castellan.server.ServerBlackboardMTImpl;
 import org.cougaar.tools.castellan.planlog.PDUBuffer;
 import org.cougaar.tools.castellan.planlog.InMemoryEventLog;
@@ -168,7 +169,7 @@ public class PSULogServerPlugin extends ComponentPlugin
     {
         ServiceBroker broker = getServiceBroker();
         log = (LoggingService) broker.getService(this, LoggingService.class, null);
-
+        ais = (AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null);
         BlackboardService bs = getBlackboardService();
         pduBufferSubscription = (IncrementalSubscription) bs.subscribe(pduBufferPredicate);
         Collection c = getParameters();
@@ -276,7 +277,7 @@ public class PSULogServerPlugin extends ComponentPlugin
         }
         buf.append( min ) ;
 
-        return getBindingSite().getAgentIdentifier().cleanToString() + buf.toString() ;
+        return ais.getName() + buf.toString() ;
     }
 
     public void unload ()
@@ -358,6 +359,7 @@ public class PSULogServerPlugin extends ComponentPlugin
 //    protected PersistentEventLog persistentLog;
     protected DBEventLog persistentLog;
     protected ArrayList buffers = new ArrayList() ;
+    protected AgentIdentificationService ais;
     protected LoggingService log ;
     protected IncrementalSubscription pduBufferSubscription;
 }

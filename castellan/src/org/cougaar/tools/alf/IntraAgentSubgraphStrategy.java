@@ -31,7 +31,7 @@ import org.cougaar.tools.castellan.pdu.PropertyGroupPDU;
 import org.cougaar.tools.castellan.pdu.ClusterPGPDU;
 import org.cougaar.tools.castellan.pdu.UIDStringPDU;
 import org.cougaar.planning.ldm.plan.Allocation;
-import org.cougaar.core.agent.Cluster;
+import org.cougaar.core.agent.*;
 
 import java.util.ArrayList;
 

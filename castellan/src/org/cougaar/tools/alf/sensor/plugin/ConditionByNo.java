@@ -5,12 +5,14 @@ import org.cougaar.core.service.*;
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.util.UID;
-import org.cougaar.core.agent.ClusterIdentifier;
+//import org.cougaar.core.agent.ClusterIdentifier;
 import org.cougaar.core.adaptivity.OMCRangeList;
 import org.cougaar.core.service.community.CommunityService;
 import org.cougaar.core.util.UniqueObject;
-import org.cougaar.core.util.XMLize;
-import org.cougaar.core.util.XMLizable;
+//import org.cougaar.core.util.XMLize; //Changed by Himanshu
+//import org.cougaar.core.util.XMLizable; //Changed by Himanshu
+import org.cougaar.planning.servlet.XMLize; //Added by Himanshu
+
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Document;

@@ -25,20 +25,24 @@
 package org.cougaar.tools.castellan.plugin;
 
 import org.cougaar.core.plugin.ComponentPlugin;
+import org.cougaar.core.service.AgentIdentificationService;
 import org.cougaar.core.service.BlackboardTimestampService;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.BlackboardService;
 import org.cougaar.core.service.UIDService;
 import org.cougaar.core.component.ServiceBroker;
+import org.cougaar.core.component.*;
 import org.cougaar.core.blackboard.*;
 import org.cougaar.core.util.UniqueObject;
 import org.cougaar.core.util.UID;
-import org.cougaar.core.agent.ClusterIdentifier;
+import org.cougaar.core.agent.*;
+import org.cougaar.core.mts.*;
 import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.core.node.NodeIdentificationService;
 import org.cougaar.util.UnaryPredicate;
 import org.cougaar.util.ConfigFinder;
 import org.cougaar.planning.ldm.plan.*;
+//import org.cougaar.planning.plugin.*;
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.tools.castellan.ldm.PlanLogConfig;
 import org.cougaar.tools.castellan.util.MultiTreeSet;
@@ -170,15 +174,16 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
             ServiceBroker broker = getServiceBroker() ;
             bts = ( BlackboardTimestampService ) broker.getService( this, BlackboardTimestampService.class, null ) ;
-            allElements = ( IncrementalSubscription ) getBlackboardService().subscribe( allPredicate ) ;
+            allElements = ( IncrementalSubscription ) getBlackboardService().subscribe( allPredicate );
 
             // Start the statistics logging
             stats = new PlanLogStats() ;
-            getBlackboardService().publishAdd( stats ) ;
+            getBlackboardService().publishAdd( stats );
 
             // Make a new client message transport
             UIDService service = ( UIDService ) broker.getService( this, UIDService.class, null ) ;
-            mtImpl = new RelayClientMTImpl( config, getBlackboardService(), service.nextUID(), getBindingSite().getAgentIdentifier(), stats ) ;
+            ais = (AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null);
+            mtImpl = new RelayClientMTImpl( config, getBlackboardService(), service.nextUID(), ais.getMessageAddress(), stats ) ;
             mtImpl.setPDUSink( this );
 
             // Check to see if any PDUBuffers already exist (based on rehydration?)
@@ -201,7 +206,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
                 buffer = ( PDUBuffer ) buffers[0] ;
                 if ( buffers.length > 0 ) {
                     if ( log != null && log.isWarnEnabled() ) {
-                        log.warn( "More than one PDU buffer created for agent \"" + getBindingSite().getAgentIdentifier() + "\". Using first." );
+                        log.warn( "More than one PDU buffer created for agent \"" + ais.getMessageAddress() + "\". Using first." );
                     }
                 }
             }
@@ -209,7 +214,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
             // Declare myself immediately.
             DeclarePDU pdu =
                new DeclarePDU( config.getNodeIdentifier(),
-                               getBindingSite().getAgentIdentifier().cleanToString(),
+                               ais.getName(),
                                System.currentTimeMillis(), currentTimeMillis() ) ;
             sendMessage( pdu );
 
@@ -238,7 +243,8 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         // System.out.printlbn( "Configuring PlanEventLogPlugIn from " + fileName ) ;
 
         ConfigFinder finder = getConfigFinder() ;
-        ClusterIdentifier clusterId = null ;
+        //ClusterIdentifier clusterId = null ;
+        MessageAddress clusterId = null;
 
         // Start with the default settings
         PlanLogConfig config = new PlanLogConfig() ;
@@ -246,7 +252,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         ServiceBroker sb = getServiceBroker() ;
         NodeIdentificationService nis = ( NodeIdentificationService )
                 sb.getService( this, NodeIdentificationService.class, null ) ;
-        config.setNodeIdentifier( nis.getNodeIdentifier().cleanToString() ) ;
+        config.setNodeIdentifier( nis.getMessageAddress().toString() ) ;
 
         try {
             String clusterName = null ;
@@ -327,13 +333,13 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         }
 
         if ( config.getLogCluster() == null ) {
-            //System.out.println( "Warning:: No configuration information found for agent " + getBindingSite().getAgentIdentifier() ) ;
-            log.error( "Warning:: No configuration information found for agent " + getBindingSite().getAgentIdentifier() );
+            //System.out.println( "Warning:: No configuration information found for agent " + ais.getMessageAddress() ) ;
+            log.error( "Warning:: No configuration information found for agent " + ais.getMessageAddress() );
         }
         else {
-            if ( config.getLogCluster().equals( getBindingSite().getAgentIdentifier().cleanToString() ) ) {
+            if ( config.getLogCluster().equals( ais.getName() ) ) {
             // DEBUG
-                System.out.println( "Setting " + getBindingSite().getAgentIdentifier().cleanToString() + " as server." );
+                System.out.println( "Setting " + ais.getName() + " as server." );
                 config.setServer( true );
             }
         }
@@ -922,4 +928,5 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
     protected HashMap map = new HashMap() ;
     protected LoggingService log;
     protected BlackboardTimestampService bts = null ;
+    protected AgentIdentificationService ais;
 }

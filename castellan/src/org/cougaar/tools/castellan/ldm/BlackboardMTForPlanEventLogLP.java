@@ -30,9 +30,12 @@ import org.cougaar.tools.castellan.pdu.*;
 import org.cougaar.core.blackboard.*;
 import org.cougaar.core.agent.*;
 import org.cougaar.core.service.*;
+import org.cougaar.core.domain.*;
+import org.cougaar.core.relay.*;
 import org.cougaar.util.*;
-import org.cougaar.planning.ldm.plan.*;
-
+import org.cougaar.planning.ldm.*;
+import org.cougaar.glm.execution.eg.ClusterInfo;
+import org.cougaar.core.mts.*;
 import java.util.*;
 import java.io.*;
 
@@ -41,10 +44,14 @@ import java.io.*;
  *
  */
 
+/*public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
+    public BlackboardMTForPlanEventLogLP(LogPlanServesLogicProvider logPlan, ClusterServesLogicProvider cluster) { */
+
+
 public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
-    public BlackboardMTForPlanEventLogLP(LogPlanServesLogicProvider logPlan, ClusterServesLogicProvider cluster) {
-        this.logPlan = logPlan;
-        this.cluster = cluster;
+    public BlackboardMTForPlanEventLogLP(RootPlan rootPlan, MessageAddress self) {
+        this.rootPlan = rootPlan;
+        this.self = self;
 
         // Configure batch size and object output stream
         try {
@@ -64,8 +71,13 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
      *  This will be called by the PlanEventLog logic provider for
      *  every execute. As a result, it may be slightly inefficient.
      */
+
     public void execute() {
-        if (( cluster.currentTimeMillis() - lastAddTime ) > maximumDelay) {
+
+       //if (( cluster.currentTimeMillis() - lastAddTime ) > maximumDelay) {
+       Object ob = (Object) self.toString();
+       ClusterInfo ci = (ClusterInfo)ob;
+       if ((ci.theExecutionTimeStatus.theExecutionTime - lastAddTime ) > maximumDelay) {
             flush();
         }
     }
@@ -142,7 +154,8 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
     }
 
     public void setLoggingDestination(String destination) {
-        targetCluster = new ClusterIdentifier(destination);
+        //targetCluster = new ClusterIdentifier(destination);
+        targetCluster = MessageAddress.getMessageAddress(destination);
         flush();
     }
 
@@ -179,11 +192,11 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
 
     private void sendWrappedMessage(PDU pdu) {
         WrappedPDUMessage msg = new WrappedPDUMessage(pdu);
-        if (logPlan != null && targetCluster != null) {
+        if (rootPlan != null && targetCluster != null) {
             flush();
             msg.setDestination(targetCluster);
-            msg.setSourceAgent(cluster.getClusterIdentifier().toString());
-            logPlan.sendDirective(msg);
+            msg.setSourceAgent(self.toString());
+            rootPlan.sendDirective(msg);
         }
         else {
             outList.add(msg);
@@ -211,22 +224,22 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
             oos = new ObjectOutputStream(bas);
 
             BatchMessage bm = new BatchMessage(ba, BatchMessage.SERIALIZED, false);
-            if (logPlan != null && targetCluster != null) {
+            if (rootPlan != null && targetCluster != null) {
                 // Clear the outlist.
                 if (outList.size() > 0) {
                     for (int i = 0 ; i < outList.size() ; i++) {
                         LogMessage d = (LogMessage) outList.get(i);
                         d.setDestination(targetCluster);
-                        d.setSourceAgent(cluster.getClusterIdentifier().cleanToString());
-                        logPlan.sendDirective(d);
+                        d.setSourceAgent(self.toString());
+                        rootPlan.sendDirective(d);
                     }
                     outList.clear();
                 }
 
                 // Add the batch message directly to the plan.
-                bm.setSourceAgent(cluster.getClusterIdentifier().cleanToString());
+                bm.setSourceAgent(self.toString());
                 bm.setDestination(targetCluster);
-                logPlan.sendDirective(bm);
+                rootPlan.sendDirective(bm);
             }
             else {
                 outList.add(bm);
@@ -238,10 +251,13 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
 
     }
 
-    LogPlanServesLogicProvider logPlan;
-    ClusterServesLogicProvider cluster;
+    RootPlan rootPlan;
+    MessageAddress self;
+    //RootPlan logPlan;
+    //ClusterContext cluster;
     PDUSink sink;
-    ClusterIdentifier targetCluster;
+    //ClusterIdentifier targetCluster;
+    MessageAddress targetCluster;
 
     long lastAddTime = 0L;
 

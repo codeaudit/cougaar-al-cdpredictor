@@ -17,6 +17,7 @@ import org.cougaar.core.component.*;
 import org.cougaar.glm.ldm.asset.OrganizationPG;
 import org.cougaar.planning.ldm.plan.*;
 import org.cougaar.core.service.*;
+import org.cougaar.core.mts.*;
 
 import java.io.*;
 
@@ -63,9 +64,14 @@ public class PlanMonitorPlugIn extends org.cougaar.core.plugin.ComponentPlugin
         return logAllocationResultsLevel;
     }
 
-    public ClusterIdentifier getIdentifier()
+   /* public ClusterIdentifier getIdentifier()
     {
         return getClusterIdentifier();
+    } */
+
+    public MessageAddress getIdentifier()
+    {
+        return getAgentIdentifier();
     }
 
     public PlanMonitorPlugIn()
@@ -465,7 +471,7 @@ public class PlanMonitorPlugIn extends org.cougaar.core.plugin.ComponentPlugin
             currentTime = System.currentTimeMillis();
             currentExecutionTime = currentTimeMillis();
 
-            String cluster = getClusterIdentifier().toString();
+            String cluster = getAgentIdentifier().toString();
             // Process added/removed/changed
             //blackboardService.openTransaction();
             for ( Enumeration e = allElements.getAddedList(); e.hasMoreElements(); )

@@ -24,13 +24,17 @@ package org.cougaar.tools.alf.sensor.plugin;
 
 import org.cougaar.tools.alf.sensor.TheSensor;
 import org.cougaar.core.adaptivity.InterAgentOperatingMode;
-import org.cougaar.core.agent.ClusterIdentifier;
+//import org.cougaar.core.agent.ClusterIdentifier; Changed by Himanshu
+import org.cougaar.core.agent.*; //Added by Himanshu
+import org.cougaar.core.mts.MessageAddress;//Added by Himanshu
 import org.cougaar.core.adaptivity.OMCRangeList;
 import org.cougaar.tools.castellan.planlog.DBEventLog;
 //import org.cougaar.core.adaptivity.SensorCondition;
 // Hong : End
 
 import org.cougaar.core.plugin.*;
+import org.cougaar.core.domain.*;
+import org.cougaar.core.component.*;
 import org.cougaar.core.service.*;
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.component.ServiceBroker;
@@ -237,6 +241,7 @@ public class SensorPlugin extends ComponentPlugin
 
     protected String getDatabaseName()
     {
+
         Date d = new Date( System.currentTimeMillis() ) ;
         // Hard code EST for now.
         String[] ids = TimeZone.getAvailableIDs(-5 * 60 * 60 * 1000);
@@ -263,7 +268,9 @@ public class SensorPlugin extends ComponentPlugin
         buf.append( hod ) ;
         buf.append( min ) ;
 
-        return getBindingSite().getAgentIdentifier().cleanToString() + buf.toString() ;
+        return ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(
+                this, AgentIdentificationService.class, null)).getName() + buf.toString();
+
     }
 
     public void execute()

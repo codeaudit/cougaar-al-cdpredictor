@@ -13,7 +13,9 @@ import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.util.UID;
 import org.cougaar.planning.ldm.plan.*;
 import org.cougaar.util.*;
-import org.cougaar.core.agent.ClusterIdentifier;
+//import org.cougaar.core.agent.ClusterIdentifier; Changed by Himanshu
+import org.cougaar.core.agent.*; //Added by Himanshu
+import org.cougaar.core.mts.MessageAddress;//Added by Himanshu
 import java.util.Iterator;
 import java.util.Collection;
 import org.cougaar.core.service.community.CommunityService;
@@ -114,7 +116,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
         myBlackboardService = getBlackboardService();
         myUIDService = (UIDService) getBindingSite().getServiceBroker().getService(this, UIDService.class, null); 
         myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null); 
-		cluster = getBindingSite().getAgentIdentifier().toString();
+		cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
         allocationSubscription = (IncrementalSubscription) myBlackboardService.subscribe(allocationPredicate);
         sensorSubscription = (IncrementalSubscription) myBlackboardService.subscribe(sensorPredicate);
 
@@ -135,7 +137,7 @@ public class PSUFBSensor4Plugin extends ComponentPlugin
                                     cluster,
                                     myUIDService.nextUID(),
                                     LoadIndicator.NORMAL_LOAD);
-                loadIndicator.addTarget(new AttributeBasedAddress(community, "Role", "AdaptiveLogisticsManager"));
+                loadIndicator.addTarget(new AttributeBasedAddress().getAttributeBasedAddress(community, "Role", "AdaptiveLogisticsManager"));
                 myBlackboardService.publishAdd(loadIndicator);
             }
 		}

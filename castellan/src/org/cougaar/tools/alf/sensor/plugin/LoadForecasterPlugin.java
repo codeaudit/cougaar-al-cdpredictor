@@ -175,7 +175,7 @@ public class LoadForecasterPlugin extends ComponentPlugin {
 
 		bs.setShouldBePersisted(false);
 
-		String cluster = getBindingSite().getAgentIdentifier().toString();
+		String cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
 		System.out.println("LoadForecasterPlugin start at " + cluster);
     }
 

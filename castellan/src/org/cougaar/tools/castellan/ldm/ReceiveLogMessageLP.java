@@ -4,19 +4,26 @@ package org.cougaar.tools.castellan.ldm;
 import org.cougaar.core.blackboard.*;
 import org.cougaar.core.agent.*;
 import org.cougaar.core.domain.*;
+import org.cougaar.core.relay.*;
 import org.cougaar.planning.ldm.plan.*;
+import org.cougaar.planning.ldm.lps.*;
+import org.cougaar.planning.ldm.PlanningFactory;
+import org.cougaar.core.domain.RootPlan;
+import org.cougaar.planning.ldm.LogPlan;
+import org.cougaar.core.mts.*;
 
 import java.util.*;
 
 /**
  * Receive log message from plug-in.
  */
-public class ReceiveLogMessageLP extends LogPlanLogicProvider implements MessageLogicProvider
+public class ReceiveLogMessageLP extends RelayLP implements MessageLogicProvider
 {
-    public ReceiveLogMessageLP(LogPlanServesLogicProvider logplan, ClusterServesLogicProvider cluster)
+    public ReceiveLogMessageLP(RootPlan rootPlan, MessageAddress self)
     {
-        super(logplan, cluster);
+        super(rootPlan,self);
     }
+
 
     public void execute(Directive m, Collection changeReports)
     {
@@ -25,7 +32,8 @@ public class ReceiveLogMessageLP extends LogPlanLogicProvider implements Message
             //logplan.findUniqueObject( ) ;
             LogMessage lm = ( LogMessage ) m ;
             lm.setLocal( false );
-            logplan.add( m );
+            rootPlan.add( m );
         }
     }
+    protected RootPlan rootPlan;
 }

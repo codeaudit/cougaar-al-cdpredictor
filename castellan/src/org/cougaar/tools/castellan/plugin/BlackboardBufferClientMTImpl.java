@@ -33,7 +33,7 @@ import org.cougaar.tools.castellan.ldm.WrappedPDUMessage;
 import org.cougaar.tools.castellan.ldm.PlanLogConfig;
 import org.cougaar.core.service.BlackboardService;
 import org.cougaar.core.relay.Relay;
-import org.cougaar.core.agent.ClusterIdentifier;
+import org.cougaar.core.mts.MessageAddress;//Added by Himanshu
 
 import java.util.Map;
 import java.util.ArrayList;
@@ -154,7 +154,8 @@ public class BlackboardBufferClientMTImpl implements ClientMessageTransport {
     }
 
     private void sendOutgoing( LogMessage msg ) {
-        msg.setDestination( new ClusterIdentifier( config.getLogCluster() ) );
+        //msg.setDestination( new ClusterIdentifier( config.getLogCluster() ) ); //Changed by Himanshu
+        msg.setDestination(MessageAddress.getMessageAddress( config.getLogCluster() ) ); //Added by Himanshu
         buffer.addOutgoing( msg ) ;
         bs.publishChange( buffer ) ;
 

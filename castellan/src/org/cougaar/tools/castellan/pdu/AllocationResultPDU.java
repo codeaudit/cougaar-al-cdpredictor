@@ -31,7 +31,7 @@
  */
 
 package org.cougaar.tools.castellan.pdu;
-import org.cougaar.planning.ldm.plan.AspectValue ;
+import org.cougaar.planning.ldm.plan.AspectValue;
 
 /**
  *  This PDU is sent when a Allocation (or other plan element) has a new AR.
@@ -116,12 +116,14 @@ public class AllocationResultPDU extends UniqueObjectPDU {
 
     public byte getSuccess() { return success ; }
 
-    public void setAspectValues( AspectValue[] newAspects ) {
+    public void setAspectValues( AspectValue[] newAspects ) {         //Modified by Himanshu
+        AspectValue[] aspect = null;
         // 8.2.1 compatible
         //aspects = AspectValue.clone( newAspects ) ;
-        aspects = new AspectValue[ newAspects.length ] ;
+        //aspects = new AspectValue[ newAspects.length ] ;
+        aspect = AspectValue.clone(newAspects) ;
         for (int i=0;i<newAspects.length;i++) {
-           aspects[i] = ( AspectValue ) newAspects[i].clone() ;
+              aspects[i] = aspect[i];
         }
     }
 

@@ -30,7 +30,10 @@ import org.cougaar.core.plugin.*;
 import org.cougaar.core.agent.*;
 import org.cougaar.core.agent.service.alarm.*;
 import org.cougaar.core.blackboard.*;
-import org.cougaar.core.service.*;
+import org.cougaar.core.service.AgentIdentificationService;
+import org.cougaar.core.service.BlackboardService;
+import org.cougaar.core.service.LoggingService;
+import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.node.NodeIdentificationService;
 import org.cougaar.util.*;
@@ -49,6 +52,7 @@ import java.io.*;
 public class PlanLogConfigPlugin extends ComponentPlugin
 {
     class FlushAlarm implements PeriodicAlarm {
+
         public FlushAlarm( long expTime )
         {
             this.expTime = expTime;
@@ -144,7 +148,7 @@ public class PlanLogConfigPlugin extends ComponentPlugin
     {
         ServiceBroker broker = getServiceBroker() ;
         log = ( LoggingService ) broker.getService( this, LoggingService.class, null ) ;
-
+        ais = (AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null);
         //BlackboardTimestampService bts =
         //        ( BlackboardTimestampService ) broker.getService( this, BlackboardTimestampService.class, null ) ;
 
@@ -159,14 +163,14 @@ public class PlanLogConfigPlugin extends ComponentPlugin
             if ( config.getLogCluster() == null ) {
                 if ( log.isInfoEnabled() ) {
                     log.info( "No target agent found for " + 
-                     getBindingSite().getAgentIdentifier() + ", logging disabled." );
+                     ais.getMessageAddress() + ", logging disabled." );
                 }
                 System.out.println( "No target agent found for " + 
-                    getBindingSite().getAgentIdentifier() + ", logging disabled."  ) ;
+                    ais.getMessageAddress() + ", logging disabled."  ) ;
                 config.setActive( false ) ;
             }
             else {
-                if ( config.getLogCluster().equals( getBindingSite().getAgentIdentifier().cleanToString() ) ) {
+                if ( config.getLogCluster().equals( ais.getName() ) ) {
                     config.setServer( true );
                 }
             }
@@ -175,14 +179,14 @@ public class PlanLogConfigPlugin extends ComponentPlugin
             config = new PlanLogConfig() ;
             if ( log.isWarnEnabled() ) {
                 log.info( "No plan logging configuration file specified.  Logging is disabled." ) ;
-                // log.info( "Using " + config + " for agent " + getBindingSite().getAgentIdentifier() ) ;
+                // log.info( "Using " + config + " for agent " + ais.getMessageAddress() ) ;
             }
             System.out.println( "PlanLogConfigPlugIn:: No plan log configuration file available. Logging is disabled." );
         }
 
         BlackboardService b = getBlackboardService() ;
         System.out.println( "PlanLogConfigPlugIn:: Publishing configuration " + config + " for cluster " + 
-                             getBindingSite().getAgentIdentifier()) ;
+                             ais.getMessageAddress()) ;
         b.publishAdd( config ) ;
         
         // Disable batching
@@ -213,13 +217,14 @@ public class PlanLogConfigPlugin extends ComponentPlugin
         // System.out.printlbn( "Configuring PlanEventLogPlugIn from " + fileName ) ;
 
         ConfigFinder finder = getConfigFinder() ;
-        ClusterIdentifier clusterId = null ;
+        //ClusterIdentifier clusterId = null ;
+        MessageAddress clusterId = null;
         PlanLogConfig config = new PlanLogConfig() ;
 
         ServiceBroker sb = getServiceBroker() ;
         NodeIdentificationService nis = ( NodeIdentificationService )
                 sb.getService( this, NodeIdentificationService.class, null ) ;
-        config.setNodeIdentifier( nis.getNodeIdentifier().cleanToString() ) ;
+        config.setNodeIdentifier( nis.getMessageAddress().toString() ) ;
         
         try {
             String clusterName = null ;
@@ -318,6 +323,6 @@ public class PlanLogConfigPlugin extends ComponentPlugin
 
     protected transient LoggingService log ;
     protected PlanLogConfig config ;
-
+    protected AgentIdentificationService ais;
     protected long flushInterval = 4000L ;
 }

@@ -28,7 +28,8 @@ import org.cougaar.core.plugin.*;
 import org.cougaar.core.service.BlackboardService;
 import org.cougaar.core.service.UIDService;
 import org.cougaar.core.component.ServiceBroker;
-import org.cougaar.core.agent.ClusterIdentifier;
+//import org.cougaar.core.agent.ClusterIdentifier; //Himanshu
+import org.cougaar.core.mts.*;
 import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.core.adaptivity.OMCRangeList;
 import org.cougaar.core.adaptivity.SensorCondition;
@@ -36,6 +37,8 @@ import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.tools.castellan.plugin.SourceBufferRelay;
 import org.cougaar.tools.castellan.plugin.TargetBufferRelay;
 import org.cougaar.util.UnaryPredicate;
+import org.cougaar.core.service.AgentIdentificationService;
+
 
 import java.util.Vector;
 import java.util.Iterator;
@@ -104,6 +107,7 @@ public class RelayTestPlugin2 extends ComponentPlugin {
         BlackboardService bs = getBlackboardService() ;
         ServiceBroker sb = getServiceBroker() ;
         UIDService us = (UIDService ) sb.getService( this, UIDService.class, null ) ;
+        ais = (AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null);
 
         targetBufferSubscription =  (IncrementalSubscription ) bs.subscribe( new UnaryPredicate() {
             public boolean execute(Object o) {
@@ -123,7 +127,7 @@ public class RelayTestPlugin2 extends ComponentPlugin {
         }) ;
 
         sourceBuffer =
-                new SourceBufferRelay( us.nextUID(), new ClusterIdentifier( target ), getBindingSite().getAgentIdentifier() ) ;
+                new SourceBufferRelay( us.nextUID(), MessageAddress.getMessageAddress( target ), ais.getMessageAddress() ) ;
 
         bs.publishAdd( sourceBuffer ) ;
 
@@ -136,7 +140,7 @@ public class RelayTestPlugin2 extends ComponentPlugin {
     protected void execute() {
 
         for ( Iterator iter = targetBufferSubscription.getAddedCollection().iterator(); iter.hasNext(); ) {
-            System.out.println( getBindingSite().getAgentIdentifier() + " FOUND NEW " + iter.next() );
+            System.out.println( ais.getName() + " FOUND NEW " + iter.next() );
         }
 
         for ( Iterator iter = targetBufferSubscription.getChangedCollection().iterator(); iter.hasNext(); ) {
@@ -164,4 +168,5 @@ public class RelayTestPlugin2 extends ComponentPlugin {
 
     IncrementalSubscription targetBufferSubscription, sourceBufferSubscription ;
     SourceBufferRelay sourceBuffer ;
+    protected AgentIdentificationService ais;
 }

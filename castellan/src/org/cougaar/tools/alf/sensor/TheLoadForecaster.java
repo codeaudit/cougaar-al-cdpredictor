@@ -31,7 +31,9 @@ import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.tools.alf.sensor.plugin.*;
 
 import org.cougaar.core.adaptivity.InterAgentOperatingMode;
-import org.cougaar.core.agent.ClusterIdentifier;
+//import org.cougaar.core.agent.ClusterIdentifier; //Changed by Himanshu
+import org.cougaar.core.agent.*; //Changed by Himanshu
+import org.cougaar.core.mts.MessageAddress;//Added by Himanshu
 import org.cougaar.core.plugin.*;
 import org.cougaar.core.service.*;
 import org.cougaar.core.adaptivity.OMCRangeList;
@@ -223,7 +225,8 @@ public class TheLoadForecaster {
   	  for (int i=0; i<agent.length; i++) {
 
 		psu_lf3[i]= new InterAgentOperatingMode("PSU_Loadforecaster_Class3", new OMCRangeList(new Double(0),new Double(Double.MAX_VALUE)),new Double(0));
-		psu_lf3[i].setTarget(new ClusterIdentifier(agent[i]));
+		//psu_lf3[i].setTarget(new ClusterIdentifier(agent[i]));//Changed by Himanshu
+		psu_lf3[i].setTarget(MessageAddress.getMessageAddress(agent[i]));
 		psu_lf3[i].setUID(us.nextUID());
 		sensorplugin.publishAdd(psu_lf3[i]);
 	  }

@@ -37,12 +37,13 @@ import org.cougaar.core.util.UID;
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.blackboard.IncrementalSubscription;
-import org.cougaar.core.agent.ClusterIdentifier;
+//import org.cougaar.core.agent.ClusterIdentifier;
 import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.util.UnaryPredicate;
 import org.cougaar.tools.alf.sensor.SensorConditionRelay;
 import org.cougaar.tools.castellan.ldm.FlushObject;
 import org.cougaar.tools.castellan.plugin.PlanLogPlugin;
+import org.cougaar.core.service.AgentIdentificationService;
 
 import java.util.Set;
 import java.util.Collections;
@@ -108,14 +109,14 @@ public class RelayTestPlugin extends ComponentPlugin {
         BlackboardService bs = getBlackboardService() ;
         ServiceBroker sb = getServiceBroker() ;
         UIDService us = (UIDService ) sb.getService( this, UIDService.class, null ) ;
-
+        ais = (AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null);
         // This is stupid.
         OMCRangeList range = new OMCRangeList( new Integer( 0 ), new Integer( 1 ) ) ;
         SensorCondition condition = new SensorCondition( "FallingBehind", range, new Integer( 0 ) ) ;
 
         Vector v = new Vector( getParameters() )  ;
-        mt = new SensorConditionRelay(us.nextUID(), new ClusterIdentifier( ( String ) v.get(0) ), getClusterIdentifier(),
-                condition, null ) ;
+        mt = new SensorConditionRelay(us.nextUID(), MessageAddress.getMessageAddress( ( String ) v.get(0) ), getAgentIdentifier(),
+                condition, null ) ;    //Himanshu
         iaom = new InterAgentOperatingMode( "FallingBehind?", range, new Integer(0) ) ;
         bs.publishAdd( iaom ) ;
         bs.publishAdd( mt ) ;
@@ -136,13 +137,13 @@ public class RelayTestPlugin extends ComponentPlugin {
     protected void execute() {
 
         for ( Iterator iter = relays.getAddedCollection().iterator() ;  iter.hasNext() ; ) {
-            System.out.println( getBindingSite().getAgentIdentifier() + "::Found relay in "
-                    + getClusterIdentifier() + "= "  + iter.next() );
+            System.out.println( ais.getName() + "::Found relay in "
+                    + getAgentIdentifier() + "= "  + iter.next() );   //Himanshu
         }
 
         for ( Iterator iter = relays.getChangedCollection().iterator() ;  iter.hasNext() ; ) {
-            System.out.println( getBindingSite().getAgentIdentifier() + "::Changed relay in "
-                    + getClusterIdentifier() + "= "  + iter.next() );
+            System.out.println( ais.getName() + "::Changed relay in "
+                    + getAgentIdentifier() + "= "  + iter.next() );     //Himanshu
         }
     }
 
@@ -150,4 +151,5 @@ public class RelayTestPlugin extends ComponentPlugin {
     SensorConditionRelay mt ;
     InterAgentOperatingMode iaom ;
     IncrementalSubscription relays ;
+    protected AgentIdentificationService ais;
 }

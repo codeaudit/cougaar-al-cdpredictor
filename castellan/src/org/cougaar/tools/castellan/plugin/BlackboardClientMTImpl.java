@@ -31,6 +31,7 @@ import org.cougaar.tools.castellan.ldm.*;
 import org.cougaar.tools.castellan.server.*;
 import org.cougaar.core.service.*;
 import org.cougaar.core.agent.*;
+import org.cougaar.core.mts.*;
 import org.cougaar.core.blackboard.*;
 import org.cougaar.util.*;
 import org.w3c.dom.*;
@@ -146,7 +147,7 @@ public class BlackboardClientMTImpl implements ClientMessageTransport {
             System.out.println( "PlanMonitorPlugIn:: Warning: Event logging is disabled, no target cluster can be found." ) ;
         }
         // DEBUG
-        System.out.println("PlanMonitorPlugIn::Logging to cluster " + targetCluster);
+        System.out.println("PlanMonitorPlugIn::Logging to cluster " + targetCluster.toString());  //Modified by Himanshu
 
         // Use a thread
         //thread = new MTThread() ;
@@ -247,7 +248,7 @@ public class BlackboardClientMTImpl implements ClientMessageTransport {
 
     }
 
-    private ClusterIdentifier getAddressFromConfig() {
+    private MessageAddress getAddressFromConfig() {      //Modified by Himanshu
         Collection params = plugIn.getParameters() ;
         Vector paramVector = new Vector( params ) ;
 
@@ -259,7 +260,8 @@ public class BlackboardClientMTImpl implements ClientMessageTransport {
         // DEBUG
         // System.out.printlbn( "Configuring PlanEventLogPlugIn from " + fileName ) ;
 
-        ClusterIdentifier clusterId = null ;
+        //ClusterIdentifier clusterId = null ;
+        MessageAddress clusterId = null;
 
         try {
             String clusterName = null ;
@@ -309,7 +311,8 @@ public class BlackboardClientMTImpl implements ClientMessageTransport {
             }
 
             if ( clusterName != null ) {
-                clusterId = new ClusterIdentifier(clusterName) ;
+                //clusterId = new ClusterIdentifier(clusterName) ;
+                clusterId = MessageAddress.getMessageAddress(clusterName); //Himanshu
             }
 
         } catch ( Exception e ) {
@@ -382,7 +385,8 @@ public class BlackboardClientMTImpl implements ClientMessageTransport {
     ConfigFinder finder ;
     PlanMonitorPlugIn plugIn ;
     PDUSink sink ;
-    ClusterIdentifier targetCluster ;
+    //ClusterIdentifier targetCluster ;   //Himanshu
+    MessageAddress targetCluster; //Himanshu
 
     long lastAddTime = 0L ;
 

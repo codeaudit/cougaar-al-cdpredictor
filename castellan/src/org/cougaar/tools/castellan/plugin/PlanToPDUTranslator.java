@@ -283,11 +283,11 @@ public abstract class PlanToPDUTranslator
         {
             // link to allocated asset
             ClusterPG clusterPG = asset.getClusterPG();
-            ClusterIdentifier clusterID = null;
+            MessageAddress clusterID = null;   //Himanshu
 
             // Check to see if this asset is a cluster.
             String remoteClusterID =
-                    ( clusterPG != null && ( clusterID = clusterPG.getClusterIdentifier() ) != null )
+                    ( clusterPG != null && ( clusterID = clusterPG.getMessageAddress() ) != null ) //Himanshu
                     ? clusterID.toString() : null;
 
             if ( remoteClusterID != null )
@@ -374,8 +374,8 @@ public abstract class PlanToPDUTranslator
             throw new IllegalArgumentException( "PropertyGroup must be non-null." ) ;
         }
         String clusterId = null ;
-        if ( cluster.getClusterIdentifier() != null ) {
-            clusterId = cluster.getClusterIdentifier().cleanToString() ;
+        if ( cluster.getMessageAddress() != null ) {
+            clusterId = cluster.getMessageAddress().toString() ;
         }
         ClusterPGPDU pgpdu = new ClusterPGPDU( clusterId ) ;
         return pgpdu ;

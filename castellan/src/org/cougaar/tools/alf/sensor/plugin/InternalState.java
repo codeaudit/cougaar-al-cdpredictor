@@ -7,14 +7,15 @@ import org.cougaar.core.adaptivity.SensorCondition;
 import org.cougaar.core.adaptivity.OMCRangeList;
 import org.cougaar.core.util.UID;
 import org.cougaar.core.util.UniqueObject;
-import org.cougaar.core.util.XMLize;
-import org.cougaar.core.util.XMLizable;
+//import org.cougaar.core.util.XMLize; //Changed by Himanshu
+//import org.cougaar.core.util.XMLizable; //Changed by Himanshu
+import org.cougaar.planning.servlet.XMLize; //Added by Himanshu
 
 import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Collection;
 
-public class InternalState implements java.io.Serializable, UniqueObject, XMLizable
+public class InternalState implements java.io.Serializable, UniqueObject //, XMLizable
 {  
 	private UID myUID = null;
 

@@ -28,13 +28,20 @@ import org.cougaar.core.blackboard.*;
 import org.cougaar.core.util.*;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.domain.*;
+import org.cougaar.core.relay.*;
+import org.cougaar.core.domain.RootPlan;
+//import org.cougaar.planning.ldm.LogPlan;
+//import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.plan.*;
 import org.cougaar.planning.ldm.asset.*;
+import org.cougaar.planning.ldm.lps.*;
 import org.cougaar.tools.castellan.plugin.*;
 import org.cougaar.tools.castellan.pdu.*;
 import org.cougaar.tools.castellan.util.*;
 import org.cougaar.tools.castellan.planlog.*;
 import org.cougaar.glm.ldm.asset.Organization;
+import org.cougaar.glm.execution.eg.ClusterInfo;
+import org.cougaar.core.mts.*;
 
 import java.util.*;
 
@@ -45,18 +52,29 @@ import java.util.*;
  * <p>  This plugin is configured using a XML configuration file whose name is passed to the PlanLogConfigPlugin.
  * If this configuration file is not present, no EventPDUs will be emitted.
  */
-public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvider, EnvelopeLogicProvider, MessageLogicProvider,
+
+/*public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvider, EnvelopeLogicProvider, MessageLogicProvider,
         PDUSink {
 
     public PlanEventLogLP(LogPlanServesLogicProvider logplan, ClusterServesLogicProvider cluster) {
+    public PlanEventLogLP(RootPlan logplan, ClusterContext cluster) {
         super(logplan, cluster);
+        Send message declaring existence of self.
+    }
+ */
+
+public class PlanEventLogLP extends RelayLP implements LogicProvider, EnvelopeLogicProvider, MessageLogicProvider,
+        PDUSink {
+
+    public PlanEventLogLP(RootPlan rootPlan, MessageAddress self) {
+                super(rootPlan, self);
         // Send message declaring existence of self.
     }
 
     public void init() {
-        clientMessageTransport = new BlackboardMTForPlanEventLogLP(logplan, cluster);
+        clientMessageTransport = new BlackboardMTForPlanEventLogLP(rootPlan, self);
         clientMessageTransport.setPDUSink(this);
-        // sendMessage(new DeclarePDU(cluster.getClusterIdentifier().cleanToString()));
+        //sendMessage(new DeclarePDU(cluster.getClusterIdentifier().cleanToString()));
     }
 
     protected AllocationResult replicate(AllocationResult ar) {
@@ -522,7 +540,7 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
 
             if (buffer == null) {
                 buffer = new PDUBuffer();
-                logplan.add(buffer);
+                rootPlan.add(buffer);
             }
 
             // Add the pdu to the buffer, synchronizing along the way.
@@ -566,7 +584,10 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
             return ;
         }
 
-        currentExecutionTime = cluster.currentTimeMillis();
+        Object ob = (Object) self.toString();
+
+        ClusterInfo ci = (ClusterInfo)ob;
+        currentExecutionTime = ci.theExecutionTimeStatus.theExecutionTime;   //  Can we do this?
         currentTime = System.currentTimeMillis();
 
         // Handle all execution traces.
@@ -586,7 +607,7 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
             if ( config.isActive() ) {
                 DeclarePDU pdu =
                    new DeclarePDU( config.getNodeIdentifier(),
-                           cluster.getClusterIdentifier().cleanToString(), System.currentTimeMillis(), -1 ) ;
+                           self.toString(), System.currentTimeMillis(), -1 ) ;
                 sendMessage( pdu );
             }
             return;
@@ -651,4 +672,6 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
 
     protected PDUBuffer buffer;
     protected ArrayList inboundPDUs = new ArrayList();
+    protected RootPlan rootPlan;
+    protected MessageAddress self;
 }
