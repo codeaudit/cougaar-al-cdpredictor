@@ -65,7 +65,7 @@ public class ScalingModel {
 
 			//getting the model based estimate of time
 			est_time = estimateRtime(curr_depth, target_depth, curr_time);
-			System.out.println("BN1: Depth= " + curr_depth + " time= " + curr_time + " target_depth= " + target_depth + " estimated_time= " + est_time);
+			//System.out.println("BN1: Depth= " + curr_depth + " time= " + curr_time + " target_depth= " + target_depth + " estimated_time= " + est_time);
 
 			HashMap t = setOpModeValue(temp, MessageAddress.getMessageAddress("BN1"), "ReplanTime", est_time);
 			if (t!=null) temp=t;
@@ -82,7 +82,7 @@ public class ScalingModel {
 
 			//getting the model based estimate of time
 			est_time = estimateRtime(curr_depth, target_depth, curr_time);
-			System.out.println("BN2: Depth= " + curr_depth + " time= " + curr_time + " target_depth= " + target_depth + " estimated_time= " + est_time);
+			//System.out.println("BN2: Depth= " + curr_depth + " time= " + curr_time + " target_depth= " + target_depth + " estimated_time= " + est_time);
 
 			HashMap t =   setOpModeValue(temp, MessageAddress.getMessageAddress("BN2"), "ReplanTime", est_time);
 			if (t!=null) temp=t;
@@ -99,7 +99,7 @@ public class ScalingModel {
 
 			//getting the model based estimate of time
 			est_time = estimateRtime(curr_depth, target_depth, curr_time);
-			System.out.println("BN3: Depth= " + curr_depth + " time= " + curr_time + " target_depth= " + target_depth + " estimated_time= " + est_time);
+			//System.out.println("BN3: Depth= " + curr_depth + " time= " + curr_time + " target_depth= " + target_depth + " estimated_time= " + est_time);
 
 			HashMap t = setOpModeValue(temp, MessageAddress.getMessageAddress("BN3"), "ReplanTime", est_time);
 			if (t!=null) temp=t;

@@ -6,6 +6,8 @@ import java.util.*;
 import org.cougaar.cpe.agents.messages.ControlMessage;
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.tools.techspecs.qos.ControlMeasurement;
+import java.util.Collections;
+import java.util.Comparator;
 /*
  * @author nathan
  * talks to Matlab and Arena to help the QueueingModel plugin 
@@ -23,49 +25,47 @@ public class SearchAndRank {
 		ControlMessage controlMsg = new ControlMessage("Test", "1");
 		HashMap t = new HashMap();
 
-		if (Math.random() > 0.5) {
+		//		if (Math.random() > 0.5) {
+		//
+		//			//case 1
+		//			t.put((Object) "ReplanPeriod", new Integer(70000));
+		//			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("BN1"), (Object) t.clone());
+		//
+		//			t.clear();
+		//			t.put((Object) "WorldStateUpdatePeriod", new Integer(20000));
+		//			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY1"), (Object) t.clone());
+		//
+		//			t.clear();
+		//			t.put((Object) "WorldStateUpdatePeriod", new Integer(30000));
+		//			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY2"), (Object) t.clone());
+		//
+		//			t.clear();
+		//			t.put((Object) "WorldStateUpdatePeriod", new Integer(40000));
+		//			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY3"), (Object) t.clone());
+		//		} else {
+		//
+		//			//case 2
+		//			t.put((Object) "ReplanPeriod", new Integer(60000));
+		//			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("BN1"), (Object) t.clone());
+		//
+		//			t.clear();
+		//			t.put((Object) "WorldStateUpdatePeriod", new Integer(30000));
+		//			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY1"), (Object) t.clone());
+		//
+		//			t.clear();
+		//			t.put((Object) "WorldStateUpdatePeriod", new Integer(30000));
+		//			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY2"), (Object) t.clone());
+		//
+		//			t.clear();
+		//			t.put((Object) "WorldStateUpdatePeriod", new Integer(30000));
+		//			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY3"), (Object) t.clone());
+		//		}
 
-			//case 1
-			t.put((Object) "ReplanPeriod", new Integer(70000));
-			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("BN1"), (Object) t.clone());
-
-			t.clear();
-			t.put((Object) "WorldStateUpdatePeriod", new Integer(20000));
-			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY1"), (Object) t.clone());
-
-			t.clear();
-			t.put((Object) "WorldStateUpdatePeriod", new Integer(30000));
-			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY2"), (Object) t.clone());
-
-			t.clear();
-			t.put((Object) "WorldStateUpdatePeriod", new Integer(40000));
-			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY3"), (Object) t.clone());
-		} else {
-
-			//case 2
-			t.put((Object) "ReplanPeriod", new Integer(60000));
-			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("BN1"), (Object) t.clone());
-
-			t.clear();
-			t.put((Object) "WorldStateUpdatePeriod", new Integer(30000));
-			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY1"), (Object) t.clone());
-
-			t.clear();
-			t.put((Object) "WorldStateUpdatePeriod", new Integer(30000));
-			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY2"), (Object) t.clone());
-
-			t.clear();
-			t.put((Object) "WorldStateUpdatePeriod", new Integer(30000));
-			controlMsg.putControlParameter((Object) MessageAddress.getMessageAddress("CPY3"), (Object) t.clone());
-		}
-		System.out.println(controlMsg.toString());
+		if (queueingParameters.size()>0)
+			controlMsg = ((QueueingParameters) rankedQueueingParameters.get(i-1)).getControlMsg();
+		if (controlMsg != null)
+			System.out.println(controlMsg.toString());
 		return controlMsg;
-	}
-
-	public void rankAccordingToScore(ArrayList a) {
-		//do the ranking using Score.java
-
-		//store the ranked list in QueueingParameters
 	}
 
 	/*
@@ -123,7 +123,7 @@ public class SearchAndRank {
 							//System.out.println(count + ": SCALED  "+ est.toString()+"\n");
 							if (sm.getifEstimated())
 								queueingParameters.add(new QueueingParameters(System.currentTimeMillis(), h, est));
-							
+
 							//System.out.println(count + " [original]: " + temp);
 							//System.out.println(count + " [changed ]: " + (HashMap) itr.next() + "\n");
 
@@ -133,8 +133,27 @@ public class SearchAndRank {
 
 				}
 
+		
+		rankQueueingParameters();
 		System.out.println("QUEUEING PARAMETERS\n" + toString());
-		//System.out.println("COUNT= " + count);
+	}
+
+	private void rankQueueingParameters() {
+		rankedQueueingParameters = new ArrayList(queueingParameters);
+		Collections.sort(rankedQueueingParameters, new Comparator() {
+			public int compare(Object o1, Object o2) {
+				QueueingParameters q1 = (QueueingParameters) o1, q2 = (QueueingParameters) o2;
+				double a, b;
+				a = q1.getTotalScore();
+				b = q2.getTotalScore();
+				if (a == b)
+					return 0;
+				else if (a < b)
+					return 1;
+				else
+					return -1;
+			}
+		});
 	}
 
 	private ArrayList permute(HashMap opmodes, int replan, int update, int depth, int breadth) {
@@ -266,8 +285,10 @@ public class SearchAndRank {
 	 */
 	public String toString() {
 		String temp = null;
-		Iterator itr = queueingParameters.iterator();
-		while (itr.hasNext()) {
+		temp += "Measured Control_Measurement= " + cm.toString() + "\n";
+		Iterator itr = rankedQueueingParameters.iterator();
+		int i = 0;
+		while ((itr.hasNext()) && (i++<10)) {
 			temp += ((QueueingParameters) itr.next()).toString() + "\n";
 		}
 		return temp;
