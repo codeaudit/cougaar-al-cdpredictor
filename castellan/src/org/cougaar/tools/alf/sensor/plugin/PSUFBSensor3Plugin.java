@@ -131,15 +131,12 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 				    {
 				        count_ps++;
 				    }
-				    if (match(verb, "Supply"))
-				    {
-				        count_s++;
-				    }
+				    
 				    if (match(verb, "ProjectWithdraw"))
 				    {
 				        count_pw++;
 				    }
-				    if (match(verb, "MaintainInventory"))
+				   /* if (match(verb, "MaintainInventory"))
 				    {
 				        count_mi++;
 				    }
@@ -151,37 +148,38 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 				    {
 				        count_to++;
 				    }
+					if (match(verb, "Supply"))
+				    {
+				        count_s++;
+				    }*/
 				}
 			    else
 				{
 					count_window++;
 					flag = true;
 										
-					//compute2(count_ps,count_s);
-					compute3(count_ps,count_pw,count_mi);
+					compute2(count_ps,count_pw);
+					//compute3(count_ps,count_pw,count_mi);
 
-					count_mi=0;
 					count_ps=0;
 					count_pw=0;
-					count_w=0;
+					/*count_w=0;
 					count_s=0;
 					count_gls=0;
 					count_to=0;
-					count_ti=0;					
+					count_ti=0;	
+					count_mi=0;*/
  
                     if (match(verb, "ProjectSupply"))
 				    {
 				        count_ps++;
 				    }
-				    if (match(verb, "Supply"))
-				    {
-				        count_s++;
-				    }
+				    
 				    if (match(verb, "ProjectWithdraw"))
 				    {
 				        count_pw++;
 				    }
-				    if (match(verb, "MaintainInventory"))
+				    /*if (match(verb, "MaintainInventory"))
 				    {
 				        count_mi++;
 				    }
@@ -193,6 +191,10 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 				    {
 				        count_to++;
 				    }
+					if (match(verb, "Supply"))
+				    {
+				        count_s++;
+				    }*/
 					endtime=endtime+span;
 							
 						while((newTime-endtime)>endtime)
@@ -201,18 +203,18 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 							{
 								count_window1++;
 								count_window=count_window1;
-								//compute2(count_ps,count_s);
-								compute3(count_ps,count_pw,count_mi);
+								compute2(count_ps,count_pw);
+								//compute3(count_ps,count_pw,count_mi);
 							}
 								
 							count_ps=0;
 							count_pw=0;
-							count_s=0;
+							/*count_s=0;
 							count_w=0;
 							count_mi=0;
 							count_gls=0;
 							count_to=0;
-							count_ti=0;
+							count_ti=0;*/
 								
 							if(flag==true)
 								{
@@ -235,10 +237,10 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
     }
 
 
- /*int compute2(int x, int y)
+ int compute2(int x, int y)
 	{	   	   	  
-		   int s = 1; 
-		   int i; 
+		 int s = 2; 
+		 int i; 
 	       int a=0;
 	       i = Math.min(x,y);
 	       num = num + i;
@@ -259,9 +261,9 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 		  ValueRef(st1,a,num2);
 		}
 		return a;
-	}*/
+	}
 
-  int compute3(int x, int y, int z)
+  /*int compute3(int x, int y, int z)
 	{	   	   
 	  int s = 2;
 	  int i; 
@@ -285,35 +287,36 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 		  ValueRef(st1,a,num3);
 		}
 		return a;
-	}
+	}*/
 
   void ValueRef(String rf, int ab, int u)
 	{
-	  myTableMap = new Hashtable();	
+	  myTableMap = new Hashtable();
 	  String textFileName = sensorname.concat(cluster+".txt"); 
 	  Iterator iter;
+	  int id;
 	  String status2 = LoadIndicator.NORMAL_LOAD;
-      BufferedReader is = null;
+        BufferedReader is = null;
 	  ConfigFinder finder = getConfigFinder() ;
 	  String f=null;
-      if ( textFileName != null && finder != null ) {
-      f = finder.locateFile(textFileName).toString() ;
+        if ( textFileName != null && finder != null ) 
+        {
+           f = finder.locateFile(textFileName).toString() ;
 	  }
-	  //System.out.println(textFileName);
-	  System.out.println(f);
+	  //System.out.println(f);
 	  
 				  try
 				  {	  
-                      is = new BufferedReader(new FileReader(f));
+                           is = new BufferedReader(new FileReader(f));
  
 					  while(is.ready())				  
 					  {						  					  
 						  int a1=0;
 						  int b=0;
-						  String temp = is.readLine();						  					  				  
+						  String temp = is.readLine();	
 						  a1 = temp.indexOf(" ", b);	
 						  int refTable[] = new int[10];
-						  int id =  (Integer.valueOf(temp.substring(b,a1))).intValue(); //String nnt = temp.substring(b,a-1);						  
+						  id =  (Integer.valueOf(temp.substring(b,a1))).intValue(); //String nnt = temp.substring(b,a-1);						  
 						  b=a1+1;					  			  
 						  a1 = temp.indexOf(" ", b);
 						  refTable[0] = (Integer.valueOf(temp.substring(b,a1))).intValue();
@@ -331,22 +334,27 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 						  //refTable[4]=(Long.valueOf(temp.substring(b,a1))).longValue();
 						  //b=a1+1;				  
 						  //refTable[5]=(Long.valueOf(temp.substring(b))).longValue();
-						  myTableMap.put(new Integer(id),refTable);	
+						  myTableMap.put(new Integer(id),refTable);
+                                      
+                                      
 					  }
-                          is.close();
-					      //System.out.println("Size is" +myTableMap.size());					  				  
+
+                             is.close();				  				  
 				  }
 				  catch (java.io.IOException ioexc)
 				  {
 					  System.err.println("can't read or write file, io error");
 					  System.err.println("RbfRidgeRegression constructor");
-				  }				      
+				  }	
+				      
 					  Integer newVal1 = Integer.valueOf(rf);
-					  //System.out.println(newVal1);
+					  if(myTableMap.containsKey(newVal1)==true)
+					  {
 					  int Table[] = new int[6];
 					  Table = (int []) myTableMap.get(newVal1);
 					  result rt = new result(Table);
 					  double status1 = rt.deduce(ab,u);	
+					  
 					  if(dispToggle==true)
 					  {
 							for (iter = sensorSubscription.getCollection().iterator(); iter.hasNext();) 
@@ -372,7 +380,10 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
 							}
 					dispToggle=false;
 					System.out.println("\n"+"["+sensorname+"]"+" "+"indicates"+" "+cluster+" "+"is under"+" "+status2+" "+"Load");
+
 					}
+				}
+			
 	}
 
     IncrementalSubscription taskSubscription;  
@@ -382,30 +393,30 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
     private BlackboardService myBlackboardService;
     private LoggingService myLoggingService;
     private UIDService myUIDService;
-	private Hashtable myTableMap;
-	private boolean dispToggle = false;	
-	private boolean flag = false;
+    private Hashtable myTableMap;
+    private boolean dispToggle = false;	
+    private boolean flag = false;
     private  int count_ps=0;
     private  int count_pw=0;
-    private  int count_mi=0;
+    /*private  int count_mi=0;
     private  int count_s=0;
     private  int count_w=0;
     private  int count_gls=0;
     private  int count_to=0;
-	private  int count_ti=0;
+	private  int count_ti=0;*/
     private  int count_window=0;
-	private  int count_window1=0;
-	//private int num;
-	private int num1;
-	//private int num2;
-	private int num3;
-	//private int k;
-	private int l;
-	boolean parity = false;
-	UID uid;
-	long starttime=0;
-	int span=5000;
-	int endtime=0;	
+    private  int count_window1=0;
+    private int num;
+	//private int num1;
+    private int num2;
+	//private int num3;
+    private int k;
+	//private int l;
+    boolean parity = false;
+    UID uid;
+    long starttime=0;
+    int span=5000;
+    int endtime=0;	
 	
 }
 
@@ -419,11 +430,12 @@ class result
 			cumln = arr[3];
 			
 		}
+		
 		 double deduce(int avg1, int cum2)
 		{
 		
-			double cumlm = cumln-(0.3*cumln);
-			double cumls = cumln-(0.5*cumln);
+			double cumlm = cumln-(0.15*cumln);
+			double cumls = cumln-(0.30*cumln);
 
 			if (avg1!=-1)
 			{
