@@ -159,6 +159,7 @@ public class RelayClientMTImpl implements ClientMessageTransport {
     }
 
     private void sendOutgoing( LogMessage msg ) {
+        System.out.println("RelayClientMTImpl:");
         msg.setSourceAgent( source.cleanToString() );
         msg.setDestination( new ClusterIdentifier( config.getLogCluster() ) );
         buffer.addOutgoing( msg ) ;
@@ -181,7 +182,6 @@ public class RelayClientMTImpl implements ClientMessageTransport {
     }
 
     public synchronized void flush() {
-        System.out.print("F+");
         lastAddTime = System.currentTimeMillis();
         if (bas.size() <= 4) {
             return;
@@ -198,6 +198,7 @@ public class RelayClientMTImpl implements ClientMessageTransport {
             oos.close() ;
             oos = new ObjectOutputStream(bas);
             BatchMessage bm = new BatchMessage(ba, BatchMessage.SERIALIZED, false);
+            System.out.println("LM+");
             sendOutgoing( bm );
         }
         catch (Exception e) {
