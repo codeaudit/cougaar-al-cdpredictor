@@ -1,0 +1,31 @@
+Penn State Load Forecasting Sensor Identification
+
+* There are three different types of sensors developed by PSU.
+* They are located in PlanLogAgent and feed back sensor results to agents  using InterAgentOperatingMode class.
+* Whenever sensor result changes sensors will update the InterAgentOperatingMode objects.
+* As a result InterAgentCondition object will be updated in each agent.
+
+
+1. Sensor 1
+
+Plugin Name: FallingBehindSensorPlugin
+Sensor Name: FallingBehind
+Allowable values: 0(not falling behind)/1(falling behind)
+Related Agents: All agents related to ProjectSupply and Supply tasks (not Transportation society)
+Description: This sensor will detect the imbalance between task arrival and task allocation. If allocation performance is degraded over predefined threshold relative to generation performance it will declare falling behind. The performance is defined as the duration taken to generate and allocate tasks.
+
+2. Sensor 2
+
+Plugin Name: 
+Sensor Name: FallingBehind
+Allowable values: 0(not falling behind)/1(falling behind)
+Related Agents:
+Description: This sensor detects whether an agent is falling behind or not. It monitors the task time series in the agent and declares falling behind if the parameters computed are over predetermined thresholds, which are established through experimentation. Optionally, this sensor can also detect falling behind by calculating the average waiting time of tasks at an agent and comparing that with predetermined thresholds. 
+
+3. Sensor 3.
+
+Plugin Name:  PSU_Loadforecaster_ClassX    (X is the supply class)
+Sensor Name:
+Allowable values: double
+Related Agents:
+Description: This sensor will forecast the load in terms of the planning start time of each agent. It will extract task arrival time series at an agent and forecasts the load at other agents by using regression model. 

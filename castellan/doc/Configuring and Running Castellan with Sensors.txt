@@ -1,0 +1,62 @@
+Configuring and Running Castellan with Sensors:
+
+1) Unzip castellan in root directory.
+2) Copy the castellan.jar into CIP/lib. Insure the support library jgl3.1.0.jar is present
+
+NOTE:  Do not add the CastellanDomain unless logging is desired or you explicitly disable logging. Currently, the Castellan logic provides will begin logging by default until explicitly disabled and consume local memory.  
+Refer to Castellan 2.0b3 Installation Guide in castellan/docs for details of how to disable and enable logging.
+IMPORTANT: If the CastellanDomain is loaded, logging must be explicitly disabled for agents for which adaptivity is not desired. If this is not done, there will be excessive memory consumption and CPU load.
+
+3) Do only if logging is desired 
+    Modify the LDMDomain.ini file by adding the following:
+    castellan=org.cougar.tools.castellan.ldm.CastellanDomain
+
+4) Add the PlanEventLogConfig.xml to CIP/configs/common. It should contain the following:
+
+   <plpconfig>
+  <settings>
+        <PlanLogAgent identifier="PlanLogAgent"/>
+        <LoggingActive value="true" /> 
+//(For logging check)
+  </settings>
+  </plpconfig>
+
+5) Add query for SensorPlugins in recipeQueries.q
+
+  recipeQueryPlanLogServerAgent=\
+  SELECT COMPONENT_ALIB_ID FROM V4_ALIB_COMPONENT    
+  WHERE COMPONENT_TYPE\ 
+  = 'agent' AND COMPONENT_NAME = 'PlanLogAgent'
+
+More queries can be added to select a subset of agents from where sensor data is desired rather than querying all agents.
+
+6) Create recipes in csmart. 
+i) Agent Insertion: PlanLogAgent
+Agent Name: PlanLogAgent
+
+ii) Specific Insertion: PlanLogConfigPlugin
+Class Name: org.cougar.tools.castellan.plugin.PlanLogConfigPlugin
+Component Name: PlanLogConfigPlugin
+No. of Arguments: 1
+Query: recipeQueryAllAgents or RecipeQuerySetofAgents..
+Argument: PlanEventLogConfig.xml
+
+
+
+iii) Specific Insertion: FallingBehindSensor
+Class Name: org.cougar.tools.alf.sensor.plugin.FallingBehindSensorPlugin
+Component Name: FallingBehindSensorPlugin
+No. of Arguments: 0
+Query: recipeQueryPlanLogServerAgent
+
+There are one more plugin that can do Load-Forecasting and FallingBehind. So just modify the Class Name as: org.cougar.tools.alf.sensor.plugin.SensorPlugin
+
+
+7) Configure the PlanLogAgent on a separate Host.
+
+Add the adaptivity engine etc to the recipes. Save the experiment and run.
+
+IMPORTANT: Insure that the system time between all the systems being run is synchronized.
+
+
+
