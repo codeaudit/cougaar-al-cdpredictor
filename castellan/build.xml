@@ -15,6 +15,7 @@
 		</fileset>
 		<pathelement location="data/libs/jgl3.1.0.jar"/>
 		<pathelement location="data/libs/matlib.jar"/>
+		<pathelement location="/var/www/html/jars/Logistics_bbn_bbn_HEAD.jar"/>
   </path>
 
 	<target name="delete">
