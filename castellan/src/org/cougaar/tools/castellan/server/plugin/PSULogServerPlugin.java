@@ -323,7 +323,7 @@ public class PSULogServerPlugin extends ComponentPlugin
         {
             synchronized (buffer)
             {
-                System.out.println("PSULogServerPlugin:: flushing " + buffer + " with size " + buffer.getIncomingSize() );
+                //System.out.println("PSULogServerPlugin:: flushing " + buffer + " with size " + buffer.getIncomingSize() );
                 // Now, flush out the buffer into an InMemoryEventLog object
                 if (buffer.getIncomingSize() > 0)
                 {
