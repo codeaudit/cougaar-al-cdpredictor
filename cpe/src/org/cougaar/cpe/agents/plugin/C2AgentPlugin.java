@@ -24,6 +24,7 @@ package org.cougaar.cpe.agents.plugin;
 import org.cougaar.core.adaptivity.OMCRangeList;
 import org.cougaar.core.adaptivity.OperatingModeCondition;
 import org.cougaar.core.blackboard.IncrementalSubscription;
+import org.cougaar.core.blackboard.Subscription;
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.relay.Relay;
@@ -43,6 +44,7 @@ import org.cougaar.cpe.relay.TargetBufferRelay;
 import org.cougaar.cpe.util.CPUConsumer;
 import org.cougaar.cpe.util.ConfigParserUtils;
 import org.cougaar.cpe.util.StandardAlarm;
+import org.cougaar.cpe.util.OMCMPManager;
 import org.cougaar.glm.ldm.asset.Organization;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.tools.techspecs.events.MessageEvent;
@@ -109,6 +111,8 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
                                                                            20000, 22500, 25000 } ) ;
     private OperatingModeCondition planningTimeLimitActiveCondition;
     private OperatingModeCondition planningTimeLimitCondition;
+    private OMCMPManager omcMPManager;
+    private IncrementalSubscription mpSubscription;
 
     public long getReplanPeriodInMillis() {
         if ( replanPeriodCondition != null ) {
@@ -193,6 +197,9 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     protected void execute() {
         // System.out.println("\n\nC2AgentPlugin:: " + getAgentIdentifier() + " EXECUTING...");
         processOrganizations();
+
+        // Execute the measurement for the MP
+        omcMPManager.execute( perceivedWorldState == null ? 0 : perceivedWorldState.getTime() );
 
         gmrt.execute( getBlackboardService() );
         // display.execute();
@@ -314,14 +321,9 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
          }
          else if ( message instanceof PublishMPMessage ) {
              BundledMPMessage bmm = new BundledMPMessage() ;
-             bmm.addData( replanTimeMP ) ;
-             bmm.addData( replanTimerDelayMP ) ;
-             bmm.addData( updateUnitStatusDelayMP );
-             Collection c = updateStatusDelayMeasPoints.values() ;
-             for (Iterator iterator = c.iterator(); iterator.hasNext();)
-             {
+             for (Iterator iterator = mpSubscription.iterator(); iterator.hasNext();) {
                  MeasurementPoint point = (MeasurementPoint) iterator.next();
-                 bmm.addData( point );
+                 bmm.addData(  point ) ;
              }
 
              // Send the configuration information.
@@ -420,6 +422,9 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
     }
 
     public void doUpdateWorldState( ) {
+        // Execute the measurement for the MP
+        omcMPManager.execute( perceivedWorldState == null ? 0 : perceivedWorldState.getTime() );
+
         try {
         log.shout( getAgentIdentifier() + " updating world state to superior.");
         gmrt.sendMessage( superior.getMessageAddress(),
@@ -586,6 +591,9 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         }
 
         try {
+            // Handle any op mode measurements.
+            omcMPManager.execute( perceivedWorldState == null ? 0 : perceivedWorldState.getTime() );
+
             // Lock the black board in this version to prevent messages from being fired!
     //		TODO NG: Need PBT (replan)
 
@@ -1011,7 +1019,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         getBlackboardService().publishAdd( relayToWorldAgent );
 
         /**
-         * A predicate that matches all organizations that
+         * A predicate that matches all organizations.
          */
         class FindOrgsPredicate implements UnaryPredicate {
             public boolean execute(Object o) {
@@ -1019,12 +1027,6 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
             }
         }
         findOrgsSubscription = (IncrementalSubscription) getBlackboardService().subscribe(new FindOrgsPredicate());
-
-        class MyMessageRelays implements UnaryPredicate {
-            public boolean execute(Object o) {
-                return false;
-            }
-        }
 
         targetRelaySubscription = ( IncrementalSubscription ) getBlackboardService().subscribe( new UnaryPredicate() {
             public boolean execute(Object o) {
@@ -1038,6 +1040,7 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
         // Make the perceived world state reference and publish to the black board.
         perceivedWorldStateRef = new WorldStateReference( "PerceivedWorldState", null) ;
         getBlackboardService().publishAdd( perceivedWorldStateRef );
+
 
         makeOperatingModeConditions();
 
@@ -1059,6 +1062,9 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
     private void makeOperatingModeConditions()
     {
+        // Record all operating modes as individual measurement points.
+        omcMPManager = new OMCMPManager( getBlackboardService() ) ;
+
         // Expose the adaptive OperatingModeConditions
         planningTimeLimitActiveCondition = new OperatingModeCondition( "BoundPlanningByTime", booleanList ) ;
         planningTimeLimitActiveCondition.setValue( new Integer(0) );
@@ -1100,6 +1106,12 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
     private void makeMeasurementPoints()
     {
+        mpSubscription = (IncrementalSubscription) getBlackboardService().subscribe( new UnaryPredicate() {
+            public boolean execute(Object o) {
+                return o instanceof MeasurementPoint ;
+            }
+        }) ;
+
         // Make some measurement points.
         replanTimerDelayMP = new EventDurationMeasurementPoint( "ReplanTimerDelay") ;
         getBlackboardService().publishAdd( replanTimerDelayMP );

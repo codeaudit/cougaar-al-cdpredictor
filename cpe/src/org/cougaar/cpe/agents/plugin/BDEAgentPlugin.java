@@ -39,6 +39,7 @@ import org.cougaar.cpe.relay.SourceBufferRelay;
 import org.cougaar.cpe.relay.TimerMessage;
 import org.cougaar.cpe.util.CPUConsumer;
 import org.cougaar.cpe.util.ConfigParserUtils;
+import org.cougaar.cpe.util.OMCMPManager;
 import org.cougaar.glm.ldm.asset.Organization;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.tools.techspecs.events.MessageEvent;
@@ -110,6 +111,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 	private DelayMeasurementPoint zonePlanMP;
     private HashMap bnAggUnitToMetricsMap = new HashMap();
     private IncrementalSubscription mpSubscrption;
+    private OMCMPManager omcMPManager;
 
     protected void setupSubscriptions() {
         mpSubscrption = (IncrementalSubscription) getBlackboardService().subscribe(
@@ -163,6 +165,8 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 	}
 
 	private void publishOperatingModes() {
+        // Record all operating modes as individual measurement points.
+        omcMPManager = new OMCMPManager( getBlackboardService() ) ;
 
 		replanPeriodCondition =
 			new OperatingModeCondition("ReplanPeriod", replanPeriodList);
@@ -643,7 +647,6 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 		System.out.println(
 			"-------------------------------------------------------\n");
 
-		// Send a dummy zone schedule to all subordinates with the
 
 	}
 
@@ -851,6 +854,8 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 
 	public void execute() {
 		processOrganizations();
+
+        omcMPManager.execute( referenceZoneWorld == null ? 0 : referenceZoneWorld.getTime() );
 
 		gmrt.execute(getBlackboardService());
 	}
