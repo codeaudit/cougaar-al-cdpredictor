@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Collection;
+import java.io.Serializable;
 
 public class MeasuredWorldMetrics extends WorldMetrics
 {
@@ -23,6 +24,7 @@ public class MeasuredWorldMetrics extends WorldMetrics
     MeasurementPoint score  ;
     MeasurementPoint scoringRate ;
     MeasurementPoint entryRate ;
+    private Double ZERO = new Double(0);
 
     public MeasuredWorldMetrics(String name, WorldState state, int integrationPeriod)
     {
@@ -105,7 +107,7 @@ public class MeasuredWorldMetrics extends WorldMetrics
 
         MeasurementPoint unitFuelConsumption = (MeasurementPoint) fuelConsumptionByUnit.get(unitId) ;
         if ( unitFuelConsumption == null ) {
-            unitFuelConsumption = new TimePeriodMeasurementPoint( getName() + ".FuelConsumption." + unitId, Double.TYPE ) ;
+            unitFuelConsumption = new TimePeriodMeasurementPoint( getName() + ".FuelConsumption." + unitId, Double.class ) ;
             fuelConsumptionByUnit.put( unitId, unitFuelConsumption ) ;
         }
 
@@ -130,13 +132,25 @@ public class MeasuredWorldMetrics extends WorldMetrics
             violations.addMeasurement( new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), new Integer( accumViolations ) ) );
             entryRate.addMeasurement( new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), new Integer( accumEntries )));
             fuelConsumption.addMeasurement( new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), new Double( accumFuelConsumption ) ) );
-            for (Iterator iterator = fuelConsumptionByUnit.entrySet().iterator(); iterator.hasNext();)
+            for (Iterator iterator = getParent().getUnits(); iterator.hasNext();)
             {
-                Map.Entry entry = (Map.Entry) iterator.next() ;
-                TimePeriodMeasurementPoint timePeriodMeasurementPoint = (TimePeriodMeasurementPoint) entry.getValue() ;
-                Double value = (Double) accumFuelConsumptionByUnit.get( entry.getKey() ) ;
-                timePeriodMeasurementPoint.addMeasurement(
-                        new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), value ) );
+                UnitEntity entry = (UnitEntity) iterator.next() ;
+                String unitId = entry.getId() ;
+                TimePeriodMeasurementPoint timePeriodMeasurementPoint = (TimePeriodMeasurementPoint)fuelConsumptionByUnit.get( unitId ) ;
+                if ( timePeriodMeasurementPoint == null ) {
+                    timePeriodMeasurementPoint = new TimePeriodMeasurementPoint( getName() + ".FuelConsumption." + unitId,
+                            Double.class ) ;
+                    fuelConsumptionByUnit.put( unitId, timePeriodMeasurementPoint ) ;
+                }
+                Double measurement = (Double) accumFuelConsumptionByUnit.get( unitId ) ;
+                if ( measurement != null ) {
+                    timePeriodMeasurementPoint.addMeasurement(
+                    new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), measurement ) );
+                }
+                else {
+                    timePeriodMeasurementPoint.addMeasurement(
+                    new TimePeriodMeasurement( ev.getOldTime(), ev.getNewTime(), ZERO ) );
+                }
             }
 
             accumFuelConsumptionByUnit.clear();

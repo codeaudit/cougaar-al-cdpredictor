@@ -68,6 +68,10 @@ public class WorldMetrics implements CPEEventListener
         }
     }
 
+    public WorldState getParent() {
+        return parent;
+    }
+
     protected void processFuelConsumptionEvent( FuelConsumptionEvent e)
     {
         accumFuelConsumption += e.getAmount() ;
