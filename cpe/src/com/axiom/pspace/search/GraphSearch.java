@@ -26,10 +26,15 @@ public interface GraphSearch {
     public final static int MAX_DEPTH_REACHED = -3 ;
     
     /**
-     *  A mplan has expanded the maximum number of nodes.
+     *  A plan has expanded the maximum number of nodes.
      */
     public final static int MAX_NODES_EXPANDED = -4 ;
-        
+
+    /**
+     *  A search instance has reached a preset time limit.
+     */
+    public final static int TIME_LIMIT_REACHED = -5 ;
+
     /**
      *  Place n on open list and reinitialize mplan.
      */
