@@ -40,6 +40,28 @@ import java.util.*;
 
 public class LogServerPlugin extends ComponentPlugin
 {
+
+    /**
+     * Thread used to periodically flush the buffer.
+     */
+    class FlushThread extends Thread {
+
+        public void run ()
+        {
+            while ( true ) {
+                try {
+                    Thread.sleep( 2000 );
+                }
+                catch ( InterruptedException e ) {
+                }
+
+                flushBuffer() ;
+            }
+        }
+
+        long delay = 2000 ;
+    }
+
     class TriggerFlushAlarm implements PeriodicAlarm
     {
         public TriggerFlushAlarm(long expTime)
@@ -175,8 +197,10 @@ public class LogServerPlugin extends ComponentPlugin
             System.out.println( "LogServerPlugin::Opened " + databaseName + " for writing." );
         }
 
-        AlarmService as = getAlarmService() ;
-        as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
+        //AlarmService as = getAlarmService() ;
+        //as.addAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
+        flushThread = new FlushThread() ;
+        flushThread.start();
     }
 
     protected String getDatabaseName()
@@ -259,8 +283,10 @@ public class LogServerPlugin extends ComponentPlugin
                 buffer.clearIncoming();
             }
         }
+
     }
 
+    protected FlushThread flushThread ;
     protected String databaseName = null;
     protected boolean logToMemory = false, logToDatabase = false;
     protected InMemoryEventLog memoryLog;

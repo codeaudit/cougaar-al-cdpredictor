@@ -644,7 +644,7 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
      */
     protected void sendMessage( PDU pdu ) {
         // Publish this to the LogMessageBuffer
-        System.out.print("S+");
+        // System.out.print("S+");
         mtImpl.sendMessage( pdu );
     }
 
@@ -693,6 +693,10 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
     }
 
     public void execute() {
+        if ( allElements == null ) {
+            return ;
+        }
+
         currentExecutionTime = currentTimeMillis() ;
         currentTime = System.currentTimeMillis() ;
 
