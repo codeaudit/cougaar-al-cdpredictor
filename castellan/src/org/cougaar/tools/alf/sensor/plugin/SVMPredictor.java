@@ -32,8 +32,8 @@ public class SVMPredictor extends Predictor {
     SvmResult svmResult = null;
 
 	// All the demand will be managed by this manager
-//	public SVMPredictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder,PredictorPlugin predictorPlugin) {	
-	public SVMPredictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder,PSUPredictorPlugin predictorPlugin) {	
+	public SVMPredictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder,PredictorPlugin predictorPlugin) {	
+//	public SVMPredictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder,PSUPredictorPlugin predictorPlugin) {	
 		super(cluster,myLoggingService,configfinder,predictorPlugin);
 		svmResult = read_SVM_Model(configfinder);
 		openLoggingFile("svm");

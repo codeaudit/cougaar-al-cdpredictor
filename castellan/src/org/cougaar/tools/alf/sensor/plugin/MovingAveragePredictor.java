@@ -31,7 +31,8 @@ import java.util.*;
 public class MovingAveragePredictor extends Predictor {
 
 	// All the demand will be managed by this manager
-	public MovingAveragePredictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder, PSUPredictorPlugin predictorPlugin) {	
+//	public MovingAveragePredictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder, PSUPredictorPlugin predictorPlugin) {	
+	public MovingAveragePredictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder, PredictorPlugin predictorPlugin) {	
 		super(cluster,myLoggingService,configfinder,predictorPlugin);
 		openLoggingFile("ma");
 	}
@@ -45,6 +46,8 @@ public class MovingAveragePredictor extends Predictor {
 
 	// forecast for all customer agent and publish forecasted data.
 	public void forecast(long commlossday, long today) {	
+//	FUTURE
+//	public void forecast(long commlossday, long today,HashMap commStatusTable) {	
 
 		// for continuous forecasting, I assume the current day when Plugin actually is as commloss day and forecast for the next day.
 		// here, today is actually next day only in the context of testing.
@@ -55,6 +58,16 @@ public class MovingAveragePredictor extends Predictor {
 		for (Iterator iter = customers.iterator();iter.hasNext() ; )
 		{
 			DemandPerAgent customer = (DemandPerAgent) iter.next();
+
+//			Examine Comm Status of customers. If it is wrong, then we will forecast. A table which contains the information of commstatus is HashMap.
+//			Boolean statusOfCustomer = (Boolean) commStatusTable.get(customer.getName());
+//			if (statusOfCustomer == null) {
+//				continue;
+//			}
+//
+//			if (statusOfCustomer.booleanValue()) {
+//				continue;
+//			}
 
 			Collection historyOfType = customer.getHistoryOfType();
 
@@ -83,30 +96,42 @@ public class MovingAveragePredictor extends Predictor {
 						continue;
 					}
 
+					long expectedNextEndTime = maxEndTimeInHistory+averageInterval;
+
+					//
+///					if (today + leadtime < expectedNextEndTime)	{			continue;				}
+					
 					// assuming comm loss day is yester day.
 					long timeWidnow = 3;
-					double expectedDemand = demandHistoryForAnItem.averagePast(timeWidnow);
-					
-					long expectedNextEndTime = maxEndTimeInHistory+averageInterval;
-					long minimumAllowableEndtime = commlossday + leadTime - averageInterval;
-					if ( expectedNextEndTime < minimumAllowableEndtime)
-					{
+					double expectedDemand = 0;
+
+//					long minimumAllowableEndtime = commlossday + leadTime - averageInterval;
+//					if ( expectedNextEndTime < minimumAllowableEndtime)		{
+					if ( expectedNextEndTime < today + leadTime)		{
+						long diff = today + leadTime - expectedNextEndTime;
+/*		OLD
 						long diff = minimumAllowableEndtime-expectedNextEndTime;
-						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] There is a difference between expected next demand time and allowable period.");
-						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] expected end time, required minimum end time, difference "
-													+expectedNextEndTime+","+minimumAllowableEndtime+","+diff);
 						// find the time point
 						int t = (int) Math.ceil(diff/averageInterval);
 						long newExpectedNextEndTime = expectedNextEndTime+t*averageInterval;
-						
-						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] expected end time which is greater than required minimum end time = "+newExpectedNextEndTime);
-						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] expected demand = " + expectedDemand);
-
+*/						
+						long newExpectedNextEndTime = today + leadTime;
+						if ((today + leadTime - newExpectedNextEndTime)% averageInterval == 0)	{
+							myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] There is a difference between expected next demand time and allowable period.");
+							myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] expected end time, required minimum end time, difference "
+													+expectedNextEndTime+","+newExpectedNextEndTime+","+diff);
+							myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] expected end time which is greater than required minimum end time = "+newExpectedNextEndTime);
+							myLoggingService.shout("[PREDICTOR:MovingAveragePredictor] expected demand = " + expectedDemand);
+							write(customer.getName()+"\t"+demandHistoryForAnItem.getOfType()+"\t"+demandHistoryForAnItem.getName()+"\t"+today+"\t"+newExpectedNextEndTime+"\t"+expectedDemand+"\t"+commlossday+"\t"+leadTime+"\n");
+							myLoggingService.shout("[PREDICTOR:MovingAveragePredictor]"+expectedNextEndTime+","+expectedDemand+","+demandHistoryForAnItem.getName()+","+today+","+commlossday+","+leadTime);	
+						}
+		
 					} else {
-
-						write(customer.getName()+"\t"+demandHistoryForAnItem.getOfType()+"\t"+demandHistoryForAnItem.getName()+"\t"+today+"\t"+expectedNextEndTime+"\t"+expectedDemand+"\t"+commlossday+"\t"+leadTime+"\n");
-						myLoggingService.shout("[PREDICTOR:MovingAveragePredictor]"+expectedNextEndTime+","+expectedDemand+","+demandHistoryForAnItem.getName()+","+today+","+commlossday+","+leadTime);	
-
+						if (today + leadTime == expectedNextEndTime)	{
+							expectedDemand = demandHistoryForAnItem.averagePast(timeWidnow);
+							write(customer.getName()+"\t"+demandHistoryForAnItem.getOfType()+"\t"+demandHistoryForAnItem.getName()+"\t"+today+"\t"+expectedNextEndTime+"\t"+expectedDemand+"\t"+commlossday+"\t"+leadTime+"\n");
+							myLoggingService.shout("[PREDICTOR:MovingAveragePredictor]"+expectedNextEndTime+","+expectedDemand+","+demandHistoryForAnItem.getName()+","+today+","+commlossday+","+leadTime);	
+						}
 					}
 
 /*					this is for the case in which actual comm loss happens and time continous progress

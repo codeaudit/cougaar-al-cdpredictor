@@ -84,6 +84,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 	History history = null;
 
 	// I assume here that the record of allocation result will be kept in time sequence.
+/*
 	class AllocResult implements java.io.Serializable 	{
 
 		public int success = 0;		public int end_time = 0;
@@ -94,7 +95,7 @@ public class ARPredictorPlugin extends ComponentPlugin {
 		}
 
 	};
-
+*/
     public void setupSubscriptions() {
 
 		cluster = ((AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null)).getName();
@@ -274,13 +275,14 @@ public class ARPredictorPlugin extends ComponentPlugin {
 //				myLoggingService.shout("[ARPredictorPlugin]Error 4");	
 //			}
 
-			if (iInfo != null)	{
-				if (!iInfo.getAgentName().equalsIgnoreCase(cluster))
-				{
-					for (int i=0;i<iInfo.getNumberOfItems(); i++)	{
-						myLoggingService.shout("["+ cluster+":"+iInfo.getTime()/86400000+"] " + iInfo.getAgentName() + ", Inventory level "+i+" , " +  iInfo.getInventoryLevel(i));
-					}
-				}				
+			if (isOutputFileOn())	{
+				if (iInfo != null)		{
+					if (!iInfo.getAgentName().equalsIgnoreCase(cluster))	{
+						for (int i=0;i<iInfo.getNumberOfItems(); i++)	{
+							myLoggingService.shout("["+ cluster+":"+iInfo.getTime()/86400000+"] " + iInfo.getAgentName() + ", Inventory level "+i+" , " +  iInfo.getInventoryLevel(i));
+						}
+					}				
+				}
 			}
 		}
 	}
@@ -399,7 +401,13 @@ public class ARPredictorPlugin extends ComponentPlugin {
 
 //			// How can I know which task is for other agents ?
 //			Task t = (Task) iter.next();
-
+/*
+			Asset asset = allocation.getAsset() ;
+			if (!(asset instanceof Organization)){
+				continue;
+//				agentName = ((Organization) asset).getMessageAddress().getAddress();
+			}
+*/
 			if (!t.getUID().getOwner().equalsIgnoreCase(cluster))	{		continue;		}
 
 			// if Task t is not BulkPOL and not Ammunition, then skip.
@@ -423,15 +431,17 @@ public class ARPredictorPlugin extends ComponentPlugin {
 //					continue;
 //				}
 
-				AllocationResult reportedResult = allocation.getReportedResult();
-
+//				AllocationResult reportedResult = allocation.getReportedResult();
+				AllocationResult receivedResult = allocation.getReceivedResult();
+													
 				/// 
 				AllocationResult estimatedResult = allocation.getEstimatedResult();
 				double earConfidence = estimatedResult.getConfidenceRating();
 
 				///
 
-				if (reportedResult==null && earConfidence < 0.4 )
+//				if (reportedResult==null && earConfidence < 0.4 )
+				if (receivedResult==null && earConfidence < 0.4 )
 				{
 					double success = 0;
 					boolean successBoolean = false;
@@ -484,10 +494,15 @@ public class ARPredictorPlugin extends ComponentPlugin {
 //					AllocationResult expectedResult = rootFactory.newAllocationResult(success, successBoolean, avs);
 //					allocation.setEstimatedResult(expectedResult);
 
-					AllocationResult newReportedResult = rootFactory.newAllocationResult(success, successBoolean, avs);
-					allocation.setObservedResult(newReportedResult);
+					AllocationResult newReceivedResult = rootFactory.newAllocationResult(success, successBoolean, avs);
+//					allocation.setObservedResult(newReportedResult);
+					AllocationImpl allocImpl = (AllocationImpl) allocation;
 
-					myBS.publishChange(allocation);
+//					allocation.setReceivedResult(newReceivedResult);
+					allocImpl.setReceivedResult(newReceivedResult);
+
+					myBS.publishChange(allocImpl);
+
 					if (isOutputFileOn())	{
 						try {
 							rst.write(Today+"\t"+t.getUID()+"\t"+nomenclature+"\t"+successOrNot+"\t"+success+"\t"+end_time+"\n");

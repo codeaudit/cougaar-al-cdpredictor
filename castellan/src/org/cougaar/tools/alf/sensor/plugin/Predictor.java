@@ -34,10 +34,12 @@ public class Predictor implements java.io.Serializable {
 	public DemandHistoryManager demandHistoryManager;
 	private String cluster = null;
 	public LoggingService myLoggingService = null;
-	public PSUPredictorPlugin predictorPlugin = null;
+//	public PSUPredictorPlugin predictorPlugin = null;
+	public PredictorPlugin predictorPlugin = null;
 
 	// All the demand will be managed by this manager
-	public Predictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder,PSUPredictorPlugin predictorPlugin) {	
+//	public Predictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder,PSUPredictorPlugin predictorPlugin) {	
+	public Predictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder,PredictorPlugin predictorPlugin) {	
 		this.cluster = cluster;
 		this.myLoggingService = myLoggingService;
 		this.predictorPlugin = predictorPlugin;
@@ -49,7 +51,7 @@ public class Predictor implements java.io.Serializable {
 
 	public void openLoggingFile(String predictorName) {
 		
-		if (!predictorPlugin.isOutputFileOn())	{		return;		}
+//		if (!predictorPlugin.isOutputFileOn())	{		return;		}
 
 		String dir = System.getProperty("org.cougaar.workspace");
         // the Result file in workspace.
@@ -62,7 +64,7 @@ public class Predictor implements java.io.Serializable {
 
 	public void write(String output) {
 
-		if (!predictorPlugin.isOutputFileOn())	{		return;		}
+//		if (!predictorPlugin.isOutputFileOn())	{		return;		}
 
         try {
            rst.write(output);
@@ -73,7 +75,7 @@ public class Predictor implements java.io.Serializable {
 
 	public void flush() {
 		
-		if (!predictorPlugin.isOutputFileOn())	{		return;		}
+//		if (!predictorPlugin.isOutputFileOn())	{		return;		}
         
 		try {
            rst.flush();

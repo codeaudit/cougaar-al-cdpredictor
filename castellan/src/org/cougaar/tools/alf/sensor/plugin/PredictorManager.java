@@ -40,7 +40,8 @@ public class PredictorManager implements java.io.Serializable {
 	LoggingService myLoggingService = null;
 
 	// All the demand will be managed by this manager
-	public PredictorManager(String cluster, LoggingService myLoggingService,ConfigFinder configfinder, PSUPredictorPlugin predictorPlugin) {
+//	public PredictorManager(String cluster, LoggingService myLoggingService,ConfigFinder configfinder, PSUPredictorPlugin predictorPlugin) {
+	public PredictorManager(String cluster, LoggingService myLoggingService,ConfigFinder configfinder, PredictorPlugin predictorPlugin) {
 		this.cluster = cluster;
 		this.myLoggingService = myLoggingService;
 
@@ -66,8 +67,14 @@ public class PredictorManager implements java.io.Serializable {
 
 	/////////////	 
 	public void forecast(long commLossDay, long today) {
+//		FUTURE
+//		public void forecast(long commLossDay, long today,HashMap commStatusTable) {
 
 		movingAverage.forecast(commLossDay,today);
+
+//		FUTURE
+//		movingAverage.forecast(commLossDay,today,commStatusTable);
+
 		if (cluster.equalsIgnoreCase("123-MSB"))	{
 			sVM.forecast(commLossDay,today);
 		}
