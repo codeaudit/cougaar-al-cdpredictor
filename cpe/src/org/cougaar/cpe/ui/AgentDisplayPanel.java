@@ -65,6 +65,29 @@ public class AgentDisplayPanel extends JFrame {
             synchronized ( relays ) {
                 relays.clear();
                 relays.addAll( data ) ;
+                Collections.sort( relays, new Comparator() {
+                    public int compare(Object o1, Object o2) {
+                        Relay r1 = (Relay) o1, r2 = (Relay) o2 ;
+                        String n1 = null , n2 = null ;
+                        if ( r1 instanceof SourceBufferRelay ) {
+                            n1 = ( ( SourceBufferRelay) r1 ).getTarget().getAddress() ;
+                        }
+                        else if ( r1 instanceof TargetBufferRelay ) {
+                            n1 = ( ( TargetBufferRelay ) r1 ).getSource().getAddress() ;
+                        }
+                        if ( r2 instanceof SourceBufferRelay ) {
+                            n2 = ( ( SourceBufferRelay) r2 ).getTarget().getAddress() ;
+                        }
+                        else if ( r2 instanceof TargetBufferRelay ) {
+                            n2 = ( ( TargetBufferRelay ) r2 ).getSource().getAddress() ;
+                        }
+                        if ( n1 == null || n2 == null ) {
+                            return 0 ;
+                        }
+
+                        return n1.compareTo( n2 ) ;
+                    }
+                }) ;
             }
             for (Iterator iterator = listeners.iterator(); iterator.hasNext();) {
                 TableModelListener l = (TableModelListener) iterator.next();
@@ -196,7 +219,7 @@ public class AgentDisplayPanel extends JFrame {
             spMeasurementPanel.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS );
             spMeasurementPanel.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_NEVER );
         }
-        rightTabbedPane.add( "Controls", controlPanel = new ControlsPanel() ) ;
+        rightTabbedPane.add( "Controls", controlPanel = new ControlsPanel( plugin.getBlackboardService()) ) ;
         sp.setDividerLocation( 400 );
 
         rightTabbedPane.add( "Relays", relayPanel = new RelayPanel() ) ;
@@ -322,22 +345,6 @@ public class AgentDisplayPanel extends JFrame {
                 MPObserver mp = (MPObserver) o ;
                 mp.updateData();
             }
-//            if ( o instanceof DelayPlotPanel ) {
-//                DelayPlotPanel delayPlotPanel = (DelayPlotPanel) o ;
-//                delayPlotPanel.updateData();
-//            }
-//            else if ( o instanceof DelayPlotPanel2 ) {
-//                DelayPlotPanel2 p = (DelayPlotPanel2) o ;
-//                p.updateData();
-//            }
-//            else if ( o instanceof EventDurationPlotPanel ) {
-//                EventDurationPlotPanel ep = (EventDurationPlotPanel) o ;
-//                ep.updateData();
-//            }
-//            else if ( o instanceof MetricsGraphPanel ) {
-//                MetricsGraphPanel mp = (MetricsGraphPanel) o ;
-//                mp.updateData();
-//            }
         }
     }
 
