@@ -232,7 +232,7 @@ public class PSULogServerPlugin extends ComponentPlugin
         }
 
         AlarmService as = getAlarmService() ;
-        as.addRealTimeAlarm( new TriggerFlushAlarm( currentTimeMillis() + 1000 ) ) ;
+        as.addRealTimeAlarm( new TriggerFlushAlarm( System.currentTimeMillis() + 1000 ) ) ;
         //flushThread = new FlushThread() ;
         //flushThread.start();
     }
