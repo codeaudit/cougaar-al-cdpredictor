@@ -5,10 +5,7 @@ import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.*;
 
 public abstract class WorldState implements java.io.Serializable {
 
@@ -287,7 +284,7 @@ public abstract class WorldState implements java.io.Serializable {
     }
 
     /**
-     * This is an actual simulation run for this world model.
+     * Execute the simulation and advance time by one delta t.
      */
     public void updateWorldState() {
         for (int i = 0; i < targets.size(); i++) {
@@ -305,17 +302,22 @@ public abstract class WorldState implements java.io.Serializable {
           supplyEntity.update( this );
         }
 
-        time = time + ( long ) ( getDeltaT() * VGWorldConstants.MILLISECONDS_PER_SECOND ) ;
         engageByFireCount.clear();
         computePenalties();
-        // computeScoreAndPenalities.
+
+        long oldTime = time ;
+        time = time + ( long ) ( getDeltaT() * VGWorldConstants.MILLISECONDS_PER_SECOND ) ;
+        TimeAdvanceEvent tav = new TimeAdvanceEvent( oldTime, time ) ;
+        fireEvent( tav );
     }
 
     protected void computePenalties( ) {
         for (int i = 0; i < targets.size(); i++) {
            TargetEntity targetEntity = (TargetEntity)targets.get(i);
            if ( targetEntity.isActive() && targetEntity.getY() < getPenaltyHeight() && targetEntity.getY() > 0 ) {
-              accumulatedPenalties++ ;
+               PenaltyEvent pe = new PenaltyEvent( getTime(), targetEntity.getId(), targetEntity.getX(), targetEntity.getY() ) ;
+               fireEvent( pe );
+               accumulatedPenalties++ ;
            }
         }
     }
@@ -562,6 +564,8 @@ public abstract class WorldState implements java.io.Serializable {
             // Target has moved off the bottom of the board!
             if ( y < 0 ) {
                 accumulatedViolations ++ ;
+                ViolationEvent ve = new ViolationEvent( getTime(), 0, entity.getId(), ( float ) x, ( float ) y ) ;
+                fireEvent( ve );
                 entity.setActive( false );
             }
             entity.setX( x ) ;
@@ -607,11 +611,162 @@ public abstract class WorldState implements java.io.Serializable {
         moveTarget( entity, dest.getX(), dest.getY() );
     }
 
-    public static class EngageByFireEvent implements Serializable {
+    public static class TimeAdvanceEvent extends CPEEvent {
+        public TimeAdvanceEvent(long oldTime, long newTime)
+        {
+            super ( newTime ) ;
+            this.oldTime = oldTime;
+        }
 
-        public EngageByFireEvent( String unitId, EngageByFireResult er ) {
-            this.er = er;
+        public long getOldTime()
+        {
+            return oldTime;
+        }
+
+        public long getNewTime()
+        {
+            return time;
+        }
+
+        private long oldTime ;
+    }
+
+    /**
+     * Every target that enters a (predefined) area.
+     */
+    public static class EntryEvent extends CPEEvent {
+        private String targetId;
+
+        public EntryEvent(long time, float height, String targetId, float xTarget, float yTarget)
+        {
+            super( time ) ;
+            this.height = height;
+            this.xTarget = xTarget;
+            this.yTarget = yTarget;
+            this.targetId = targetId ;
+        }
+
+        public String getTargetId()
+        {
+            return targetId;
+        }
+
+        public float getHeight()
+        {
+            return height;
+        }
+
+        public long getTime()
+        {
+            return time;
+        }
+
+        public float getxTarget()
+        {
+            return xTarget;
+        }
+
+        public float getyTarget()
+        {
+            return yTarget;
+        }
+
+        private float height ;
+        private float xTarget, yTarget ;
+    }
+
+    public static class ViolationEvent extends EntryEvent {
+        public ViolationEvent(long time, float height, String targetId, float xTarget, float yTarget )
+        {
+            super(time, height, targetId, xTarget, yTarget);
+        }
+    }
+
+    public static class PenaltyEvent extends CPEEvent {
+        public PenaltyEvent( long time, String targetId, float xTarget, float yTarget)
+        {
+            super( time ) ;
+            this.targetId = targetId;
+            this.xTarget = xTarget;
+            this.yTarget = yTarget;
+        }
+
+        public String getTargetId()
+        {
+            return targetId;
+        }
+
+        public float getxTarget()
+        {
+            return xTarget;
+        }
+
+        public float getyTarget()
+        {
+            return yTarget;
+        }
+
+        String targetId ;
+        float xTarget, yTarget ;
+    }
+
+    public static class KillEvent extends CPEEvent {
+        private String targetId;
+        private String unitId;
+
+        public KillEvent(long time, String unit, String targetId )
+        {
+            super(time);
+            this.targetId = targetId ;
+            this.unitId = unit ;
+        }
+
+        public String getTargetId()
+        {
+            return targetId;
+        }
+
+        public String getUnitId()
+        {
+            return unitId;
+        }
+    }
+
+    public static class EngageByFireEvent extends CPEEvent {
+        public EngageByFireEvent(String unitId, EngageByFireResult er, long time, float xTarget, float yTarget, float xUnit, float yUnit)
+        {
+            super( time ) ;
             this.unitId = unitId;
+            this.er = er;
+            this.xTarget = xTarget;
+            this.yTarget = yTarget;
+            this.xUnit = xUnit;
+            this.yUnit = yUnit;
+        }
+
+        public float getxTarget()
+        {
+            return xTarget;
+        }
+
+        public float getyTarget()
+        {
+            return yTarget;
+        }
+
+        public float getxUnit()
+        {
+            return xUnit;
+        }
+
+        public float getyUnit()
+        {
+            return yUnit;
+        }
+
+        public long getTime()
+        {
+            return time;
         }
 
         public EngageByFireResult getEr() {
@@ -624,6 +779,8 @@ public abstract class WorldState implements java.io.Serializable {
 
         String unitId ;
         EngageByFireResult er ;
+        float xUnit, yUnit ;
+        float xTarget, yTarget ;
     }
 
     /**
@@ -712,13 +869,13 @@ public abstract class WorldState implements java.io.Serializable {
 
     private HashMap engageByFireCount = new HashMap() ;
 
-    public void engageByFire( TargetEntity entity, UnitEntity unitEntity ) {
-         if ( !entity.isRouted() ) {
-             // Fire at the unit entity which is in range.  Increment the damage counter on that entity.
-             unitEntity.setStrength( unitEntity.getStrength() - VGWorldConstants.TARGET_STANDARD_ATTRITION);
-             accumulatedDamage ++ ;
-         }
-    }
+//    public void engageByFire( TargetEntity entity, UnitEntity unitEntity ) {
+//         if ( !entity.isRouted() ) {
+//             // Fire at the unit entity which is in range.  Increment the damage counter on that entity.
+//             unitEntity.setStrength( unitEntity.getStrength() - VGWorldConstants.TARGET_STANDARD_ATTRITION);
+//             accumulatedDamage ++ ;
+//         }
+//    }
 
     public EngageByFireResult engageByFire( UnitEntity entity, String target ) {
 
@@ -753,6 +910,8 @@ public abstract class WorldState implements java.io.Serializable {
                 if ( t.getStrength() <= 0 ) {
                     t.setStrength( 0);
                     t.setActive( false );
+                    KillEvent ke = new KillEvent( getTime(), entity.getId(), t.getId() ) ;
+                    fireEvent( ke );
                     accumulatedKills ++ ;
                 }
             }
@@ -761,8 +920,13 @@ public abstract class WorldState implements java.io.Serializable {
             ue.setAmmoQuantity( ue.getAmmoQuantity() - consumption );
             if ( logEvents ) {
                 events.add( new EngageByFireEvent( entity.getId(),
-                        new EngageByFireResult(t.getId(), attritValue,
-                                consumption, false) ) ) ;
+                            new EngageByFireResult(t.getId(), attritValue,
+                                consumption, false), getTime(),
+                            t.getX(), t.getY(), ue.getX(), ue.getY() ) ) ;
+                fireEvent( new EngageByFireEvent( entity.getId(),
+                            new EngageByFireResult(t.getId(), attritValue,
+                                consumption, false), getTime(),
+                            t.getX(), t.getY(), ue.getX(), ue.getY() ) ) ;
             }
             return new EngageByFireResult(t.getId(), attritValue,
                     consumption, false) ;
@@ -770,6 +934,22 @@ public abstract class WorldState implements java.io.Serializable {
         else {
             return null ;
         }
+    }
+
+    protected void fireEvent( CPEEvent event ) {
+        for (int i = 0; i < eventListenerList.size(); i++) {
+          CPEEventListener eventListener = (CPEEventListener) eventListenerList.get(i);
+            try {
+                eventListener.notify( event );
+            }
+            catch ( Exception e ) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void addEventListener( CPEEventListener listener ) {
+        this.eventListenerList.add( listener ) ;
     }
 
     protected float accumulatedAttritionValue ;
@@ -809,6 +989,7 @@ public abstract class WorldState implements java.io.Serializable {
     protected ArrayList supplyVehicleEntities ;
     protected HashMap idToInfoMap ;
 
+    protected ArrayList eventListenerList = new ArrayList() ;
 
     /**
      * These are a list of local events that have occured (e.g. fire events, etc.)

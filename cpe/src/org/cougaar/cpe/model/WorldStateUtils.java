@@ -534,7 +534,7 @@ public class WorldStateUtils {
         while (oldTargets.hasNext()) {
             TargetContact targetContact = (TargetContact) oldTargets.next();
             TargetContact newTargetcontact = (TargetContact) reference.getEntity( targetContact.getId() ) ;
-            if ( newTargetcontact == null ) {
+            if ( newTargetcontact == null || newTargetcontact.isActive() == false ) {
                targetsToBeRemoved.add( targetContact.getId() ) ;
             }
         }

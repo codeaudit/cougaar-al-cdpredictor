@@ -36,7 +36,7 @@ public class Interval extends Zone
     }
 
     public String toString() {
-        return "[xl=" + xLower + ",xu=" + xUpper + ",yheight=" + yHeight + "]" ;
+        return "[xl=" + xLower + ",xu=" + xUpper +"]" ;
     }
 
     public float getXLower() {
