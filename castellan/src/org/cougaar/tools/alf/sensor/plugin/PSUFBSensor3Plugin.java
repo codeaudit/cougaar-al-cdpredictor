@@ -58,8 +58,8 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
         myBlackboardService = getBlackboardService();
         myUIDService = (UIDService) getBindingSite().getServiceBroker().getService(this, UIDService.class, null); 
         myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null); 
-		cluster = getBindingSite().getAgentIdentifier().toString();
-		taskSubscription = (IncrementalSubscription) myBlackboardService.subscribe(taskPredicate);
+	  cluster = getBindingSite().getAgentIdentifier().toString();
+	  taskSubscription = (IncrementalSubscription) myBlackboardService.subscribe(taskPredicate);
         sensorSubscription = (IncrementalSubscription) myBlackboardService.subscribe(sensorPredicate);
 
         if (myBlackboardService.didRehydrate()==false)
@@ -87,6 +87,10 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
             }
 		}
 		myBlackboardService.setShouldBePersisted(false);
+		if(myTimestampService==null)
+		{
+		System.out.println("TimestampService for"+" "+sensorname+" "+"in"+" "+cluster+" "+"not available");
+		}
     }
 
 
@@ -95,6 +99,12 @@ public class PSUFBSensor3Plugin extends ComponentPlugin
         Iterator iter;
         String verb, source;    
         Task task;
+
+	if(myTimestampService==null)
+		{
+		return;
+		}
+
    
         for (iter = taskSubscription.getCollection().iterator() ; iter.hasNext() ;)
         {
