@@ -360,6 +360,8 @@ public class AgentLoadObserver {
                     BoundaryLog otl = ( BoundaryLog ) outgoing.get(i) ;
                     tl.addOutgoingDescendent( ( TaskLog ) otl );
                     otl.addIncomingAncestor( tl ) ;
+                    int type = getBoundaryType( ( TaskLog ) otl ) ;
+                    //System.out.println("\t\t\tboundaryType=" + BoundaryConstants.toParamString( type ));
                 }
                 //System.out.println("\t\tTERMINAL \n" ) ;
                 for (int i=0;i<terminal.size();i++) {
@@ -368,6 +370,8 @@ public class AgentLoadObserver {
                     tl.addOutgoingDescendent( ( TaskLog ) ttl );
                     ttl.addIncomingAncestor( tl ) ;
                 }
+                //System.out.println("#Internal=" + internal.size());
+
                 // Fill in unknown (internal descendents that terminate with no plan element.)
                 //System.out.println("\t\tUNKNOWN \n");
                 for (int i=0;i<unknown.size();i++) {
@@ -388,6 +392,7 @@ public class AgentLoadObserver {
         //
         // Process all the incoming source tasks into BoundaryVerbTaskAggregates.
         //
+        // System.out.println("\n\nMAKING AGGREGATES...\n");
         for (int i=0;i<incomingAndSource.size();i++) {
             BoundaryTaskLog btl = ( BoundaryTaskLog ) incomingAndSource.get(i) ;
             int btype = btl.getBoundaryType() ;
@@ -430,6 +435,8 @@ public class AgentLoadObserver {
             checkTaskAggregate( tl.getBoundaryType(), tl.getTaskVerb().toString(), tl.getCluster(), null, null ) ;
         agg.logInstance( tl ) ;
         uidToAggregateMap.put( tl.getUID(), agg ) ;
+        //System.out.println("PROCESSING INCOMING " + tl );
+        //System.out.println("\tUsing " + agg );
 
         // Hook up parent task log ( should be from another cluster.)
         BoundaryTaskLog pbtl = ( BoundaryTaskLog ) pld.getLog( tl.getParent() ) ;
@@ -453,6 +460,7 @@ public class AgentLoadObserver {
             BoundaryVerbTaskAggregate cagg =
                 checkTaskAggregate( ( ( BoundaryLog )btl ).getBoundaryType(), btl.getTaskVerb().toString(),
                                     btl.getCluster(), targetCluster, null ) ;
+            // System.out.println("\tLogging child aggregate log " + cagg );
             cagg.logInstance( btl ) ;
             uidToAggregateMap.put( btl.getUID(), cagg ) ;
             agg.logChildAggregateLog( cagg, btl ) ;
@@ -475,7 +483,7 @@ public class AgentLoadObserver {
         // Get a tasklog for this task.
         BoundaryVerbTaskAggregate agg =
             checkTaskAggregate( BoundaryConstants.INCOMING, tpdu.getTaskVerb().toString(), tpdu.getSource(), null, null ) ;
-        System.out.println("Task aggregate " + agg + " used for " + tpdu );
+        // System.out.println("Task aggregate " + agg + " used for " + tpdu );
 
         // Map uids to aggregate logs.
         agg.logInstance( log ) ;
@@ -663,8 +671,8 @@ public class AgentLoadObserver {
         BoundaryVerbTaskAggregate agg = ( BoundaryVerbTaskAggregate ) boundaryTaskAggregateMap.get( tuple ) ;
 
         if ( agg == null ) {
-            agg = new BoundaryVerbTaskAggregate( type, verb, agent ) ;
-            boundaryTaskAggregateMap.put( new TypeVerbClusterTuple( type, verb, agent ), agg ) ;
+            agg = new BoundaryVerbTaskAggregate( type, agent, verb, source, target  ) ;
+            boundaryTaskAggregateMap.put( tuple, agg ) ;
         }
         return agg ;
     }
