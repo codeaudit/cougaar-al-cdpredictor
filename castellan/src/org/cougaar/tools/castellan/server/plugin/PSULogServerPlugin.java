@@ -358,7 +358,6 @@ public class PSULogServerPlugin extends ComponentPlugin
 //    protected PersistentEventLog persistentLog;
     protected DBEventLog persistentLog;
     protected ArrayList buffers = new ArrayList() ;
-    protected PDUBuffer buffer;
     protected LoggingService log ;
     protected IncrementalSubscription pduBufferSubscription;
 }
