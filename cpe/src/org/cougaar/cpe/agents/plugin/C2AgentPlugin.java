@@ -1187,6 +1187,42 @@ public class C2AgentPlugin extends ComponentPlugin implements MessageSink {
 
     }
 
+	/**
+	 * Run this method from time to time to estimate how much real time it takes for each opmode.
+	 * This information could be published to a measurement point and retrieved elsewhere. 
+	 */
+		private void estimateTimesForOpmodes()
+		{
+			ArrayList subordinateEntities = new ArrayList() ;
+
+			// Compile a list of subordinate entities and their delay measurement points for
+			// the world state update message.
+			for (Iterator iterator = subordinateCombatOrganizations.values().iterator();iterator.hasNext();)
+			{
+				Organization organization = (Organization) iterator.next();
+				subordinateEntities.add( organization.getMessageAddress().getAddress() ) ;
+			}
+		
+			for (int depth=3;depth<10;depth++)
+			{    
+				for (int breadth=10;breadth<100;breadth+=10)
+				{
+				//measure starttime
+			
+				// Create the manuever planner.
+				ManueverPlanner manPlan = new ManueverPlanner( getAgentIdentifier().getAddress(), subordinateEntities ) ;
+				// Number of deltas per planning cycle.
+				manPlan.setDeltaValues( getNumDeltasPerTask(), getNumIncrementsPerPlan() );
+				manPlan.setMaxDepth( depth );
+				manPlan.setMaxBranchFactor( breadth );
+				manPlan.plan( perceivedWorldState, getPlanningDelay(), zoneSchedule );
+			
+				//measure endtime
+				//log (depth,breadth,endtime-starttime) into a measurement point
+			
+				}
+			}
+		}
 
     public class ReplanAlarm extends StandardAlarm {
         public ReplanAlarm(long expirationTime) {
