@@ -23,27 +23,16 @@ import org.cougaar.core.relay.Relay;
 import org.cougaar.core.agent.service.alarm.Alarm;
 import com.axiom.lib.mat.*;
 import com.axiom.lib.util.*;
+import java.io.Serializable;
+import org.cougaar.cpe.agents.messages.ControlMessage;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.*;
+import org.cougaar.cpe.agents.plugin.QMHelper;
 
 public class QueueingModel extends ComponentPlugin {
 	private LoggingService log;
-
-	private double BCMPQueueingModel() {
-		double MPF = 1000.00;
-		return MPF;
-	}
-
-	private double WWhittQueueingModel() {
-		double MPF = 1000.00;
-		return MPF;
-	}
-
-	private void searchBestSet() {
-		return;
-	}
 
 	public void processMessage(Object o) {
 	}
@@ -67,6 +56,8 @@ public class QueueingModel extends ComponentPlugin {
 		});
 
 		setupRelaySubscriptions();
+
+		// get a QMHelper instantiated
 
 	}
 
@@ -174,7 +165,8 @@ public class QueueingModel extends ComponentPlugin {
 						if (total_delay[ii][1] > 0) {
 
 							avg_delays[ii][0] =
-								(double)(total_delay[ii][0] / total_delay[ii][1]);
+								(double) (total_delay[ii][0]
+									/ total_delay[ii][1]);
 						} else {
 
 							avg_delays[ii][0] = -1;
@@ -215,51 +207,6 @@ public class QueueingModel extends ComponentPlugin {
 		}
 	}
 
-	public void matlab(double[][] stats) {
-		MatEng eng = null;
-		try {
-			eng = new MatEng();
-			eng.open(null);
-			eng.setBufSize(1024);
-
-			//forming the mean and variance strings
-			String means = "";
-			String variances = "";
-			for (int i = 0; i < stats.length; i++) {
-
-				if (i == 0) {
-					means += "SM = [" + stats[i][0] + " ";
-					variances += "SV = [" + stats[i][1] + " ";
-				} else if (i == (stats.length - 1)) {
-					means += stats[i][0] + " " + "]";
-					variances += stats[i][1] + " " + "]";
-				} else {
-					means +=  stats[i][0] + " ";
-					variances +=  stats[i][1] + " ";
-				}
-
-			}
-			System.out.println(means);
-			System.out.println(variances);
-			eng.evalString(means + ";" + variances);
-			eng.evalString("whitt(SM,SV)");
-			
-			FloatMatrix fm = eng.getArray("means");
-			
-			System.out.println("MATLAB OUTPUT: "+fm.toString());
-			
-			 
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-//			if (eng!=null)
-//				eng.close();
-			logger.shout(
-				"\n *------------------EXITING MATLAB-------------* @"
-					+ this.getAgentIdentifier());
-		}
-	}
-
 	//Here the measurements will be used in the queueing models
 	public void execute() {
 		//logger.shout("\n *------------------Execute Called---------------* ");
@@ -277,29 +224,54 @@ public class QueueingModel extends ComponentPlugin {
 			measurementPoints.addAll(
 				measurementPointSubscription.getCollection());
 
-			//			find the mean and variance
+			//	Find the mean and variance
 			logger.shout(
 				"\n *------------------CALCULATING DELAY-------------* @"
 					+ this.getAgentIdentifier());
-			double[][] stats = consolidateDelays(true);
-			//matlab(stats);
+			//get all delays
+			double[][] processingDelayStats = consolidateDelays(true);
+
+			//TODO remove later
+			qmh.invokeMatlab(processingDelayStats);
+
+			//if inside qmh something is in process, the function will return a null
+			HashMap h = qmh.getControlSet(processingDelayStats);
+
+			//a null HashMap ensures no opmodes are shipped
+			if (h != null) {
+				shipControlSet(h);
+			}
+			//TODO REMOVE: TEST FOR SENDING MESSAGES BACK TO SUBORDINATES:
+			ControlMessage controlMsg = new ControlMessage("a", "b");
+			controlMsg.putControlParameter(
+				(Object) "BN1Replan",
+				new Integer(10));
+			for (int l = 0; l < SubordinateList.length; l++)
+				sendMessage((Serializable) controlMsg, csbr[l]);
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			// Now, reset the alarm service.
+			// Reset the alarm service.
 			if (started) {
 				long nextTime = 10000;
-				//				System.out.println(
-				//					getAgentIdentifier()
-				//						+ ":  SCHEDULING NEXT MEASUREMENT in "
-				//						+ nextTime / 1000
-				//						+ " secs.");
 				getAlarmService().addRealTimeAlarm(
 					new MeasurementAlarm(nextTime));
 			}
 
 		}
+	}
+
+	private void shipControlSet(HashMap h) {
+		//TODO from the HashMap choose which Control Set you want
+		
+		
+		//TODO convert them to opmodes
+		
+		ControlMessage controlMsg = new ControlMessage("a", "b");
+		controlMsg.putControlParameter((Object) "BN1Replan", new Integer(10));
+		for (int l = 0; l < SubordinateList.length; l++)
+			sendMessage((Serializable) controlMsg, csbr[l]);
 	}
 
 	private double[][] consolidateDelays(boolean print) {
@@ -407,6 +379,24 @@ public class QueueingModel extends ComponentPlugin {
 		return averageProcessingDelays;
 	}
 
+	private void sendMessage(Object msg, ControlSourceBufferRelay c) {
+		boolean wasOpen = true;
+		if (!getBlackboardService().isTransactionOpen()) {
+			wasOpen = false;
+			getBlackboardService().openTransaction();
+		}
+
+		if (c != null) {
+			c.addOutgoing((Serializable) msg);
+			this.getBlackboardService().publishChange(
+				(ControlSourceBufferRelay) c);
+		}
+
+		if (getBlackboardService().isTransactionOpen() && !wasOpen) {
+			getBlackboardService().closeTransaction();
+		}
+	}
+
 	public class MeasurementAlarm implements Alarm {
 		private boolean expired;
 
@@ -449,6 +439,7 @@ public class QueueingModel extends ComponentPlugin {
 	}
 
 	LoggingService logger;
+	QMHelper qmh = new QMHelper();
 	private ArrayList measurementPoints = new ArrayList();
 	long baseTime = 0;
 	IncrementalSubscription measurementPointSubscription;
