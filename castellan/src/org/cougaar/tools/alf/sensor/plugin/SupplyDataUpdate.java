@@ -177,26 +177,7 @@ public class SupplyDataUpdate {
                         double tot_qty = new Double(((Vector) tempHash.get(new Integer(int_count))).elementAt(5).toString()).doubleValue();
                         long f_day = new Long(((Vector) tempHash.get(new Integer(int_count))).elementAt(6).toString()).longValue();
                         String items = ((Vector) tempHash.get(new Integer(int_count))).elementAt(7).toString();
-                        try {
-                            pr = new PrintWriter(new BufferedWriter(new FileWriter(sup + ".txt", true)));
-                            pr.print(sup);
-                            pr.print(",");
-                            pr.print(cus);
-                            pr.print(",");
-                            pr.print(supclass);
-                            pr.print(",");
-                            pr.print(c_day);
-                            pr.print(",");
-                            pr.print(f_day);
-                            pr.print(",");
-                            pr.print(tot_qty);
-                            pr.print(",");
-                            pr.print(items);
-                            pr.println();
-                            pr.close();
-                        } catch (Exception e) {
-                            System.out.println(e);
-                        }
+                        printToFile(sup,cus,supclass,items,c_day,f_day,tot_qty,true);
                     }
                 }
             }
@@ -207,9 +188,36 @@ public class SupplyDataUpdate {
             return null;
     }
 
+     public void printToFile(String su, String cu, String sucl, String itm, long cday, long fday, double qty, boolean toggle){
+        toggle = print_flag;
+        if(toggle == true){
+           try {
+               pr = new PrintWriter(new BufferedWriter(new FileWriter(su + "error" + ".txt", true)));
+               pr.print(su);
+               pr.print(",");
+               pr.print(cu);
+               pr.print(",");
+               pr.print(sucl);
+               pr.print(",");
+               pr.print(itm);
+               pr.print(",");
+               pr.print(cday);
+               pr.print(",");
+               pr.print(fday);
+               pr.print(",");
+               pr.print(qty);
+               pr.println();
+               pr.close();
+           } catch (Exception e) {
+               System.out.println(e);
+            }
+        }
+    }
+
     Hashtable hashTable;
     ArrayList alt = new ArrayList();
     int j = 0;
     double total_quant = 0;
     PrintWriter pr;
+    boolean print_flag = false;
 }

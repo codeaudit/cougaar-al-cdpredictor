@@ -96,7 +96,7 @@ public class KalmanFilter implements java.io.Serializable {
                                     temp_est_vec.insertElementAt(new Double(aprior_estimate), 5);
                                     temp_est_vec.insertElementAt(((Vector) hTable.get(new Integer(1))).elementAt(5).toString(), 6);
                                     estimate_array.add(estimate_array.size(), temp_est_vec);
-                                    //System.out.println("Aprior Estimate for day " + d + " supplier " + s + " customer " + c + " supply class " + sc + " is " + aprior_estimate);
+                                    System.out.println("Aprior Estimate for day " + d + " supplier " + s + " customer " + c + " supply class " + sc + " is " + aprior_estimate);
                                     break;
                                 }
                             }
@@ -162,36 +162,15 @@ public class KalmanFilter implements java.io.Serializable {
                                     if (apri_estimate != -1 && act_value != -1) {
                                         double apost = 0;
                                         double error = act_value - apri_estimate;
-                                        //System.out.println("Error is  " + error + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
+                                        System.out.println("Error is  " + error + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
                                         if (error < 0) {
                                             apost = apri_estimate - (gain * Math.abs(error));
-                                            //System.out.println("Aposterior Estimate is " + apost + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
+                                            System.out.println("Aposterior Estimate is " + apost + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
                                         } else {
                                             apost = apri_estimate + (gain * Math.abs(error));
-                                            //System.out.println("Aposterior Estimate is " + apost + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
+                                            System.out.println("Aposterior Estimate is " + apost + " Supplier " + s + " Customer " + c + " Supply Class " + sc);
                                         }
-                                        try {
-                                            pr = new PrintWriter(new BufferedWriter(new FileWriter(s + "error" + ".txt", true)));
-                                            pr.print(s);
-                                            pr.print(",");
-                                            pr.print(c);
-                                            pr.print(",");
-                                            pr.print(sc);
-                                            pr.print(",");
-                                            pr.print(item);
-                                            pr.print(",");
-                                            pr.print(day_val);
-                                            pr.print(",");
-                                            pr.print(apri_estimate);
-                                            pr.print(",");
-                                            pr.print(apost);
-                                            pr.print(",");
-                                            pr.print(error);
-                                            pr.println();
-                                            pr.close();
-                                        } catch (Exception e) {
-                                            System.out.println(e);
-                                        }
+                                        printToFile(s,c,sc,item,day_val,apri_estimate,apost,error,true);
                                         for (int i = 1; i <= hTable.size(); i++) {
                                         Vector vl = (Vector) hTable.get(new Integer(i));
                                         //if(new Long(vl.elementAt(3).toString()).longValue() == last_day) {
@@ -376,7 +355,36 @@ public class KalmanFilter implements java.io.Serializable {
             return;
     }   */
 
+    public void printToFile(String su, String cu, String sucl, String itm, long day, double apri, double apos,double error, boolean toggle){
+        toggle = print_flag;
+        if(toggle == true){
+           try {
+               pr = new PrintWriter(new BufferedWriter(new FileWriter(su + "error" + ".txt", true)));
+               pr.print(su);
+               pr.print(",");
+               pr.print(cu);
+               pr.print(",");
+               pr.print(sucl);
+               pr.print(",");
+               pr.print(itm);
+               pr.print(",");
+               pr.print(day);
+               pr.print(",");
+               pr.print(apri);
+               pr.print(",");
+               pr.print(apos);
+               pr.print(",");
+               pr.print(error);
+               pr.println();
+               pr.close();
+           } catch (Exception e) {
+               System.out.println(e);
+            }
+        }
+    }
+
     private ArrayList alt;
     private ArrayList estimate_array = new ArrayList();
     PrintWriter pr;
+    boolean print_flag = false;
 }
