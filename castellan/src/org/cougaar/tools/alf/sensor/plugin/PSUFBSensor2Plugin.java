@@ -25,12 +25,14 @@
 package org.cougaar.tools.alf.sensor.plugin;
 
 import org.cougaar.core.plugin.ComponentPlugin;
+import org.cougaar.core.service.*;
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.util.UID;
-import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
+import org.cougaar.core.agent.ClusterIdentifier;
+import org.cougaar.core.adaptivity.OMCRangeList;
 import org.cougaar.core.service.community.CommunityService;
-import org.cougaar.core.service.*;
+import org.cougaar.core.util.UniqueObject;
 import org.cougaar.core.util.XMLize;
 import org.cougaar.core.util.XMLizable;
 import org.cougaar.util.*;
@@ -40,35 +42,36 @@ import org.cougaar.logistics.plugin.manager.LoadIndicator;
 
 import org.cougaar.tools.alf.sensor.plugin.PSUSensorCondition;
 import org.cougaar.tools.alf.sensor.*;
-import org.cougaar.tools.alf.sensor.rbfnn.*;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Document;
 
 import java.util.Iterator;
 import java.util.Collection;
+import java.util.Hashtable;
+import java.util.Arrays;
 import java.util.Vector;
+import java.util.Enumeration;
 
 import java.io.*;
 
 /* 
- *	programed by Yunho Hong
- *	August 21, 2002
- *	Pennsylvania State University
- */
+	programed by Yunho Hong
+	August 21, 2002
+	Pennsylvania State University
+*/
 
 public class PSUFBSensor2Plugin extends ComponentPlugin
 {
 
 	IncrementalSubscription taskSubscription;
-
+	IncrementalSubscription timeIndicatiorSubscription;
 	IncrementalSubscription loadIndicatiorSubscription;
 	IncrementalSubscription internalStateSubscription;
 
-	UnaryPredicate taskPredicate			= new UnaryPredicate()	{ 	public boolean execute(Object o) {  return (o instanceof Task); 	}   };
-//	UnaryPredicate planelementPredicate		= new UnaryPredicate()	{ 	public boolean execute(Object o) {  return (o instanceof Task); 	}   };
-	UnaryPredicate internalStatePredicate	= new UnaryPredicate()	{	public boolean execute(Object o) {  return (o instanceof InternalState);   }    };
-
+	UnaryPredicate taskPredicate					= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof Task;  }   };
+    UnaryPredicate timeIndicatiorPredicate			= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof StartIndicator;   }    };
+    
 	UnaryPredicate loadIndicatiorPredicate			
 		= new UnaryPredicate()	{ 
 			public boolean execute(Object o) {  
@@ -84,95 +87,264 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 			}    
 		};
 
-	AlarmService as;
-    TriggerFlushAlarm alarm = null;
+    UnaryPredicate internalStatePredicate			= new UnaryPredicate()	{ public boolean execute(Object o) {  return o instanceof InternalState;   }    };
 
 	BlackboardService bs;
-   	UIDService uidservice;
+    BlackboardTimestampService bts; 
+    UIDService uidservice;
 
-   	String cluster;  // the current agent's name
-	
-	RbfRidgeRegression rbfnn = null;
+    String cluster;  // the current agent's name
+
 	LoadIndicator loadIndicator = null;
-	LFMessage lfMessage = null;
+	Hashtable lookuptable = null;
 
-	double [] a;
+	long starttime = -1L;
+	private int Hongfbtype = 2;
+	private String [] fbresult = null;
+
 	InternalState internalState = null;
-
-	int curr_state = -1;
-
-	long nextTime = 0;
-	long unittime = 10000;
-	long offsetTime = -1L;
-	
-	int previous_nTask = 0;
-	int previous_nUnplannedTask = 0;
-
-	java.io.BufferedWriter rst = null;
-	boolean isTransporationAgent = false;
-	
-	boolean firstTime = true;
 
     public void setupSubscriptions()   {
 
+		bts = ( BlackboardTimestampService ) getServiceBroker().getService( this, BlackboardTimestampService.class, null ) ;
         bs = getBlackboardService();
 		cluster = getBindingSite().getAgentIdentifier().toString();
 
-		internalStateSubscription 	= (IncrementalSubscription) bs.subscribe(internalStatePredicate);
-		loadIndicatiorSubscription 	= (IncrementalSubscription) bs.subscribe(loadIndicatiorPredicate);
-		taskSubscription		 	= (IncrementalSubscription) bs.subscribe(taskPredicate);
+	    fbresult = new String[3];
+	    fbresult[0] = LoadIndicator.NORMAL_LOAD; // normal
+	    fbresult[1] = LoadIndicator.MODERATE_LOAD; // mild falling behind
+		fbresult[2] = LoadIndicator.SEVERE_LOAD; // severe falling behind
+
+		internalStateSubscription = (IncrementalSubscription) bs.subscribe(internalStatePredicate);
+		loadIndicatiorSubscription = (IncrementalSubscription) bs.subscribe(loadIndicatiorPredicate);
+		taskSubscription = (IncrementalSubscription) bs.subscribe(taskPredicate);
+		timeIndicatiorSubscription = (IncrementalSubscription) bs.subscribe(timeIndicatiorPredicate);
+
+		// Read threshold values and publishAdd the lookuptable for future hydration.
+		getThresholdforLookupTable(); // in this function fbsensor will be constructed.
 
 		uidservice =(UIDService) getServiceBroker().getService(this, UIDService.class, null);
 
 		if (bs.didRehydrate() == false)
         {
-			a = new double[6];
-			rbfnn = new RbfRidgeRegression();			
-
-			// num_hidden1, lamda1, increment1, count_limit1, dimension1
-			rbfnn.setParameters(15, 10, 0.1, 20, 6);
-			System.out.println("next check time " + nextTime);
-
-			ConfigFinder finder = getConfigFinder();
-			String inputName = "ulmodel.txt";
-
-			try {
-
-				if ( inputName != null && finder != null ) {
-
-					File inputFile = finder.locateFile( inputName ) ;
-					if ( inputFile != null && inputFile.exists() ) {
-						System.out.println("Load Input model.");
-						rbfnn.readModel(inputFile);
-			        } else {
-						System.out.println("Input model error.");
-					}
-				}
-
-	        } catch ( Exception e ) {
-		        e.printStackTrace() ;
-			}
-
 			internalState = new InternalState(1000, Integer.MAX_VALUE, uidservice.nextUID());
-
-		    CommunityService communityService = (CommunityService) getBindingSite().getServiceBroker().getService(this, CommunityService.class, null);
-
-			Collection alCommunities = communityService.listParentCommunities(getAgentIdentifier().toString(), "(CommunityType=AdaptiveLogistics)");				
-			internalState.setalCommunities(alCommunities);
+			if (lookuptable == null)
+			{
+				internalState.over = true;
+			}
 			bs.publishAdd(internalState);
-			System.out.println("PSUFBSensor2Plugin start at " + cluster); 
+			if(!internalState.over) { System.out.println("PSUFBSensor2Plugin start at " + cluster); }
 		}
 
 		bs.setShouldBePersisted(false);
-		as = getAlarmService() ;
+    }
+
+	// read user defined threshold values from a file
+	private void getThresholdforLookupTable() {
+
+		ConfigFinder finder = getConfigFinder();
+		String inputName = "lookup.txt";
+       
+		try {
+
+			if ( inputName != null && finder != null ) {
+
+				File inputFile = finder.locateFile( inputName ) ;
+
+                if ( inputFile != null && inputFile.exists() ) {
+                    
+					java.io.BufferedReader input_file = new java.io.BufferedReader ( new java.io.FileReader(inputFile));					
+
+					read_lookupTable(input_file);
+
+					input_file.close();
+                }
+
+            }
+        } catch ( Exception e ) {
+            e.printStackTrace() ;
+        }
+	}
+
+	// 	Read threshold values specified by user and put them into lookup tables
+	private void read_lookupTable(java.io.BufferedReader input_stream) {
+
+		String current_agent = null;
+		Hashtable LookupTable = null;
+		String s = null;
+		Long From; 
+		int FbLevel = 0;
+		float LLThreshold = 0, ULThreshold = 0;
+		int lt = 0; 
+		int st = 0;
+
+		try
+		{
+			while ((s = input_stream.readLine()) != null)
+			{
+				int is = 0;
+				int ix = s.indexOf(" ");
+
+				String temp_string = s.substring(is,ix);
+				
+				if(temp_string.charAt(0) == '#'){   // # represents Comment
+
+					continue;
+
+				} else if (temp_string.equalsIgnoreCase("@agent"))	{
+
+					if (current_agent != null)
+					{
+						lookuptable = LookupTable;
+						break;  
+					}
+					
+					st = ix+1;
+					if (cluster.equalsIgnoreCase(s.substring(st).trim()))  // 'cluster' is the name of the agent in which this plugin is running.
+					{
+						current_agent = cluster;
+						LookupTable	= new Hashtable();
+						// debug
+//						System.out.println("agent : " + current_agent);
+					}
+					continue;
+				} 
+				else if (current_agent == null)
+				{
+					continue;
+				}
+
+				// from	 (specific time)
+				From = new Long(temp_string.trim());
+
+				// Level
+				is = ix + 1;
+				ix = s.indexOf(" ",is);	
+				FbLevel = (Integer.valueOf(s.substring(is,ix).trim())).intValue();
+
+				// Lower limit threshold value
+				is = ix + 1;
+				ix = s.indexOf(" ",is);	
+				LLThreshold = (Float.valueOf(s.substring(is,ix).trim())).floatValue();
+
+				// Upper limit threshold value
+				st = ix+1;
+				ULThreshold = (Float.valueOf(s.substring(st).trim())).floatValue();
+				
+				// debug
+//				System.out.println("lookup: " + From + ", " + FbLevel + ", " + LLThreshold + ", " + ULThreshold);
+				Vector ThresholdList = null;
+				if ((ThresholdList = (Vector) LookupTable.get(From)) == null)
+				{
+					ThresholdList = new Vector();
+				}
+				ThresholdList.add(new ConditionByNo( FbLevel, LLThreshold, ULThreshold, 0));
+				LookupTable.put(From,ThresholdList);  // Last part represents level of falling behindness. 
+													  // Here, I just set one level of falling behindness. 
+													  // In the future, if we specify more levels, then it will have meaning. 
+
+			}
+
+			if (lookuptable == null)
+			{
+				lookuptable = LookupTable;
+			}
+
+		} 
+		catch (java.io.IOException ioexc)
+	    {
+		    System.err.println ("can't read the input file, io error" );
+	    }
+	}
+
+    public synchronized void add(org.cougaar.core.util.UniqueObject p, int action ) {	
+
+			if (internalState.StartTime == -1L)
+			{
+				if ( p instanceof Task) {
+
+					Task pdu = ( Task ) p ; 
+
+					// if this pdu is not an add event.
+					if (action != 0) {	return;	}
+					
+					// check the start time of planning
+					String v = pdu.getVerb().toString();
+
+					if (v.compareToIgnoreCase("ReportForDuty") != 0 && v.compareToIgnoreCase("ReportForService") != 0)
+					{
+
+						starttime = bts.getCreationTime(pdu.getUID()); 
+
+						if (starttime == -1) { return; }
+
+						internalState.StartTime = starttime;
+						System.out.println("\n" + cluster + "'s first task : time = " + internalState.StartTime + " with verb = " + v +", " + pdu.getUID().toString());
+						bs.publishChange(internalState);
+
+					    CommunityService communityService = (CommunityService) getBindingSite().getServiceBroker().getService(this, CommunityService.class, null);
+
+						Collection alCommunities = communityService.listParentCommunities(getAgentIdentifier().toString(), "(CommunityType=AdaptiveLogistics)");				
+						internalState.setalCommunities(alCommunities);
+
+						Collection alCommunities2 = communityService.search("(CommunityType=AdaptiveLogistics)");				
+
+//						internalState.setalCommunities(alCommunities2);
+
+						if (internalState.alCommunities != null)
+						{
+							for (Iterator iterator = alCommunities2.iterator(); iterator.hasNext();) {
+						        String community = (String) iterator.next();
+								StartIndicator tindicator = new StartIndicator(cluster, uidservice.nextUID(), starttime, 10);
+								tindicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
+								bs.publishAdd(tindicator);
+								System.out.println(getAgentIdentifier().toString() + ": adding StartIndicator to be sent to " + tindicator.getTargets());
+							}
+
+							if(!internalState.over) { sendLoadIndicator(0, LoadIndicator.NORMAL_LOAD); }
+						} else {
+							System.out.println(getAgentIdentifier().toString() + " Destination address is null");
+						}
+					}
+				}
+
+			} else if (!internalState.over) {
+
+				if ( p instanceof Task ) {
+
+					Task tpdu = ( Task ) p ;
+
+					String s = tpdu.getVerb().toString();
+
+					if (internalState.StartTime > 0 )
+					{
+						org.cougaar.core.util.UID uid = (org.cougaar.core.util.UID) tpdu.getUID();
+
+						if (action == 0)	{
+							addTaskForCheckingFallingBehind(tpdu);
+							bs.publishChange(internalState);
+						} else if (action == 1 && Hongfbtype == 1) { // for type 1, considering the case in which a task is cancelled before allocation
+							getAverageWaitingTime(uid, bts.getCreationTime(uid));
+							bs.publishChange(internalState);
+          				}
+					}
+					
+				}
+  			    else if (Hongfbtype == 1 && action != 0 && internalState != null)
+  			    {
+					if (p instanceof PlanElement)	{
+						PlanElement ppdu = (PlanElement) p;
+						getAverageWaitingTime((org.cougaar.core.util.UID) ppdu.getTask().getUID(), bts.getCreationTime(ppdu.getUID()));
+						bs.publishChange(internalState);
+					} 
+  			    } 
+		 	}
     }
 	
 	public void execute()
     {
         Iterator iter;
-
-        if (alarm != null) alarm.cancel();
-
+        
         if (loadIndicator == null)
 		{
 	        for (iter = loadIndicatiorSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
@@ -189,297 +361,271 @@ public class PSUFBSensor2Plugin extends ComponentPlugin
 		        internalState = (InternalState) iter.next();
 				// debug
 				internalState.show();
+				internalState.rehydrate = true;
+				if(!internalState.over) { System.out.println("PSUFBSensor2Plugin start at " + cluster); }
 				break;
 			}
 		} 
 
-		if (offsetTime == -1L)
+		if (internalState != null)
 		{
-			for (iter = taskSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
-	        {
-		        Task t = (Task) iter.next();
-				Verb v = t.getVerb();
-				if (cluster.equalsIgnoreCase("CONUSGround") || cluster.equalsIgnoreCase("GlobalAir")     ||
-					cluster.equalsIgnoreCase("GlobalSea")   || cluster.equalsIgnoreCase("PlanePacker")   ||
-					cluster.equalsIgnoreCase("ShipPacker")  || cluster.equalsIgnoreCase("TheaterGround") )
-				{
-					if (!v.equals("ReportForDuty") && !v.equals("ReportForService") )
-					{
-						offsetTime = System.currentTimeMillis();
-						nextTime = offsetTime + unittime;
-//						nextTime = unittime;
-//						sendLoadIndicator(0, LoadIndicator.NORMAL_LOAD);
-//						sendLoadIndicator(0, LoadIndicator.NORMAL_LOAD);
-						reportBlackboardState(0, 0, 0);
-						curr_state = -1;
-
-//						checkTaskSubscription(0,taskSubscription);
-						checkTaskSubscription(offsetTime,taskSubscription);
-						isTransporationAgent = true;
-						System.out.println("Start to checking blackboard at " + cluster); 
-						break;
-					}
-
-				} else {
-					if (v.equals("GetLogSupport"))
-					{
-						offsetTime = System.currentTimeMillis();
-						nextTime = offsetTime + unittime;
-//						nextTime = unittime;
-//						checkTaskSubscription(0,taskSubscription);
-//						sendLoadIndicator(0, LoadIndicator.NORMAL_LOAD);
-						reportBlackboardState(0, 0, 0);
-						checkTaskSubscription(offsetTime,taskSubscription);
-//						sendLoadIndicator(0, LoadIndicator.NORMAL_LOAD);
-						curr_state = -1;
-						System.out.println("Start to checking blackboard at " + cluster); 
-						break;
-					}
-				}
-			}
-		} 
-		else 
-		{
-//		    long nowTime = System.currentTimeMillis()-offsetTime; // this is for the falling behind sensor
-		    long nowTime = System.currentTimeMillis(); // in order to get proper timing.
-
-//			if (nowTime >= nextTime)	  
-//			{		  
-//				nextTime =  (nowTime - nowTime%unittime) + unittime;	
-
-				checkTaskSubscription(nowTime, taskSubscription);
-//			}
+			// collect the information about the time and number of tasks
+		    for (iter = taskSubscription.getAddedCollection().iterator() ; iter.hasNext() ;)
+			{
+				Task task = (Task)iter.next();
+				add(task, 0);
+		    }
 		}
-
-		alarm = new TriggerFlushAlarm(  currentTimeMillis() + 60000 );
-        as.addAlarm(alarm) ;
     }
-
-	private void checkTaskSubscription(long nowTime, IncrementalSubscription taskSubscription)
-	{
-		if (!taskSubscription.isEmpty()) {
-	
-			// examine tasks
-			int nUnplannedTasks = 0;
-		    int nUnestimatedTasks = 0;
-//		    int nFailedTasks = 0;
-			int nUnconfidentTasks = 0;
-
-//////////////
-			int nPSI=0;
-			int nPSO=0;
-			int nPW=0;
-			int nSI=0;
-			int nSO=0;
-			int nW=0;
-			int nOthers=0;
-//////////////
-
-			int nTasks = taskSubscription.size();
-		    Iterator taskIter = taskSubscription.iterator();
-			
-			for (int i = 0; i < nTasks; i++) {
-				Task ti = (Task)taskIter.next();
-///////////
-/*
-				if (!isTransporationAgent)
-				{
-					Verb v = ti.getVerb();
-	
-					if (v.equals("ProjectSupply"))			{	
-						if (ti.getUID().getOwner().equalsIgnoreCase(cluster))	{		nPSI++;		} 
-						else													{		nPSO++;		}
-					}
-					else if (v.equals("Supply"))			{	
-						if (ti.getUID().getOwner().equalsIgnoreCase(cluster))	{		nSI++;		} 
-						else													{		nSO++;		}
-					}	
-					else if (v.equals("ProjectWithdraw"))	{	nPW++;	}
-					else if (v.equals("Withdraw"))			{	nW++;	}
-				}
-*/
-////////////////////
-
-				PlanElement pe = ti.getPlanElement();
-				if (pe != null) {
-/*
-						AllocationResult peEstResult = pe.getEstimatedResult();
-						if (peEstResult != null) {
-							 double estConf = peEstResult.getConfidenceRating();
-//				             if (peEstResult.isSuccess()) {
-									if (estConf > 0.99) {
-					                  // 100% success
-									} else {					  	
-								      nUnconfidentTasks++;
-									}
-//							 } else {
-//				                nFailedTasks++;   // Most of the case is success. No meaning
-//			                 }
-						} else {
-				          nUnestimatedTasks++;
-					    }
-*/
-				} else {
-				    nUnplannedTasks++;
-				}
-			} // for
-
-//			checkFallingBehindness(nowTime, nTasks, nUnconfidentTasks, nFailedTasks, nUnestimatedTasks, nUnplannedTasks);
-			checkFallingBehindness(nowTime, nTasks, nUnconfidentTasks, nUnestimatedTasks, nUnplannedTasks, nPSI, nPSO, nSI, nSO, nPW, nW);
-		}
-	}
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-//	public void checkFallingBehindness(long nowTime, int nTasks, int nUnconfidentTasks, int nFailedTasks, int nUnestimatedTasks, int nUnplannedTasks) 
-	public void checkFallingBehindness(long nowTime, int nTasks, int nUnconfidentTasks, int nUnestimatedTasks, int nUnplannedTasks, int nPSI, int nPSO, int nSI, int nSO, int nPW, int nW)
-	{
+		public void addTaskForCheckingFallingBehind(Task tpdu) {
 
-		int newlydetectedstate = internalState.currentstate;
+			if (internalState.over) {	return;	}
 
-//			try
-//			{
-//				System.out.println("\n"+nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nFailedTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks);
-//				rst.write(nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nFailedTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks+"\n");
-//				rst.write(nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks+","+nPSI+","+ nPSO+","+ nSI+","+ nSO+","+ nPW+","+ nW+"\n");
-//				rst.flush();
+			long t = bts.getCreationTime(tpdu.getUID());
 
-	
-//				if (firstTime == true)	{	reportBlackboardState(0, nTasks, nowTime);		firstTime = false;	} 
-//				else					{	reportBlackboardState(1, nTasks, nowTime);							}
-
-				if (previous_nTask != nTasks || previous_nUnplannedTask != nUnplannedTasks )
-				{
-					reportBlackboardState(1, nTasks, nowTime);
-					previous_nTask = nTasks;
-					previous_nUnplannedTask = nUnplannedTasks;
-					System.out.println("\n[PSUFB2] "+cluster+ " : " +nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks+","+nPSI+","+ nPSO+","+ nSI+","+ nSO+","+ nPW+","+ nW+"\n");
-				}
-
-/*
-				a[0] = (double) nowTime;
-				a[1] = (double) nTasks;
-				a[2] = (double) nUnconfidentTasks;
-				a[3] = (double) nFailedTasks;
-				a[4] = (double) nUnestimatedTasks;
-				a[5] = (double) nUnplannedTasks;
-
-				double y = rbfnn.f(a);
-
-				if (y > 0)
-				{
-					if (curr_state == -1)
-					{
-						System.out.println("SEVERE_LOAD");
-						sendLoadIndicator(1, LoadIndicator.SEVERE_LOAD); 	
-						curr_state = 1;
-					}
-
-				} else {
-					if (curr_state == 1)
-					{
-						System.out.println("NORMAL_LOAD");
-						sendLoadIndicator(1, LoadIndicator.NORMAL_LOAD); 				
-						curr_state = -1;
-					}
-				}
-*/
-//			}
-//			catch (java.io.IOException ioexc)
-//			{
-//				System.err.println ("can't write file, io error" );
-//		    }					
-	}
-
-	// send load indicator to the transcom
-	public void sendLoadIndicator(int mode, String loadlevel) 
-	{
-
-		if (mode == 0)
-		{
-			loadIndicator = new LoadIndicator(this.getClass(), cluster, uidservice.nextUID(), loadlevel);
-			for (Iterator iterator = internalState.alCommunities.iterator(); iterator.hasNext();) {
-				String community = (String) iterator.next();
-				loadIndicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
-				bs.publishAdd(loadIndicator);
-			}
-		} else {
-	        loadIndicator.setLoadStatus(loadlevel);
-			bs.publishChange(loadIndicator);
-		}	
-
-		System.out.println(cluster + ": adding loadIndicator to be sent to " + loadIndicator.getTargets());
-	}
-
-	// send current blackboard state to the transcom
-	public void reportBlackboardState(int mode, int num_of_tasks, long time) 
-	{
-
-		if (mode == 0)
-		{
-			lfMessage = new LFMessage(this.getClass(), cluster, uidservice.nextUID(), num_of_tasks, time);
-			for (Iterator iterator = internalState.alCommunities.iterator(); iterator.hasNext();) {
-				String community = (String) iterator.next();
-				lfMessage.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
-				bs.publishAdd(lfMessage);
-			}
-		} else {
-	        lfMessage.setNum_of_tasks(num_of_tasks);
-			lfMessage.setTime(time);
-			bs.publishChange(lfMessage);
-		}	
-
-//		System.out.println(cluster + ": sending current state to " + loadIndicator.getTargets()+ ", "+ lfMessage.getNum_of_tasks()+","+lfMessage.getTime()+","+offsetTime);
-	}
-
-	class TriggerFlushAlarm implements PeriodicAlarm
-    {
-        public TriggerFlushAlarm(long expTime)
-        {
-            this.expTime = expTime;
-        }
-
-        public void reset(long currentTime)
-        {
-            expTime = currentTime + delay;
-            expired = false;
-        }
-
-        public long getExpirationTime()
-        {
-            return expTime;
-        }
-
-        public void expire()
-        {
-            expired = true;
-			getBlackboardService().openTransaction();
-			System.out.println("expire()");
-			execute();
-			if (curr_state == 1)
+			if (internalState.rehydrate)
 			{
-//	            sendLoadIndicator(1, LoadIndicator.NORMAL_LOAD);
+				internalState.Correction = t - internalState.CurrentTime ;
+				internalState.rehydrate=false;
 			}
 
-			getBlackboardService().closeTransaction();
+			internalState.CurrentTime = t;
 
-        }
+			t = t - internalState.StartTime - internalState.Correction;
 
-        public boolean hasExpired()
-        {
-            return expired;
-        }
+			internalState.NoTasks++;
 
-        public boolean cancel()
-        {
-            boolean was = expired;
-            expired = true;
-            return was;
-        }
+			if (t >= internalState.nextcheckpoint)
+			{
+				System.out.println(cluster + " at time " + t + ", # of tasks = " + internalState.NoTasks);
+				internalState.nextcheckpoint = t - t%1000;
+				checkfallingbehindness2(internalState.nextcheckpoint, internalState.NoTasks);	// Type 2
+				internalState.nextcheckpoint = internalState.nextcheckpoint + 1000;
+			}
+		}
 
-        boolean expired = false;
-        long expTime;
-        long delay = 60000;
-    }
+		public void checkfallingbehindness2(long curr_time, int num_task) { // for the number of tasks
+
+			boolean FbSV = false;
+			int newlydetectedstate = internalState.currentstate;
+
+			if (FbSV == true) // check whether SV check falling behindness.
+			{
+
+			
+			} else {
+
+				// Consult Lookup table
+				Vector thresholdlist = (Vector) lookuptable.get(new Long(curr_time));
+
+				if (thresholdlist != null)
+				{
+					for (Enumeration e = thresholdlist.elements() ; e.hasMoreElements() ;) {
+						 ConditionByNo k = (ConditionByNo) e.nextElement();
+						 if (k.check(num_task, curr_time))
+						 {
+							newlydetectedstate = k.getLevel();
+						 } 
+					}
+
+					if (newlydetectedstate != internalState.currentstate)
+					{
+						internalState.currentstate = newlydetectedstate;
+						System.out.println(cluster+","+num_task+","+curr_time+", Falling behind: level "+ fbresult[internalState.currentstate]);
+						sendLoadIndicator(1, fbresult[internalState.currentstate]);
+					}
+				}
+			}
+		}
+
+		public void getAverageWaitingTime(org.cougaar.core.util.UID uid, long time1) {
+/*
+			if (internalState.over) {	return;	}
+
+			long time = time1 - internalState.StartTime;
+
+			// add cumulative finishtime
+			taskinfo tpdu = null;
+
+			if ((tpdu = (taskinfo) internalState.TaskList.get(uid))== null)
+			{
+				return;
+			}
+
+			long wt = 0; 
+			float awt = 0;
+			long chktime = internalState.CurrentTime + internalState.unittime;
+			String ss="N";
+
+			if (chktime > time)
+			{
+				((taskinfo) internalState.TaskList.get(uid.toString())).finishtime = time;
+				if (internalState.timelimit < time) // if the time is over a certain number them it will not calculate the 
+				{
+					internalState.over = true;				
+				}
+				return;
+			}
+
+			while (chktime < time)
+			{
+				for (Enumeration e = internalState.TaskList.keys() ; e.hasMoreElements() ;) {
+					
+					taskinfo t = (taskinfo) internalState.TaskList.get(e.nextElement()); 
+
+					if ( t!=null) {
+						if (t.finishtime < chktime)
+						{
+							internalState.CTFinish = internalState.CTFinish + t.finishtime - t.eventtime;
+							internalState.TaskList.remove(uid.toString());
+							internalState.NoFinish++;
+						} else {
+							wt = chktime - t.eventtime;
+						}
+					}
+				}
+
+				int s = internalState.TaskList.size();
+
+				awt = (float) (wt+internalState.CTFinish)/(internalState.NoFinish+s);
+
+				checkfallingbehindness(chktime,awt);
+				internalState.CurrentTime = internalState.CurrentTime + internalState.unittime;
+				chktime = internalState.CurrentTime + internalState.unittime;
+			} 
+*/
+		}
+
+		public void checkfallingbehindness(long chktime, float awt) {   // for the average waiting time
+
+			int []c = { -1, -1 };
+			
+			for (Enumeration e = lookuptable.elements() ; e.hasMoreElements() ;) {
+				 criteria k = (criteria) e.nextElement();
+				 if (k.check(chktime))
+				 {
+					 if (k.threshold < awt )
+					 {
+						c[k.type] = 1;
+					 } 
+				 }
+			}
+
+			if (c[1] > 0 && internalState.currentstate < 2)  // Severe falling behind
+			{
+				System.out.println(cluster+","+chktime+","+awt+", S, by waiting time");
+				internalState.currentstate = 2;
+				sendLoadIndicator(1, fbresult[internalState.currentstate]);
+			} else 	if (c[0] > 0  && c[1] < 0 && internalState.currentstate < 1) {  // Mild falling behind
+				System.out.println(cluster+","+chktime+","+awt+", M, by waiting time");
+				internalState.currentstate = 1;
+				sendLoadIndicator(1, fbresult[internalState.currentstate]);
+			} 
+		}
+
+		public void sendLoadIndicator(int mode, String loadlevel) 
+		{
+
+			if (mode == 0)
+			{
+				loadIndicator = new LoadIndicator(this.getClass(), cluster, uidservice.nextUID(), loadlevel);
+				if (loadIndicator == null)
+				{
+					System.out.println("loadindicator is null");
+				}
+				for (Iterator iterator = internalState.alCommunities.iterator(); iterator.hasNext();) {
+					String community = (String) iterator.next();
+					AttributeBasedAddress aba = new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager");
+//					loadIndicator.addTarget(new AttributeBasedAddress(community,"Role","AdaptiveLogisticsManager"));
+					if (aba == null)
+					{
+						System.out.println("aba is null");
+					}
+					loadIndicator.addTarget(aba);
+					bs.publishAdd(loadIndicator);
+					System.out.println(cluster + ": add loadIndicator to be sent to " + loadIndicator.getTargets());
+				}
+
+
+			} else {
+			
+		        loadIndicator.setLoadStatus(loadlevel);
+				bs.publishChange(loadIndicator);
+				System.out.println(cluster + ": change loadIndicator to be sent to " + loadIndicator.getTargets());
+			}	
+
+
+		}
+
+	class ConditionByNo implements java.io.Serializable
+	{
+		public ConditionByNo(int FbLevel, float LLThreshold, float ULThreshold, int type1) {
+			level = FbLevel;
+			LowerLimit = LLThreshold;
+			Upperlimit = ULThreshold;  // time;
+			type = type1;
+		}
+
+		public boolean check(int num_task, long t) {
+
+			if (LowerLimit < num_task && num_task <= Upperlimit) {
+
+				return true;
+			}
+
+			return false;
+		}
+
+		public int getLevel() {
+			return level;
+		}
+
+		int level;
+		float LowerLimit;
+		float Upperlimit;  // time;
+		public int type;
+
+	}
+
+	class criteria implements java.io.Serializable
+	{
+		public criteria(long from1, long to1, float threshold1, int type1) {
+			from = from1;
+			to = to1;
+			threshold = threshold1;
+			type = type1;
+		}
+
+		public boolean check(long time) {
+
+			if (from < time && time <= to)
+			{
+				return true;
+			} 
+			return false;
+		}
+
+		long from;
+		long to;
+		public float threshold;
+		public int type;
+
+	};
+
+	// it is used for average waiting time
+	class taskinfo implements java.io.Serializable
+	{
+		public taskinfo(long e) { 
+			eventtime = e;
+			finishtime = Long.MAX_VALUE;
+		}
+
+		public long eventtime;
+		public long finishtime;
+
+	};
+
 }
