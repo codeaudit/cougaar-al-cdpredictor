@@ -39,9 +39,9 @@ public abstract class WorldState implements java.io.Serializable {
         buf.append( ",penalties=" + accumulatedPenalties ) ;
         buf.append( ",score=" + getScore() ) ;
         buf.append( ",criticalCoverage=" + WorldStateUtils.computeCoverage( this, WorldStateUtils.COVERAGE_CRITICAL,
-                WorldStateUtils.LIMITED_INVERSE_FUNCTION, 1.4 ) ) ;
+                WorldStateUtils.LIMITED_INVERSE_FUNCTION, 1.4, true ) ) ;
         buf.append( ",inRangeCoverage=" +  WorldStateUtils.computeCoverage( this, WorldStateUtils.COVERAGE_IN_RANGE,
-                WorldStateUtils.LIMITED_INVERSE_FUNCTION, 1.4 ));
+                WorldStateUtils.LIMITED_INVERSE_FUNCTION, 1.4, true ));
 
 
         buf.append( ",\nunits=") ;
@@ -485,12 +485,17 @@ public abstract class WorldState implements java.io.Serializable {
     }
 
 
-    public ArrayList getCriticalTargetsCovered( double x, double y, Shape s ) {
+    public ArrayList getCriticalTargetsCovered( double x, double y, Shape s, Shape area ) {
         ArrayList results = null ;
         for (int i=0;i<targets.size();i++) {
             TargetEntity t = (TargetEntity) targets.get(i) ;
             if ( t.isActive() && t.getY() < getPenaltyHeight() &&
-                 isInRegion( s, x, y, t.getX(), t.getY() ) ) {
+                 isInRegion( s, x, y, t.getX(), t.getY() ) )
+            {
+                if ( area != null && !area.contains(t.getX(), t.getY() ) ) {
+                     break ;
+                }
+
                 if ( results == null ) {
                     results = new ArrayList();
                 }

@@ -205,7 +205,7 @@ public class WorldStateUtils {
      * @return
      */
     public static double computeCoverage( WorldState ws, ArrayList unitList, int type,
-                                          WeightingFunction function, double maxCoverage, Interval interval )
+                                          WeightingFunction function, double maxCoverage, Interval interval, boolean usePartialCoverage )
     {
         // Try and maintain uniformly weighted coverage.
         MultiHashSet coveredTargetsToUnitsMap = new MultiHashSet() ;
@@ -228,8 +228,7 @@ public class WorldStateUtils {
                     coveredTargets = ws.getTargetsInRange( ue.getX(), ue.getY(), ue.getRangeShape(), r2d ) ;
                     break ;
                 case COVERAGE_CRITICAL :
-                    // Covering critical targets outside the zone is still rewarded
-                    coveredTargets = ws.getCriticalTargetsCovered( ue.getX(), ue.getY(), ue.getRangeShape() ) ;
+                    coveredTargets = ws.getCriticalTargetsCovered( ue.getX(), ue.getY(), ue.getRangeShape(), r2d ) ;
                     break ;
                 default :
                     throw new IllegalArgumentException( "Type " + type + " not understood." ) ;
@@ -262,7 +261,10 @@ public class WorldStateUtils {
             totalCoverage += Math.min( localCoverage, maxCoverage ) ;
         }
 
-        double partialCoverage = computePartialCoverage( ws, coveredTargetsToUnitsMap, type, maxCoverage ) ;
+        double partialCoverage = 0 ;
+        if ( usePartialCoverage ) {
+            partialCoverage = computePartialCoverage( ws, coveredTargetsToUnitsMap, type, maxCoverage, interval ) ;
+        }
 
         return totalCoverage + partialCoverage ;
 
@@ -278,7 +280,7 @@ public class WorldStateUtils {
      * @return
      */
     public static synchronized double computeCoverage( WorldState ws, int type,
-                                                       WeightingFunction function, double maxCoverage ) {
+                                                       WeightingFunction function, double maxCoverage, boolean usePartialCoverage ) {
         // Try and maintain uniformly weighted coverage.
         MultiHashSet coveredTargetsToUnitsMap = new MultiHashSet() ;
         HashMap units = new HashMap() ;
@@ -295,7 +297,7 @@ public class WorldStateUtils {
                     coveredTargets = ws.getTargetsInRange( ue.getX(), ue.getY(), ue.getRangeShape() ) ;
                     break ;
                 case COVERAGE_CRITICAL :
-                    coveredTargets = ws.getCriticalTargetsCovered( ue.getX(), ue.getY(), ue.getRangeShape() ) ;
+                    coveredTargets = ws.getCriticalTargetsCovered( ue.getX(), ue.getY(), ue.getRangeShape(), null ) ;
                     break ;
                 default :
                     throw new IllegalArgumentException( "Type " + type + " not understood." ) ;
@@ -328,14 +330,17 @@ public class WorldStateUtils {
             totalCoverage += Math.min( localCoverage, maxCoverage ) ;
         }
 
-        double partialCoverage = computePartialCoverage( ws, coveredTargetsToUnitsMap, type, maxCoverage ) ;
+        double partialCoverage = 0 ;
+        if ( usePartialCoverage ) {
+            computePartialCoverage( ws, coveredTargetsToUnitsMap, type, maxCoverage, null ) ;
+        }
 
         return totalCoverage + partialCoverage ;
     }
 
     public static double computePartialCoverage( WorldState ws,
                                                  MultiHashSet coveredTargetsToUnitsMap,
-                                                 int type, double maxCoverage ) {
+                                                 int type, double maxCoverage, Interval zone ) {
         // Compute a list of _uncovered_ targets which are critical (i.e. below
         // the penalty height.)
         targets.clear();
@@ -353,6 +358,7 @@ public class WorldStateUtils {
                 throw new IllegalArgumentException( "Type " + type + " not recognized." ) ;
         }
 
+        // Discount targets which are already covered.
         ws.getTargets( targets, IN_RANGE_TARGETS_PREDICATE );
         Iterator iter = targets.iterator() ;
         while (iter.hasNext())
@@ -375,10 +381,22 @@ public class WorldStateUtils {
         while (iter.hasNext())
         {
             UnitEntity unitEntity = (UnitEntity) iter.next();
+
+            // We are not in the current zone, ignore.
+            if ( unitEntity.getX() < zone.getXLower() - VGWorldConstants.getUnitRangeWidth()/2
+                && unitEntity.getX() > zone.getXUpper() + VGWorldConstants.getUnitRangeWidth()/2) {
+                continue ;
+            }
             double localCoverage = 0 ;
             for (int i = 0; i < targets.size(); i++) {
                 TargetEntity targetEntity = (TargetEntity)targets.get(i);
-                float dist = (float) (targetEntity.getX() - unitEntity.getX()) ;
+                float dist = (targetEntity.getX() - unitEntity.getX()) ;
+
+                // Ignore targets which are further away than 2 * the range width.
+                if ( dist > VGWorldConstants.getUnitRangeWidth() * 2 ) {
+                    continue ;
+                }
+
                 localCoverage += Math.exp( - ( dist * dist )
                         / VGWorldConstants.getUnitRangeWidth() ) ;
             }
@@ -411,7 +429,7 @@ public class WorldStateUtils {
                     list = ws.getTargetsInRange( ue.getX(), ue.getY(), ue.getRangeShape() ) ;
                     break ;
                 case COVERAGE_CRITICAL :
-                    list = ws.getCriticalTargetsCovered( ue.getX(), ue.getY(), ue.getRangeShape() ) ;
+                    list = ws.getCriticalTargetsCovered( ue.getX(), ue.getY(), ue.getRangeShape(), null ) ;
                     break ;
                 default :
                     throw new IllegalArgumentException( "Type " + type + " not understood." ) ;

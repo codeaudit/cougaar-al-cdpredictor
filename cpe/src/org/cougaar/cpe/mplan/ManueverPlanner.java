@@ -6,6 +6,7 @@ import com.axiom.pspace.search.GraphSearch;
 import com.axiom.pspace.search.SimpleSearch;
 
 import java.util.*;
+import java.io.PrintWriter;
 
 public class ManueverPlanner extends Planner {
     private String id;
@@ -227,6 +228,47 @@ public class ManueverPlanner extends Planner {
 
         return result ;
     }
+
+    public void dump( PrintWriter w ) {
+        ArrayList openListByDepth = s.getOpenListByDepth() ;
+
+        ArrayList[] closedListByDepth = new ArrayList[ openListByDepth.size() ] ;
+        WorldStateNode bestNode = (WorldStateNode) s.getBestGraphNode() ;
+        w.println("\n\nBEST NODE=");
+        w.println(bestNode) ;
+
+        w.println( "\n\n****************************\nCLOSED NODES:");
+        for (int i = 0; i < closedListByDepth.length; i++) {
+            closedListByDepth[i] = new ArrayList() ;
+        }
+
+        ArrayList closedList = s.getClosedList() ;
+        for (int i = 0; i < closedList.size(); i++) {
+            WorldStateNode wsn = (WorldStateNode) closedList.get(i);
+            closedListByDepth[wsn.getDepth()].add( wsn) ;
+        }
+
+        for (int i = 0; i < closedListByDepth.length; i++) {
+            ArrayList arrayList = closedListByDepth[i];
+            for (int j = 0; j < arrayList.size(); j++) {
+                WorldStateNode worldStateNode = (WorldStateNode) arrayList.get(j);
+                w.println( worldStateNode.toString() ) ;
+            }
+        }
+
+        w.println( "\n\n****************************\nOPEN NODES:");
+        for (int i=0;i<openListByDepth.size();i++) {
+            w.println( "\nOpen Nodes at Depth=" + i );
+            ArrayList nodes = (ArrayList) openListByDepth.get(i) ;
+            for (int j = 0; j < nodes.size(); j++) {
+                WorldStateNode worldStateNode = (WorldStateNode) nodes.get(j);
+                w.println( worldStateNode ) ;
+            }
+        }
+
+
+    }
+
 
     Interval initialZone ;
     BoundedBranchSearch s ;

@@ -29,7 +29,7 @@ public class WorldStateNode extends DefaultGraphNode {
         }
         return ( "[id=" + id + ",par=" + pid + ",d=" +
                 depth + ",sc=" + score + ",fc="
-                + fuelConsumption + ",ac=" + ammoConsumption + ",oc=" + overallCoverage + ",cc= " + criticalCoverage + "]" );
+                + fuelConsumption + ",ac=" + ammoConsumption + ",oc=" + overallCoverage + ",cc= " + criticalCoverage + ",zc=" + zoneCoverage + "]" );
     }
 
     public float getZoneCoverage()

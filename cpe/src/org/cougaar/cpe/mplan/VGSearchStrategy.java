@@ -15,6 +15,8 @@ public class VGSearchStrategy implements Strategy {
 
     private Plan zoneSchedule ;
     private ManueverPlanner manueverPlanner ;
+    private static final double MAX_COVERAGE = 1.4;
+    private static final double MAX_COVERAGE_CRITICAL = 2.0 ;
 
     /**
      * @param subordinateEntities Search only for the subordinate entities.
@@ -54,7 +56,7 @@ public class VGSearchStrategy implements Strategy {
     }
 
     public int compare(Object n1, Object n2) {
-        double coverageThreshold = 0.00 ;
+        double coverageThreshold = 1E-5 ;
 
         WorldStateNode wsn1 = (WorldStateNode) n1, wsn2 = (WorldStateNode) n2 ;
         WorldStateModel wsm1 = wsn1.getState(), wsm2 = wsn2.getState() ;
@@ -85,12 +87,12 @@ public class VGSearchStrategy implements Strategy {
         if ( wsn1.getCriticalCoverage() == -1 ) {
             wsn1.setCriticalCoverage(
                     WorldStateUtils.computeCoverage( wsn1.getState(), subordinateEntities, WorldStateUtils.COVERAGE_CRITICAL,
-                            WorldStateUtils.LIMITED_INVERSE_FUNCTION, 1.4, currentZoneInterval ));
+                            WorldStateUtils.LIMITED_INVERSE_FUNCTION, MAX_COVERAGE_CRITICAL, currentZoneInterval, false ));
         }
         if ( wsn2.getCriticalCoverage() == -1 ) {
             wsn2.setCriticalCoverage(
                     WorldStateUtils.computeCoverage( wsn2.getState(), subordinateEntities, WorldStateUtils.COVERAGE_CRITICAL,
-                            WorldStateUtils.LIMITED_INVERSE_FUNCTION, 1.4, currentZoneInterval ));
+                            WorldStateUtils.LIMITED_INVERSE_FUNCTION, MAX_COVERAGE_CRITICAL, currentZoneInterval, false ));
         }
         double cc = wsn1.getCriticalCoverage() - wsn2.getCriticalCoverage() ;
         if ( Math.abs( cc ) > coverageThreshold ) {
@@ -117,12 +119,12 @@ public class VGSearchStrategy implements Strategy {
         if ( wsn1.getTargetCoverage() == -1 )
         {
             wsn1.setTargetCoverage( WorldStateUtils.computeCoverage( wsn1.getState(), subordinateEntities, WorldStateUtils.COVERAGE_IN_RANGE,
-                            WorldStateUtils.LIMITED_INVERSE_FUNCTION, 1.4, currentZoneInterval ) ) ;
+                            WorldStateUtils.LIMITED_INVERSE_FUNCTION, MAX_COVERAGE, currentZoneInterval, true ) ) ;
         }
         if ( wsn2.getTargetCoverage() == -1 ) {
             wsn2.setTargetCoverage(
                     WorldStateUtils.computeCoverage( wsn2.getState(), subordinateEntities, WorldStateUtils.COVERAGE_IN_RANGE,
-                            WorldStateUtils.LIMITED_INVERSE_FUNCTION, 1.4, currentZoneInterval ));
+                            WorldStateUtils.LIMITED_INVERSE_FUNCTION, MAX_COVERAGE, currentZoneInterval, true  ));
         }
         double cd = wsn1.getTargetCoverage() - wsn2.getTargetCoverage() ;
 
@@ -131,10 +133,15 @@ public class VGSearchStrategy implements Strategy {
             // return  -cd ;  // Prefer arrangements with high coverage over low.
         }
 
-        // Look at projected fuel consumption.  This will minimize motion.
+        // Look at projected fuel consumption.  This will minimize motion by favoring units with less fuel consumption.
         double h2 = ( wsn1.getFuelConsumption() - wsn2.getFuelConsumption() ) ;
         if ( h2 != 0 ) {
-            return ( h2 > 0 ) ? 1 : -1 ;
+            if ( h2 > 0 ) {
+                return 1 ;
+            }
+            else if ( h2 < 0 ) {
+                return -1;
+            }
         }
 
         // Finally, look at ammo consumption?

@@ -6,6 +6,8 @@ import com.axiom.pspace.search.Strategy;
 import com.axiom.pspace.search.GraphNode;
 
 import java.util.*;
+import java.io.Writer;
+import java.io.PrintWriter;
 
 public class BoundedBranchSearch extends AbstractSearch {
 
@@ -80,8 +82,12 @@ public class BoundedBranchSearch extends AbstractSearch {
         return closedList.size() ;
     }
 
-    public void dumpStats() {
+    public ArrayList getOpenListByDepth() {
+        return openListByDepth;
+    }
 
+    public ArrayList getClosedList() {
+        return closedList;
     }
 
     public void dump() {
