@@ -21,9 +21,6 @@
   * </copyright>
   *
   */
-//	Revision 1.2 by hgupta 06/24/04
-//  Revision 1.1 by hgupta 03/22/04
-//  Revision 1.0 by hgupta: Initial Revision
 
 package org.cougaar.tools.alf.predictor.plugin;
 
@@ -33,11 +30,7 @@ import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.service.*;
 
 import org.cougaar.glm.ldm.Constants;
-import org.cougaar.glm.ldm.plan.AlpineAspectType;
-
 import org.cougaar.planning.ldm.asset.Asset;
-import org.cougaar.planning.ldm.measure.CountRate;
-import org.cougaar.planning.ldm.measure.FlowRate;
 import org.cougaar.planning.ldm.plan.*;
 
 import org.cougaar.util.UnaryPredicate;
@@ -112,7 +105,6 @@ public class PredictorDataPlugin extends ComponentPlugin {
 		taskSubscription = (IncrementalSubscription) myBlackBoardService.subscribe(taskPredicate);
 		myUIDService = (UIDService) getBindingSite().getServiceBroker().getService(this,
 						UIDService.class, null);
-		//Condition check to see if rehydration occured, and if it did retrieve objects from blackboard
 		if (myBlackBoardService.didRehydrate() == false) myBlackBoardService.setShouldBePersisted(false);
 		else {
 			rehydrate_flag = true;
@@ -151,7 +143,6 @@ public class PredictorDataPlugin extends ComponentPlugin {
 					count_alarm = 0;
 				} else if (phm.size()!= 0) {
 					count_alarm = 1;
-					System.out.println("phmRehydrated");
 					if (alarm!= null) alarm.cancel();
 				}
 			}
@@ -191,7 +182,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 					if (org_name!= null && role!= null) {
 						tick++;
 						role = stringRevManipulation(role);
-						myLoggingService.shout("Supplier : " + cluster + "| Customer: " + org_name + "| SupplyClass "+role);
+						myLoggingService.debug("Supplier : " + cluster + "| Customer: " + org_name + "| SupplyClass "+role);
 						phm.addHashMap(org_name, role);
 						if(tick == 1) phm.setUID(myUIDService.nextUID());
 					}
@@ -201,137 +192,32 @@ public class PredictorDataPlugin extends ComponentPlugin {
 	}
 
 	public void getPlannedDemand() {
-		long startT = currentTimeMillis();
-		myLoggingService.debug("getPlannedDemand() method start time " +  new Date(startT));
 		Task task;
-		HashMap hashmap;
-		//boolean fireAlarm = true;
-		int task_counter = 0;
-		if(phm.getMap()!= null || !phm.getMap().isEmpty()) hashmap = phm.getMap();	else return;
-
-		for (Enumeration e = taskSubscription.getChangedList(); e.hasMoreElements();) {
-			task = (Task) e.nextElement();
-			if(task.getVerb().equals("Supply")) {
-			System.out.println("PlanningModeChangedList "+" UID "+task.getUID()+" ParentTaskUID "
-										+task.getParentTaskUID()+" "+task.getPreferredValue(AspectType.QUANTITY)+" "+
-														new Date((long)(task.getPreferredValue(AspectType.END_TIME)))
-			+" "+task.getDirectObject().getTypeIdentificationPG().getTypeIdentification());
-			}
-		}
-
-		for (Enumeration e = taskSubscription.getRemovedList(); e.hasMoreElements();) {
-			task = (Task) e.nextElement();
-			if(task.getVerb().equals("Supply")) {
-			System.out.println("PlanningModeRemovedList "+" UID "+task.getUID()+" ParentTaskUID "
-										+task.getParentTaskUID()+" "+task.getPreferredValue(AspectType.QUANTITY)+" "+
-														new Date((long)(task.getPreferredValue(AspectType.END_TIME)))
-			+" "+task.getDirectObject().getTypeIdentificationPG().getTypeIdentification());
-			}
-		}
-
-		for (Iterator e = taskSubscription.getCollection().iterator(); e.hasNext();) {
-			task = (Task) e.next();
-			if(task.getVerb().equals("Supply")) {
-			System.out.println("PlanningModeWholeCollectionList "+" UID "+task.getUID()+" ParentTaskUID "
-										+task.getParentTaskUID()+" "+task.getPreferredValue(AspectType.QUANTITY)+" "+
-														new Date((long)(task.getPreferredValue(AspectType.END_TIME)))
-							+" "+task.getDirectObject().getTypeIdentificationPG().getTypeIdentification());
-			}
-		}
-
+		//if(phm.getMap()!= null || !phm.getMap().isEmpty()) HashMap hashmap = phm.getMap();	else return;
 		for (Enumeration e = taskSubscription.getAddedList(); e.hasMoreElements();) {
 			task = (Task) e.nextElement();
-			task_counter++;
-
-			//fireAlarm = false;
 			String owner = task.getPrepositionalPhrase("For").getIndirectObject().toString();
 			String comp = (String) task.getPrepositionalPhrase("OfType").getIndirectObject();
-			if (comp!= null) {
+			if (comp!= null && owner!= null) {
 				if (alarm != null) alarm.cancel();
           alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
           as.addAlarm(alarm);
 					taskList.add(task);
-					if(task.getVerb().equals("Supply")) {
-					System.out.println("PlanningModeAddedList "+" UID "+task.getUID()+" ParentTaskUID "
-												+task.getParentTaskUID()+" "+task.getPreferredValue(AspectType.QUANTITY)+" "+
-																new Date((long)(task.getPreferredValue(AspectType.END_TIME)))
-									+" "+task.getDirectObject().getTypeIdentificationPG().getTypeIdentification());
-					}
-				/*	Asset as = task.getDirectObject();
-					//String item_name = as.getTypeIdentificationPG().getNomenclature();
-					String item_name = as.getTypeIdentificationPG().getTypeIdentification();
-					CustomerRoleKey crk = new CustomerRoleKey(owner, comp);
-					HashMap inner_hashmap = (HashMap) hashmap.get(crk);
-					ArrayList valuesList = (ArrayList)inner_hashmap.get(item_name);
-				//	if(task.getVerb().equals("ProjectSupply")) {
-					long sTime = (long) task.getPreferredValue(AspectType.START_TIME);
-					long zTime = (long) task.getPreferredValue(AspectType.END_TIME);
-
-					for (long incTime = sTime; incTime <= zTime; incTime = incTime + 86400000) {
-						double rate = 0.0;
-						if (comp.compareToIgnoreCase("BulkPOL") == 0) {
-							AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
-							FlowRate flowrate = (FlowRate) aspectrate.rateValue();
-							rate = (flowrate.getGallonsPerDay());
-						}
-						else {
-							AspectRate aspectrate = (AspectRate) task.getPreference(AlpineAspectType.DEMANDRATE).getScoringFunction().getBest().getAspectValue();
-							CountRate flowrate = (CountRate) aspectrate.rateValue();
-							rate = (flowrate.getUnitsPerDay());
-						}
-							Values new_value = new Values(incTime, rate, as);
-							if(valuesList!= null) valuesList.add(new_value);
-							else
-							{
-								valuesList = new ArrayList();
-								valuesList.add(new_value);
-								inner_hashmap.put(item_name, valuesList);
-							}
-						}*/
-					//}
-					/*else {
-						long endTime = (long) (task.getPreferredValue(AspectType.END_TIME));
-						double quantity = task.getPreferredValue(AspectType.QUANTITY);
-						Values new_value = new Values(endTime, quantity, as);
-							if(valuesList!= null) valuesList.add(new_value);
-							else
-							{
-								valuesList = new ArrayList();
-								valuesList.add(new_value);
-								inner_hashmap.put(item_name, valuesList);
-							}
-						}*/
 				}
 			}
-		/*if(!fireAlarm) {
-			if (alarm != null) alarm.cancel();
-			alarm = new TriggerFlushAlarm(currentTimeMillis() + 60000);
-			as.addAlarm(alarm);
-		}*/
-			long end = currentTimeMillis();
-			myLoggingService.debug("getPlannedDemand() method end time " +  new Date(end)
-		 	+ " in milliseconds" + (end - startT)+" Task Count "+task_counter);
-
 	}
 
 	public void executeAlarm() {
-		long startT = currentTimeMillis();
-		myLoggingService.shout("executeAlarm() method start time " +  new Date(startT));
 		HashMap processedMap = null;
 		myBlackBoardService.publishAdd(phm);
-		//phm.setUID(myUIDService.nextUID());
 		HashMap hashmap = phm.getMap();
-		ProcessHashData phd = new ProcessHashData(cluster, hashmap, taskList); //cluster added new
+		ProcessHashData phd = new ProcessHashData(cluster, hashmap, taskList);
 		if (phd!= null) processedMap = phd.iterateList();
 			if (processedMap!= null) {
-				myLoggingService.shout("DemandModelPublished "+processedMap.size());
-				myBlackBoardService.publishChange(phm);
-				modelsPublished = true;
-				if(alarm!= null) alarm.cancel();
+					myBlackBoardService.publishChange(phm);
+					modelsPublished = true;
+					if(alarm!= null) alarm.cancel();
 			}
-		long end = System.currentTimeMillis();
-			myLoggingService.shout("executeAlarm() method end time " +  new Date(end)
-		 	+ " in milliseconds" + (end - startT));
 	}
 
 
@@ -352,8 +238,7 @@ public class PredictorDataPlugin extends ComponentPlugin {
 		} else return flag;
 	}
 
-	/* Converts the role string into Supply Class string
-	*/
+	/* Converts the role string into Supply Class string */
 	public String stringRevManipulation(String s_class) {
 
 		final String ammo = "Ammunition";
@@ -363,13 +248,9 @@ public class PredictorDataPlugin extends ComponentPlugin {
 		final String consumable = "Consumable";
 
 		if (s_class.equalsIgnoreCase("AmmunitionCustomer")) return ammo;
-
 		if (s_class.equalsIgnoreCase("SubsistenceSupplyCustomer")) return subs;
-
 		if (s_class.equalsIgnoreCase("PackagedPolSupplyCustomer")) return packpol;
-
 		if (s_class.equalsIgnoreCase("FuelSupplyCustomer")) return bulkpol;
-
 		if (s_class.equalsIgnoreCase("SparePartsCustomer")) return consumable;
 
 		return null;

@@ -32,10 +32,7 @@ public class PredictorHashMap implements java.io.Serializable {
 	private UID uid;
 	public HashMap hashmap = new HashMap();
 
-	/* Method to add hashmap containing each unique (customer and supply class) for a given supplier
-	 * The hashmap contained in the static hashmap would be filled with items as keys and
-	 * the values would be Array of end time and quantity
-	 */
+	/* Method to add hashmap containing each unique (customer and supply class) for a given supplier */
 	public void addHashMap(String customer, String supply_class) {
 		CustomerRoleKey crk = new CustomerRoleKey(customer, supply_class);
 		if(!hashmap.containsKey(crk)) hashmap.put(crk, new HashMap());

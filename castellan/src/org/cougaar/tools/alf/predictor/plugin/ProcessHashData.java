@@ -83,8 +83,6 @@ public class ProcessHashData {
 									if(value.getEndTime()== incTime) {
 										double newQuantity = (value.getQuantity() + rate)/2;
 										value.setQuantity(newQuantity);
-										System.out.println("NewProjectSupplyQuantitySet "+new Date(incTime)+" "+newQuantity+
-														" "+owner+" "+comp+" "+item_name);
 										foundEndTime = true;
 									}
 								}
@@ -112,8 +110,6 @@ public class ProcessHashData {
 									if(value.getEndTime()== endTime) {
 										double newQuantity = (value.getQuantity() + quantity)/2;
 										value.setQuantity(newQuantity);
-										System.out.println("NewSupplyQuantitySet "+new Date(endTime)+" "+newQuantity+
-														" "+owner+" "+comp+" "+item_name);
 										foundEndTime = true;
 									}
 								}
@@ -143,21 +139,17 @@ public class ProcessHashData {
 				String item_name = (String)iter.next();
 				ArrayList valuesList = (ArrayList)inner_hashmap.get(item_name);
 				demandPerDay(valuesList);
-				String formattedName = formatItemName(item_name, crk.getCustomerName(), crk.getRoleName());
-				printList(formattedName, valuesList);
+				//String formattedName = formatItemName(item_name, crk.getCustomerName(), crk.getRoleName());
+				//printList(formattedName, valuesList);
 			}
 		}
 		return hashmap;
 	}
 
   public void endTimeSort(Collection values) {
-    //long start = System.currentTimeMillis();
-    //System.out.println(" SORT start of for loop in sort function " +  new Date(start));
-
 		ArrayList result;
 		if(values instanceof ArrayList) result = (ArrayList)values;
  		else result = new ArrayList(values);
-
     Collections.sort(result, new Comparator () {
       public int compare (Object a, Object b) {
           Values v1 = (Values)a;
@@ -168,11 +160,6 @@ public class ProcessHashData {
         if (time1 > time2) return +1;
         return 0;
       }});
-
-    //long end = System.currentTimeMillis();
-    //System.out.println("SORT End of for loop in sort function " +  new Date(end)
-                       //+ " total time to sort in milliseconds" +
-                       //(end - start));
   }
 
 	private void demandPerDay(ArrayList timeQtyValues) {
