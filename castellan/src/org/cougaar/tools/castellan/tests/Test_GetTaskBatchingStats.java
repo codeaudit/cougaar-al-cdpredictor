@@ -171,7 +171,7 @@ public class Test_GetTaskBatchingStats {
            String dbPath = "jdbc:mysql://localhost/";
            System.out.println( " USING: " + dbPath );
            String databaseName = "PlanLogAgent";
-           System.out.println( " USING: " + dbPath );
+           System.out.println( " USING: " + databaseName );
         // Access the database
         props.put( "user", userName ) ;
         props.put( "password", userPassword ) ;
