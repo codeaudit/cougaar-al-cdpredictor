@@ -50,9 +50,9 @@ public class TimeSeries {
 		 try {
            PdStatement.executeQuery("USE " + DatabaseName);
         } catch (SQLException E) {
-        	System.out.println("SQLException: " + E.getMessage());
-            System.out.println("SQLState:     " + E.getSQLState());
-            System.out.println("VendorError:  " + E.getErrorCode());
+//        	System.out.println("SQLException: " + E.getMessage());
+//          System.out.println("SQLState:     " + E.getSQLState());
+//          System.out.println("VendorError:  " + E.getErrorCode());
         }
 
 //		System.out.println("Find the start time of planning");
@@ -65,9 +65,9 @@ public class TimeSeries {
 //			System.out.println("start_time = " + start_time);
 
         } catch (SQLException E) {
-        	System.out.println("SQLException: " + E.getMessage());
-            System.out.println("SQLState:     " + E.getSQLState());
-            System.out.println("VendorError:  " + E.getErrorCode());
+//        	System.out.println("SQLException: " + E.getMessage());
+//          System.out.println("SQLState:     " + E.getSQLState());
+//          System.out.println("VendorError:  " + E.getErrorCode());
         }
 	}
 	
@@ -87,7 +87,7 @@ public class TimeSeries {
 
 		String table1 = "task_generation";
 		String table2 = "tt";
-		String specify_cluster = " and source = '"+ cluster + "' ";
+//		String specify_cluster = " and source = '"+ cluster + "' ";
 		long starttime = 0;
 		float [][] TimeSeries = null;
 
@@ -242,7 +242,7 @@ public class TimeSeries {
 
 		String table1 = "task_generation";
 		String table2 = "tt";
-		String specify_cluster = " and source = '"+ cluster + "' ";
+//		String specify_cluster = " and source = '"+ cluster + "' ";
 		long starttime = 0;
 		float [][] TimeSeries = null;
 
@@ -392,10 +392,10 @@ public class TimeSeries {
 					} 
 				}
 		} catch (SQLException E) {
-		  System.out.println("checkAndDelete");
-          System.out.println("SQLException: " + E.getMessage());
-          System.out.println("SQLState:     " + E.getSQLState());
-          System.out.println("VendorError:  " + E.getErrorCode());
+//		  System.out.println("checkAndDelete");
+//          System.out.println("SQLException: " + E.getMessage());
+//          System.out.println("SQLState:     " + E.getSQLState());
+//          System.out.println("VendorError:  " + E.getErrorCode());
         }
 	}
 
@@ -494,7 +494,7 @@ public class TimeSeries {
 
 
 ////////////
-			int z = 0;
+//			int z = 0;
 			for (Enumeration e = tasklist.keys() ; e.hasMoreElements() ;) {
 				 String k = (String) e.nextElement();
 			     task tt = (task) tasklist.get(k);
@@ -574,9 +574,9 @@ public class TimeSeries {
 			} while(ct < me);
 			
 		} catch (SQLException E) {
-          System.out.println("SQLException: " + E.getMessage());
-          System.out.println("SQLState:     " + E.getSQLState());
-          System.out.println("VendorError:  " + E.getErrorCode());
+//          System.out.println("SQLException: " + E.getMessage());
+//          System.out.println("SQLState:     " + E.getSQLState());
+//          System.out.println("VendorError:  " + E.getErrorCode());
         }
 
 		return TimeSeries;
@@ -938,9 +938,9 @@ public class TimeSeries {
 			} while(ct < me);
 			
 		} catch (SQLException E) {
-          System.out.println("SQLException: " + E.getMessage());
-          System.out.println("SQLState:     " + E.getSQLState());
-          System.out.println("VendorError:  " + E.getErrorCode());
+//          System.out.println("SQLException: " + E.getMessage());
+//          System.out.println("SQLState:     " + E.getSQLState());
+//          System.out.println("VendorError:  " + E.getErrorCode());
         }
 
 		return TimeSeries;
@@ -1254,8 +1254,8 @@ public class TimeSeries {
       Class.forName("org.gjt.mm.mysql.Driver");
 
     } catch(java.lang.ClassNotFoundException e) {
-      System.err.print("(EstablishConnetction) ClassNotFoundException:");
-      System.err.println(e.getMessage());
+//      System.err.print("(EstablishConnetction) ClassNotFoundException:");
+//      System.err.println(e.getMessage());
     }
 
 //    String dbPath = ServerApp.instance().getDbPath() ;
@@ -1263,7 +1263,7 @@ public class TimeSeries {
 	String dbPath = "jdbc:mysql://localhost/?user=ultralog";
 
     if ( dbPath == null ) {
-        System.out.println( "dbPath variable not set. Could not establish connection to database." );
+//        System.out.println( "dbPath variable not set. Could not establish connection to database." );
         return ;
     }
 
@@ -1277,10 +1277,10 @@ public class TimeSeries {
      
     } catch(SQLException ex) {
 
-      System.err.println("(EstablishConnetction) -----SQLException-----");
-      System.err.println("SQLState:  " + ex.getSQLState());
-      System.err.println("Message:  " + ex.getMessage());
-      System.err.println("Vendor:  " + ex.getErrorCode());
+//      System.err.println("(EstablishConnetction) -----SQLException-----");
+//      System.err.println("SQLState:  " + ex.getSQLState());
+//      System.err.println("Message:  " + ex.getMessage());
+//      System.err.println("Vendor:  " + ex.getErrorCode());
     } 
 
   }

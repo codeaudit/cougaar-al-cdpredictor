@@ -1,24 +1,9 @@
 package org.cougaar.tools.alf.sensor.plugin;
 
-import org.cougaar.core.adaptivity.InterAgentCondition;
-import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
-import org.cougaar.core.blackboard.IncrementalSubscription;
-import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.service.*;
-import org.cougaar.core.util.UID;
-import org.cougaar.glm.ldm.Constants;
-import org.cougaar.logistics.plugin.inventory.TaskUtils;
-import org.cougaar.planning.ldm.PlanningFactory;
-import org.cougaar.planning.ldm.asset.Asset;
-import org.cougaar.planning.ldm.plan.*;
-import org.cougaar.planning.service.LDMService;
 import org.cougaar.util.ConfigFinder;
-import org.cougaar.util.UnaryPredicate;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.PrintWriter;
 import java.util.*;
 
 /** 
@@ -33,15 +18,11 @@ public class SVMPredictor extends Predictor {
 
 	// All the demand will be managed by this manager
 	public SVMPredictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder,PredictorPlugin predictorPlugin) {	
-//	public SVMPredictor(String cluster,LoggingService myLoggingService,ConfigFinder configfinder,PSUPredictorPlugin predictorPlugin) {	
 		super(cluster,myLoggingService,configfinder,predictorPlugin);
 		svmResult = read_SVM_Model(configfinder);
 		openLoggingFile("svm");
 	}
 
-	// in this function, most appropriate one might be chosen. this will be called once just after communication loss. 
-	// This is regularly called by plugin for the purpose of test. 
-	// this is a future work.
 	public void updateEsimationOfPredictorParameters() {
 
 	}
@@ -82,18 +63,16 @@ public class SVMPredictor extends Predictor {
 						continue;
 					}
 
-					// assuming comm loss day is yester day.
-					long timeWidnow = 3;
-					myLoggingService.shout("SVM : "+demandHistoryForAnItem.getName());
+//					myLoggingService.shout("SVM : "+demandHistoryForAnItem.getName());
 
 					int timeLag = 3;
 			    
 					double pastRecord[] = demandHistoryForAnItem.getHistoryOf(timeLag);
 			    
 					// for test purpose
-					for (int k=0;k<timeLag;k++)	{
-						myLoggingService.shout("SVM : pastRecord["+k+"]="+pastRecord[k]);
-					}
+//					for (int k=0;k<timeLag;k++)	{
+//						myLoggingService.shout("SVM : pastRecord["+k+"]="+pastRecord[k]);
+//					}
 					//
 			    
 					double expectedDemand = 0;
@@ -124,18 +103,6 @@ public class SVMPredictor extends Predictor {
 						myLoggingService.shout("[HONG]averagePast : "+expectedDemand+","+expectedNextEndTime+","+demandHistoryForAnItem.getName());	
 
 					}
-
-/*					this is for the case in which actual comm loss happens and time continous progress
-					
-					if (((today + leadTime - maxEndTimeInHistory)%averageInterval)== 0)	{
-						write(customer.getName()+"\t"+demandHistoryForAnItem.getOfType()+"\t"+demandHistoryForAnItem.getName()+"\t"+today+"\t"+expectedNextEndTime+"\t"+expectedDemand+"\n");						
-					} 
-					//else {
-					//	// print out zero.
-					//	write(customer.getName()+"\t"+demandHistoryForAnItem.getOfType()+"\t"+demandHistoryForAnItem.getName()+"\t"+today+"\t"+expectedNextEndTime+"\t"+expectedDemand+"\n");						
-					//}
-*/
-
 
 				}
 			}

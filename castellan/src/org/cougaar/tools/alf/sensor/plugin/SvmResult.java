@@ -83,7 +83,7 @@ public class SvmResult implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't read model file, io error" );
+//		    System.err.println ("can't read model file, io error" );
 	    }
 	}
 
@@ -116,7 +116,7 @@ public class SvmResult implements java.io.Serializable {
 		}
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't read param file, io error" );
+//		    System.err.println ("can't read param file, io error" );
 	    }
 	}
 
@@ -152,8 +152,8 @@ public class SvmResult implements java.io.Serializable {
 				}
 				count++;
 
-				for (int i=0;i<dim;i++)		{	System.out.print(xx[i]+" ");	}
-				System.out.print("\n");
+//				for (int i=0;i<dim;i++)		{	System.out.print(xx[i]+" ");	}
+//				System.out.print("\n");
 
 				yyy = f(xx);				
 				System.out.println("yyy="+yyy);

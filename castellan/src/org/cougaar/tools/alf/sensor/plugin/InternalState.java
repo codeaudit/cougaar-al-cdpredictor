@@ -7,10 +7,7 @@ import org.cougaar.core.adaptivity.SensorCondition;
 import org.cougaar.core.adaptivity.OMCRangeList;
 import org.cougaar.core.util.UID;
 import org.cougaar.core.util.UniqueObject;
-//import org.cougaar.core.util.XMLize; //Changed by Himanshu
-//import org.cougaar.core.util.XMLizable; //Changed by Himanshu
 import org.cougaar.planning.servlet.XMLize; //Added by Himanshu
-
 import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Collection;
@@ -29,11 +26,6 @@ public class InternalState implements java.io.Serializable, UniqueObject //, XML
 	public  Collection alCommunities = null;
 	public  boolean rehydrate;
 
-//	public  long unittime;								// waiting time method
-//	public  long timelimit;								// waiting time method
-//	public	int NoFinish;								// waiting time method
-//	public	long CTFinish;  // Cumulative waiting time;	// waiting time method
-
 	public InternalState(long ut, long timelimit1, UID uid) {
 
 		nextcheckpoint = 0;
@@ -44,10 +36,6 @@ public class InternalState implements java.io.Serializable, UniqueObject //, XML
 		NoTasks = 0;				
 		Correction = 0;
 		rehydrate = false;
-//		unittime = ut;  // 1 sec	// waiting time method
-//		NoFinish = 0;				// waiting time method
-//		CTFinish = 0;				// waiting time method
-//		timelimit = timelimit1;		// waiting time method
 
 		setUID(uid);
 	}

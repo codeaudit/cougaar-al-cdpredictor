@@ -5,7 +5,6 @@ import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.util.UID;
 import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
-import org.cougaar.core.service.community.CommunityService;
 import org.cougaar.core.service.*;
 import org.cougaar.util.*;
 import org.cougaar.multicast.AttributeBasedAddress;
@@ -59,15 +58,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 					if (verb.equals("Supply")||verb.equals("ProjectSupply"))
 					{
-//						PrepositionalPhrase pp = null;
-//						if ((pp = tempTask.getPrepositionalPhrase("OfType"))!=null)
-//						{
-//							String s = (String) pp.getIndirectObject();
-//							if (s.equalsIgnoreCase("BulkPOL")||s.equalsIgnoreCase("Ammunition"))
-//							{
-								return true;
-//							} 
-//						}
+						return true;
 					}
 				}
 				return false; 	
@@ -84,30 +75,13 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 					
 					if (verb.equals("Supply")||verb.equals("ProjectSupply"))
 					{
-//						PrepositionalPhrase pp = null;
-//						if ((pp = tempTask.getPrepositionalPhrase("OfType"))!=null)
-//						{
-//							String s = (String) pp.getIndirectObject();
-//
-//							if (s.equalsIgnoreCase("BulkPOL")||s.equalsIgnoreCase("Ammunition"))
-//							{
-								return true;
-//							} 
-//						}
+						return true;
 					}
 				}
 				return false; 	
 			} 
 		};
 
-    /** Selects the LogisticsOPlan objects   **/
-/*
-	private static class LogisticsOPlanPredicate implements UnaryPredicate {
-      public boolean execute(Object o) {
-        return o instanceof LogisticsOPlan;
-      }
-    }
-*/
     /**  Passes Inventory assets that have a valid LogisticsInventoryPG   **/
     private static class InventoryPredicate implements UnaryPredicate {
       String supplyType;
@@ -122,9 +96,6 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
           LogisticsInventoryPG logInvpg = (LogisticsInventoryPG) inv.searchForPropertyGroup(LogisticsInventoryPG.class);
           if (logInvpg != null) {
             String type = getAssetType(logInvpg);
-
-			// 
-//			System.out.println("type = " + type);
 
 			if (supplyType.equals(type)) {
               return true;
@@ -160,17 +131,11 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
         public boolean execute(Object o) {
           if (o instanceof org.cougaar.logistics.plugin.inventory.InventoryPolicy) {
             String type = ((InventoryPolicy) o).getResourceType();
-//			System.out.println("type = " + type);
+
             if (type.equals(this.type)) {
-//              if (logger.isInfoEnabled()) {
-//                logger.info("Found an inventory policy for " + this.type + "agent is: " + getMyOrganization());
-//              }
               return true;
-            } else {
-//              if (logger.isDebugEnabled()) {
-//                logger.debug("Ignoring type of: " + type + " in " + getMyOrganization() + " this type is: " + this.type);
-//              }
-            }
+            } 
+
           }
           return false;
         }
@@ -206,8 +171,6 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 		planelementSubscription     = (IncrementalSubscription) bs.subscribe(pePredicate);
 
 	    inventoryPolicySubscription = (IncrementalSubscription) bs.subscribe(new InventoryPolicyPredicate("Ammunition"));
-//		logisticsOPlanSubscription	= (IncrementalSubscription) bs.subscribe(new LogisticsOPlanPredicate());
-//	    inventorySubscription		= (IncrementalSubscription) bs.subscribe(new InventoryPredicate("Ammunition"));
 
 		String dir = System.getProperty("org.cougaar.workspace");
 		
@@ -217,16 +180,11 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 		{
 			rst = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster + forName +".dump.txt", true ));
 			rstInv = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster + forName +"Inv.txt", true ));
-//			rstTask = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster+System.currentTimeMillis()+".t", true ));
-//			rstPE = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster+System.currentTimeMillis()+".p", true ));
 		}
 		catch (java.io.IOException ioexc)
 	    {
-		    System.err.println ("can't write data collecting file, io error" );
+		    myLoggingService.shout("can't write data collecting file, io error" );
 	    }						
-
-		myLoggingService.shout("DemandDataCollectingPlugin start at " + cluster); 
-		bs.setShouldBePersisted(false);
 
     }
 	
@@ -234,11 +192,8 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
     {
 		if (!isOutputFileOn())	{		return;		}
 
-        Iterator iter;
-
-//		long nowTime = (currentTimeMillis()/ 86400000) - baseTime; // long nowTime = System.currentTimeMillis()-offsetTime;
 		long nowTime = currentTimeMillis();
-//		long nowTime = currentTimeMillis()/ 86400000; // long nowTime = System.currentTimeMillis()-offsetTime;
+
 		checkTaskSubscription(nowTime/86400000, taskSubscription);
 		checkPeSubscription(nowTime/86400000, planelementSubscription);
 
@@ -252,7 +207,6 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 			printInventory(c.size(), c.iterator(), "added",nowTime);
 		}
 
-//		checkInventorySubscription(nowTime, inventorySubscription);
     }
 
 	private void checkInventorySubscription(long nowTime, IncrementalSubscription inventorySubscription)
@@ -277,11 +231,9 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				LogisticsInventoryPG logInvpg = (LogisticsInventoryPG) inv.searchForPropertyGroup(LogisticsInventoryPG.class);
 				
 				String type = "";
-				String outputStr ="";
-//				String outputStr2 ="";
 				String nomenclature ="";
 				String typeId ="";
-				Collection invLevelCollection = null;
+
 				Schedule invLevels = null;
 
 				if (logInvpg != null) {
@@ -290,36 +242,13 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				    if (a != null) {
 						SupplyClassPG pg = (SupplyClassPG)  a.searchForPropertyGroup(SupplyClassPG.class);
 						type = pg.getSupplyType();
-//						nomenclature = a.getItemIdentificationPG().getNomenclature();
 						typeId = a.getTypeIdentificationPG().getTypeIdentification();
 						nomenclature = a.getTypeIdentificationPG().getNomenclature(); 
 
 					}
 
 					invLevels = logInvpg.getBufferedInvLevels(); 
-//					invLevelCollection = invLevels.getScheduleElementsWithTime(nowTime);
-					
-//					for (Enumeration en = invLevels.getAllScheduleElements() ; en.hasMoreElements() ;) {
-//				      QuantityScheduleElement invLevel = (QuantityScheduleElement) en.nextElement();
-//                    outputStr = outputStr + invLevel.getStartTime()+"\t"+invLevel.getEndTime()+"\t"+invLevel.getQuantity() + "\t";
-//					}
-/*
-					Iterator it = invLevelCollection.iterator();
-//
-                    while (it.hasNext()) {
-                      QuantityScheduleElement invLevel = (QuantityScheduleElement) it.next();
-                      outputStr = outputStr + invLevel.getQuantity() + "\t";
-                    }
-*/
-//					System.out.println("test 2 " + outputStr);
-/*
-					outputStr2 ="";
-					while (it2.hasNext()) {
-                      QuantityScheduleElement invLevel = (QuantityScheduleElement) it2.next();
-                      outputStr2 = outputStr2 + invLevel.getQuantity() + "\t";
-                    }
-					System.out.println("test 3" + outputStr2);
-*/
+
 				}
 		
 				try
@@ -327,24 +256,16 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 					for (Enumeration en = invLevels.getAllScheduleElements() ; en.hasMoreElements() ;) {
 				      QuantityScheduleElement invLevel = (QuantityScheduleElement) en.nextElement();
-//                      outputStr = outputStr + invLevel.getStartTime()+"\t"+invLevel.getEndTime()+"\t"+invLevel.getQuantity() + "\t";
-//					  rst.write("Inv"+nowTime/86400000 +"\t"+ checkingTime + "\t" + modifier + "\t" + type + "\t"+ nomenclature+ "\t" + typeId + "\t" 
-//									+invLevel.getStartTime()/86400000+"\t"+invLevel.getEndTime()/86400000+"\t"+invLevel.getQuantity() +"\n");
 
 					  rstInv.write(nowTime/86400000 +"\t"+ checkingTime + "\t" + modifier + "\t" + type + "\t"+ nomenclature+ "\t" + typeId + "\t" 
 									+invLevel.getStartTime()/86400000+"\t"+invLevel.getEndTime()/86400000+"\t"+invLevel.getQuantity() +"\n");
 					}
 
-//					rstInv.write(nowTime/86400000 +"\t"+ checkingTime+ "\t" + modifier + "\t" + type + "\t"+ nomenclature+ "\t" + typeId + "\t" +outputStr +"\n");
-//					rstInv.write("task\t"+refill+"\t"+oftype+"\t"+modifier+"\t"+nowTime+"\t"+ checkingTime+"\t"+ uid.toString()+"\t"+v.toString()
-//								 +"\t"+nomenclature+"\t"+qty+"\t"+rate+"\t"+start_time+"\t"+ end_time+"\t\t"+rarsuccess +"\t"+ rarConfidence
-//								 +"\t"+earsuccess+"\t"+ earConfidence+"\t"+ti.getUID().getOwner() +"\t"+ cluster+"\n");
 					rstInv.flush();
-//					rst.flush();
 				}
 				catch (java.io.IOException ioexc)
 				{
-					System.err.println ("can't write file, io error" );
+					myLoggingService.shout("can't write file, io error" );
 			    }					
 			} // for
 	}
@@ -383,7 +304,6 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 	{
 		if (!planelementSubscription.isEmpty())
 		{
-//			myLoggingService.shout("planelementSubscription is not Empty");
 			Collection c1 = planelementSubscription.getAddedCollection();
 			if (c1!=null)
 			{
@@ -471,8 +391,8 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 				Verb v = ti.getVerb();
 
-				double start_time=0, start_time2=0;
-				double end_time=0, end_time2=0;
+				double start_time=0;//, start_time2=0;
+				double end_time=0; //, end_time2=0;
 				double qty = 0, rate = 0, rarConfidence=-1,earConfidence=-1;
 				String rarsuccess=" ",earsuccess=" ";
 				double rarQuantity = 0;	long rarEndTime = 0;
@@ -482,11 +402,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				AllocationResult rar=null, ear=null;
 
 					start_time = (long) (ti.getPreferredValue(AspectType.START_TIME) / 86400000);
-//   					start_time2 = ti.getPreference(AspectType.START_TIME).getScoringFunction().getBest().getValue();
-	
-//					end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000) - baseTime;
 					end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000);
-//					end_time2 = ti.getPreference(AspectType.END_TIME).getScoringFunction().getBest().getValue();
 						
 					if (v.equals("Supply")||v.equals("ForecastDemand"))
 					{
@@ -513,16 +429,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 						{
 							if (rar.isSuccess())	{ rarsuccess = "success"; } else { rarsuccess = "fail";}
 							rarConfidence = rar.getConfidenceRating();
-/*							
-							AspectValue [] av = rar.getAspectValueResults();
-							int [] at = rar.getAspectTypes();
 
-							int s = av.length;
-							for (int k=0; k<s ; k++ )
-							{
-								System.out.println(av[k]+","+at[k]+","+rar.getAspectTypeFromArray(at[k])+","+rar.getAspectTypeFromArray(k));
-							}		
-*/
 							if ((pi instanceof Allocation) && v.equals("Supply"))
 							{
 								AspectValue avQ = rar.getAspectValue(AspectType.QUANTITY); 
@@ -557,7 +464,6 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 				try
 				{
-//					rst.write(typeOfPlanElement+","+refill+","+oftype+","+modifier+","+nowTime+","+ checkingTime+","+uid.toString() + ","+v.toString()+","+agentName+","+rarsuccess +","+ rarConfidence+","+ earsuccess +","+ earConfidence+"\n");
 					rst.write(typeOfPlanElement+"\t"+refill+"\t"+oftype+"\t"+modifier+"\t"+nowTime+"\t"+ checkingTime+"\t"+uid.toString() + "\t"
 								+ v.toString()+"\t"+nomenclature+"\t"+qty+"\t"+rate+"\t"+start_time+"\t"+end_time+"\t"+agentName+"\t"+rarsuccess +"\t"
 								+ rarConfidence +"\t"+ rarQuantity+"\t"+rarEndTime+"\t"+earsuccess +"\t"+ earConfidence+"\t"
@@ -566,7 +472,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				}
 				catch (java.io.IOException ioexc)
 				{
-					System.err.println ("can't write file, io error" );
+					myLoggingService.shout("can't write file, io error" );
 			    }					
 			} // for
 	}
@@ -605,8 +511,8 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 				Verb v = ti.getVerb();
 
-				long start_time=0, start_time2=0;
-				long end_time=0, end_time2=0;
+				long start_time=0;
+				long end_time=0; 
 				double qty = 0, rate = 0, rarConfidence=-1, earConfidence=-1;
 				String rarsuccess=" ",earsuccess=" ";
 				AllocationResult rar=null, ear=null;
@@ -614,13 +520,8 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				double earQuantity = 0;	long earEndTime = 0; long commitmentTime = 0;
 				String agentName = "";
 
-//				start_time = (long) (ti.getPreferredValue(AspectType.START_TIME) / 86400000) - baseTime;
 				start_time = (long) (ti.getPreferredValue(AspectType.START_TIME) / 86400000);
-//   			start_time2 = ti.getPreference(AspectType.START_TIME).getScoringFunction().getBest().getValue();
-	
-//				end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000) - baseTime;
 				end_time = (long) (ti.getPreferredValue(AspectType.END_TIME) / 86400000);
-//				end_time2 = ti.getPreference(AspectType.END_TIME).getScoringFunction().getBest().getValue();
 				
 				Date commitmentDate = ti.getCommitmentDate();
 
@@ -676,7 +577,6 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 						earConfidence = ear.getConfidenceRating();
 				
 							if ((planElement instanceof Allocation) && v.equals("Supply"))
-//							if (v.equals("Supply"))
 							{
 								AspectValue avQ = ear.getAspectValue(AspectType.QUANTITY); 
 								AspectValue avE = ear.getAspectValue(AspectType.END_TIME);
@@ -699,7 +599,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				}
 				catch (java.io.IOException ioexc)
 				{
-					System.err.println ("can't write file, io error" );
+					myLoggingService.shout("can't write file, io error" );
 			    }					
 			} // for
 	}
@@ -708,16 +608,12 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 		Collection c = getParameters();
 
-        Properties props = new Properties() ;
-        // Iterate through the parameters
-        int count = 0;
         for (Iterator iter = c.iterator() ; iter.hasNext() ;)
         {
             String s = (String) iter.next();
 			if (!s.equalsIgnoreCase("true"))	{
 				return false;
 			}
-//			break;
         }
 		return true;
 	}

@@ -8,27 +8,16 @@ import org.cougaar.core.agent.service.alarm.PeriodicAlarm;
 import org.cougaar.core.service.community.CommunityService;
 import org.cougaar.core.service.*;
 import org.cougaar.util.*;
-import org.cougaar.multicast.AttributeBasedAddress;
 import org.cougaar.planning.ldm.plan.*;
-import org.cougaar.glm.ldm.oplan.Oplan;
-import org.cougaar.planning.ldm.measure.FlowRate;
-import org.cougaar.planning.ldm.measure.CountRate;
-import org.cougaar.glm.ldm.plan.AlpineAspectType;
-import org.cougaar.glm.plugins.TimeUtils.*;
 import org.cougaar.tools.alf.sensor.*;
 import org.cougaar.planning.ldm.asset.Asset;
-import org.cougaar.logistics.plugin.inventory.MaintainedItem;
-import org.cougaar.glm.ldm.asset.Organization;
-import org.cougaar.glm.ldm.plan.QuantityScheduleElement;
 import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.glm.ldm.asset.Inventory;
 import org.cougaar.glm.ldm.asset.SupplyClassPG;
-import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.mts.SimpleMessageAddress;
 
 import org.cougaar.logistics.plugin.inventory.InventoryPolicy;
 import org.cougaar.logistics.plugin.inventory.LogisticsInventoryPG;
-import org.cougaar.glm.ldm.Constants;
 
 import java.util.*;
 import java.util.Iterator;
@@ -49,7 +38,6 @@ public class SupplierSideARPlugin extends ComponentPlugin
 
 	IncrementalSubscription taskSubscription;
 	IncrementalSubscription planelementSubscription;
-	IncrementalSubscription oPlanSubscription;
 	IncrementalSubscription inventorySubscription, relationSubscription;
 	IncrementalSubscription inventoryPolicySubscription;
 
@@ -94,14 +82,6 @@ public class SupplierSideARPlugin extends ComponentPlugin
     };
 
 
-    /** Selects the LogisticsOPlan objects   **/
-/*
-	private static class LogisticsOPlanPredicate implements UnaryPredicate {
-      public boolean execute(Object o) {
-        return o instanceof LogisticsOPlan;
-      }
-    }
-*/
     /**  Passes Inventory assets that have a valid LogisticsInventoryPG   **/
     private static class InventoryPredicate implements UnaryPredicate {
       String supplyType;
@@ -165,9 +145,6 @@ public class SupplierSideARPlugin extends ComponentPlugin
 	
 	double [] a;
 
-	// long baseTime = 13005; // August 10th 2005 
-
-	boolean oplan_is_not_detected = true;
 	boolean isPublishedBefore = false;
 
 	java.io.BufferedWriter rst = null, rstInv=null;
@@ -189,19 +166,6 @@ public class SupplierSideARPlugin extends ComponentPlugin
 	    inventoryPolicySubscription = (IncrementalSubscription) bs.subscribe(new InventoryPolicyPredicate("Ammunition"));
 		relationSubscription		= (IncrementalSubscription) bs.subscribe(relationPredicate);
 
-		String dir = System.getProperty("org.cougaar.workspace");
-		
-		long forName = System.currentTimeMillis()/300000;
-/*
-		try	{
-			rstInv = new java.io.BufferedWriter ( new java.io.FileWriter(dir+"/"+ cluster + forName +".inv.txt", true ));
-		}
-		catch (java.io.IOException ioexc)
-	    {
-		    System.err.println ("can't write data collecting file, io error" );
-	    }						
-*/
-
 		createIndex();
 
 		// build customer list
@@ -220,10 +184,8 @@ public class SupplierSideARPlugin extends ComponentPlugin
 	
 	Vector customers;
 
-	public void execute()
+    public void execute()
     {
-        Iterator iter;
-		
 		long nowTime = currentTimeMillis();
 
 		if (Rantime != (long) nowTime / 86400000)	{
@@ -261,8 +223,6 @@ public class SupplierSideARPlugin extends ComponentPlugin
 			boolean isChanged = false;
 			InventoryInfo invInfo = new InventoryInfo(30,cluster,nowTime);
 
-			long checkingTime = System.currentTimeMillis();
-
 			for (int i = 0; i < nInventories; i++) {
 				Inventory inv = (Inventory)inventortyIter.next();
 				LogisticsInventoryPG logInvpg = (LogisticsInventoryPG) inv.searchForPropertyGroup(LogisticsInventoryPG.class);
@@ -281,8 +241,6 @@ public class SupplierSideARPlugin extends ComponentPlugin
 
 				Asset a = logInvpg.getResource();
 				if (a != null) {
-					SupplyClassPG pg = (SupplyClassPG)  a.searchForPropertyGroup(SupplyClassPG.class);
-
 					nomenclature = a.getTypeIdentificationPG().getNomenclature(); 
 				}
 
@@ -291,30 +249,7 @@ public class SupplierSideARPlugin extends ComponentPlugin
 				}
 
 				invLevels = logInvpg.getBufferedInvLevels(); 
-/*		
-				try
-				{
 
-					for (Enumeration en = invLevels.getAllScheduleElements() ; en.hasMoreElements() ;) {
-				      QuantityScheduleElement invLevel = (QuantityScheduleElement) en.nextElement();
-					  if (invLevel.getStartTime()/86400000 == (long) nowTime/86400000)
-					  {
-							rstInv.write(nowTime/86400000 +"\t"+ checkingTime + "\t" + modifier + "\t" + nomenclature+ "\t"  
-									+invLevel.getStartTime()/86400000+"\t"+invLevel.getEndTime()/86400000+"\t"+invLevel.getQuantity() +"\n");
-							// for relay
-							invInfo.setInventoryLevel(getIndex(nomenclature),invLevel.getQuantity());
-							isChanged = true;
-							break;
-					  }
-					}
-
-					rstInv.flush();
-				}
-				catch (java.io.IOException ioexc)
-				{
-					System.err.println ("can't write file, io error" );
-			    }					
-*/
 			} // for
 		
 			if (isChanged)	{
