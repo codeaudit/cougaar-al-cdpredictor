@@ -23,6 +23,7 @@ package org.cougaar.cpe.agents.plugin;
 
 import org.cougaar.core.agent.service.alarm.Alarm;
 import org.cougaar.core.blackboard.IncrementalSubscription;
+import org.cougaar.core.blackboard.Subscription;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.plugin.ComponentPlugin;
@@ -49,6 +50,7 @@ import org.cougaar.cpe.relay.SourceBufferRelay;
 import org.cougaar.cpe.relay.TargetBufferRelay;
 import org.cougaar.tools.techspecs.qos.*;
 import org.cougaar.cpe.util.CPUConsumer;
+import org.cougaar.cpe.util.OMCMPManager;
 import org.cougaar.tools.techspecs.events.MessageEvent;
 import org.cougaar.tools.techspecs.events.TimerEvent;
 import org.xml.sax.SAXException;
@@ -111,8 +113,10 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
 	*/
 	private DelayMeasurementPoint ProcessPlanMP;
 	private	DelayMeasurementPoint ProcessUpdateMP;
+    private OMCMPManager omcMPManager;
+    private IncrementalSubscription mpSubscription;
 
-	protected void execute() {
+    protected void execute() {
 		System.out.print("E(" + getAgentIdentifier() + ")");
 		Collection c = myOrgsSubscription.getAddedCollection();
 		if (!c.isEmpty()) {
@@ -140,6 +144,8 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
 				}
 			}
 		}
+
+        omcMPManager.execute( perceivedWorldState == null ? 0 : perceivedWorldState.getTime() );
 
 		//
 		// Always execute the mt.
@@ -401,8 +407,10 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
 			}
 		} else if (msg instanceof PublishMPMessage) {
 			BundledMPMessage bmm = new BundledMPMessage();
-			bmm.addData(manueverPlanFreshnessMP);
-			bmm.addData(updateUnitStatusTimeMP);
+			for (Iterator iterator = mpSubscription.iterator(); iterator.hasNext();) {
+                MeasurementPoint mp = (MeasurementPoint) iterator.next();
+                bmm.addData( mp ) ;
+            }
 
 			// Write the configuration data file.
 			Collection params = getParameters();
@@ -690,14 +698,9 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
 		createMeasurementPoints();
 
 		// Create the OperatingModeCondition for the update period in seconds
-		statusUpdatePeriodOMC =
-			new OperatingModeCondition(
-				"WorldStateUpdatePeriod",
-				worldStateUpdateList);
-		statusUpdatePeriodOMC.setValue(new Integer(15000));
-		getBlackboardService().publishAdd(statusUpdatePeriodOMC);
+        createOperatingModes();
 
-		refToWorldState = new WorldStateReference("PerceivedWorldState", null);
+        refToWorldState = new WorldStateReference("PerceivedWorldState", null);
 		getBlackboardService().publishAdd(refToWorldState);
 
 		getConfigInfo();
@@ -712,7 +715,23 @@ public class UnitAgentPlugin extends ComponentPlugin implements MessageSink {
 		System.out.println("--------------------------------------------");
 	}
 
-	private void createMeasurementPoints() {
+    private void createOperatingModes() {
+        statusUpdatePeriodOMC =
+			new OperatingModeCondition(
+				"WorldStateUpdatePeriod",
+				worldStateUpdateList);
+        statusUpdatePeriodOMC.setValue(new Integer(15000));
+        getBlackboardService().publishAdd(statusUpdatePeriodOMC);
+    }
+
+    private void createMeasurementPoints() {
+        omcMPManager = new OMCMPManager( getBlackboardService() ) ;
+        mpSubscription = (IncrementalSubscription) getBlackboardService().subscribe( new UnaryPredicate() {
+            public boolean execute(Object o) {
+                return o instanceof MeasurementPoint ;
+            }
+        }) ;
+
 		// Create a DelayMeasurementPoint associated with the NewManueverPlanMessage
 		// This is the minimum time between when the CP agent takes the world
 		// state and sends it to the BN agent and
