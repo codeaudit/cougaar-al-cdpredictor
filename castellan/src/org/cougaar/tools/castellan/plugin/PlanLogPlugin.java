@@ -41,7 +41,6 @@ import org.cougaar.util.ConfigFinder;
 import org.cougaar.planning.ldm.plan.*;
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.tools.castellan.ldm.PlanLogConfig;
-import org.cougaar.tools.castellan.ldm.FlushObject;
 import org.cougaar.tools.castellan.util.MultiTreeSet;
 import org.cougaar.tools.castellan.util.Timestampable;
 import org.cougaar.tools.castellan.pdu.*;
@@ -61,6 +60,27 @@ import java.io.File;
 public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 
     class FlushThread extends Thread {
+
+        public long getInterval ()
+        {
+            return interval;
+        }
+
+        public void setInterval ( long interval )
+        {
+            this.interval = interval;
+        }
+
+        public boolean isStop ()
+        {
+            return stop;
+        }
+
+        public void setStop ( boolean stop )
+        {
+            this.stop = stop;
+        }
+
         public void run ()
         {
             while ( !stop ) {
@@ -68,6 +88,10 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
                    sleep( interval ) ;
                 }
                 catch ( InterruptedException e ) {
+                }
+
+                if ( stop ) {
+                    break ;
                 }
 
                 BlackboardService bs = getBlackboardService() ;
@@ -119,7 +143,6 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
             return was;
         }
 
-        FlushObject flushedObject ;
         boolean stop = false ;
         boolean expired = false ;
         long expTime ;
@@ -712,8 +735,9 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
         // Remove duplicates.
         map.clear();
         while ( iter.hasMoreElements() ) {
-            UniqueObject uo = ( UniqueObject ) iter.nextElement() ;
-            map.put( uo.getUID(), uo ) ;
+            processChangedObject( ( UniqueObject ) iter.nextElement() );
+            //UniqueObject uo = ( UniqueObject ) iter.nextElement() ;
+            //map.put( uo.getUID(), uo ) ;
         }
 
 //        for ( Iterator iter2 =map.values().iterator();iter2.hasNext();) {
@@ -725,9 +749,9 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
 //        }
 
         // Now, process the changed list.
-        for ( Iterator iter2=map.values().iterator();iter2.hasNext();) {
-            processChangedObject( ( UniqueObject ) iter2.next() );
-        }
+        //for ( Iterator iter2=map.values().iterator();iter2.hasNext();) {
+        //    processChangedObject( ( UniqueObject ) iter2.next() );
+        //}
     }
 
     public long getCurrentTime() {
@@ -741,13 +765,19 @@ public class PlanLogPlugin extends ComponentPlugin implements PDUSink {
     public void suspend ()
     {
         super.suspend();
-        ServiceBroker sb = getServiceBroker() ;
-        sb.releaseService( this, LoggingService.class, null );
     }
 
     public void unload ()
     {
         super.unload();
+
+        // Stop the thread
+        flushThread.setStop( true );
+        flushThread.interrupt();
+        flushThread = null ;
+
+        // Release the logging service.
+        getServiceBroker().releaseService( this,  LoggingService.class, log );
     }
 
     public void execute() {

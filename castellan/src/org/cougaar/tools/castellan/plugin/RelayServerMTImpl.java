@@ -93,45 +93,50 @@ public class RelayServerMTImpl implements ServerMessageTransport {
         for ( Iterator iter = relaySubscription.getChangedCollection().iterator(); iter.hasNext(); ) {
         // Take incoming messages from the buffer for each response.
             TargetBufferRelay buffer  = ( TargetBufferRelay ) iter.next() ;
-            synchronized ( buffer ) {
-                Object[] incoming = buffer.clearIncoming() ;
-                for ( int i=0;i<incoming.length;i++) {
-                    System.out.print("L+" );
-                    LogMessage lm = ( LogMessage ) incoming[i] ;
-                    if (lm instanceof WrappedPDUMessage) {
-                        WrappedPDUMessage wpm = (WrappedPDUMessage) lm;
-                        PDU pdu = wpm.getPDU();
-                        String sa = lm.getSourceAgent();
-                        if (sa != null) {
-                            sa = sa.intern();
-                        }
-                        pdu.setSource(sa);
-                        sink.processPDU(pdu);
+            flushIncomingBuffer( buffer );
+        }
+    }
+
+    private void flushIncomingBuffer ( TargetBufferRelay buffer )
+    {
+        synchronized ( buffer ) {
+            Object[] incoming = buffer.clearIncoming() ;
+            for ( int i=0;i<incoming.length;i++) {
+                System.out.print("L+" );
+                LogMessage lm = ( LogMessage ) incoming[i] ;
+                if (lm instanceof WrappedPDUMessage) {
+                    WrappedPDUMessage wpm = (WrappedPDUMessage) lm;
+                    PDU pdu = wpm.getPDU();
+                    String sa = lm.getSourceAgent();
+                    if (sa != null) {
+                        sa = sa.intern();
                     }
-                    else if (lm instanceof BatchMessage) {
-                        // Decompress each batch message.
-                        BatchMessage bm = ( BatchMessage ) lm ;
+                    pdu.setSource(sa);
+                    sink.processPDU(pdu);
+                }
+                else if (lm instanceof BatchMessage) {
+                    // Decompress each batch message.
+                    BatchMessage bm = ( BatchMessage ) lm ;
 
-                        try {
-                            ByteArrayInputStream bis = new ByteArrayInputStream( bm.getByteArray() ) ;
-                            ObjectInputStream ois = new ObjectInputStream( bis ) ;
-                            while ( bis.available() > 0 ) {
-                                Object o = ois.readObject() ;
+                    try {
+                        ByteArrayInputStream bis = new ByteArrayInputStream( bm.getByteArray() ) ;
+                        ObjectInputStream ois = new ObjectInputStream( bis ) ;
+                        while ( bis.available() > 0 ) {
+                            Object o = ois.readObject() ;
 
-                                if ( o instanceof PDU ) {
-                                    PDU p = ( PDU ) o ;
-                                    String sa = lm.getSourceAgent() ;
-                                    if ( sa != null ) {
-                                        sa.intern() ;
-                                    }
-                                    p.setSource( sa ) ;
-                                    sink.processPDU( p ) ;
+                            if ( o instanceof PDU ) {
+                                PDU p = ( PDU ) o ;
+                                String sa = lm.getSourceAgent() ;
+                                if ( sa != null ) {
+                                    sa.intern() ;
                                 }
+                                p.setSource( sa ) ;
+                                sink.processPDU( p ) ;
                             }
                         }
-                        catch ( Exception e ) {
-                            e.printStackTrace();
-                        }
+                    }
+                    catch ( Exception e ) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -164,6 +169,7 @@ public class RelayServerMTImpl implements ServerMessageTransport {
                     + " with no existing relay." ) ;
         }
 
+        // msg.setSourceAgent( sourceAgent );
         relay.addResponse( msg ) ;
         bs.publishChange( relay ) ;
     }
@@ -182,6 +188,9 @@ public class RelayServerMTImpl implements ServerMessageTransport {
     }
 
     public synchronized void flush() {
+        for (int i=0;i<buffers.size();i++) {
+            flushIncomingBuffer( ( TargetBufferRelay ) buffers.get(i) );
+        }
     }
 
     protected long lastAddTime = 0L;

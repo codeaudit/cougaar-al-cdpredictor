@@ -58,10 +58,7 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
     }
 
     public Object getContent() {
-        Object[] c = new Object[ outgoing.size() ] ;
-        for (int i=0;i<outgoing.size();i++) {
-            c[i] = outgoing.get(i) ;
-        }
+        Object[] c = outgoing.toArray() ;
         outgoing.clear();
         return c ;
     }
@@ -77,7 +74,7 @@ public class SourceBufferRelay implements Relay.Source, Serializable {
     /**
      * Get responses.
      */
-    public Object[] clearReponses() {
+    public synchronized Object[] clearReponses() {
         Object[] result = new Object[responses.size()];
         for (int i = 0 ; i < responses.size() ; i++) {
             result[i] = responses.get(i);

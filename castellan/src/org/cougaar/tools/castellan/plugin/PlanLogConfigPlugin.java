@@ -101,6 +101,16 @@ public class PlanLogConfigPlugin extends ComponentPlugin
 
 
     class TimerThread extends Thread {
+        public boolean isStop ()
+        {
+            return stop;
+        }
+
+        public void setStop ( boolean stop )
+        {
+            this.stop = stop;
+        }
+
         public void run()
         {
             while ( !stop ) {
@@ -109,19 +119,24 @@ public class PlanLogConfigPlugin extends ComponentPlugin
                 }
                 catch ( Exception e ) {
                 }
+
+                if ( stop ) {
+                    break ;
+                }
+
                 BlackboardService bs = getBlackboardService() ;
                 bs.openTransaction();
                 FlushObject fo = null ;
-                bs.publishAdd( fo = new FlushObject( currentTimeMillis() ) ) ;
-                if ( previousFlushedObject != null ) {
-                    bs.publishRemove( previousFlushedObject ) ;
+                if ( flushObject == null ) {
+                    bs.publishAdd( flushObject = new FlushObject( currentTimeMillis() ) ) ;
                 }
-                previousFlushedObject = fo ;
+                flushObject.setTime( System.currentTimeMillis() );
+                bs.publishChange( flushObject ) ;
                 bs.closeTransaction();
             }
         }
 
-        FlushObject previousFlushedObject ;
+        FlushObject flushObject ;
         boolean stop = false ;
     }
 
@@ -171,12 +186,14 @@ public class PlanLogConfigPlugin extends ComponentPlugin
         b.publishAdd( config ) ;
         
         // Disable batching
-        // Publish periodic flush messages to the LP
-        //Thread t = new TimerThread() ;
-        //t.start();
-        // Set up a timer to fire every 5 seconds.
+
         if ( config.isActive() ) {
-            getAlarmService().addRealTimeAlarm( new FlushAlarm( System.currentTimeMillis() + 5000 ) ) ;
+            // Publish periodic flush messages to the LP
+            Thread t = new TimerThread() ;
+            t.start();
+
+            // Alarms seem to be broken in 9.4.01.  Resort to old timer thread.
+            // getAlarmService().addRealTimeAlarm( new FlushAlarm( System.currentTimeMillis() + 5000 ) ) ;
         }
     }
 
@@ -302,5 +319,5 @@ public class PlanLogConfigPlugin extends ComponentPlugin
     protected transient LoggingService log ;
     protected PlanLogConfig config ;
 
-    protected long flushInterval = 7500L ;
+    protected long flushInterval = 4000L ;
 }
