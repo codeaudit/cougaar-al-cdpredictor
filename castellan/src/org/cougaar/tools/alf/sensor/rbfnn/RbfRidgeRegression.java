@@ -40,12 +40,13 @@ public class RbfRidgeRegression implements java.io.Serializable {
 		count_limit = 10;
 	}
 	
-	public void setParameters(int num_hidden1, double lamda1, double increment1, int count_limit1) {
+	public void setParameters(int num_hidden1, double lamda1, double increment1, int count_limit1, int dimension1) {
 
 		num_hidden = num_hidden1;
 		lamda = lamda1;
 		increment = increment1;
 		count_limit = count_limit1;
+		dimension = dimension1;
 
 	}
 
