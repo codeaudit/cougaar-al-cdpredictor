@@ -441,7 +441,7 @@ public class PredictorServlet extends BaseServletComponent implements Blackboard
   	protected void printResponse(PrintWriter out)
   	{
   		printHtmlBegin(out);
-  		out.println("<form method =\"get\" action=\"http://localhost:8800/$" + getAgentID() + getPath());
+  		out.println("<form method =\"get\" action=\"/$" + getAgentID() + getPath());
   		out.println("\">");
   		out.println("<tr>");
   		out.println("<td><B>TURN OFF PREDICTOR</td>");
