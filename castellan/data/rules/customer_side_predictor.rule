@@ -1,9 +1,9 @@
 ####################################################
 # Rule to insert Customer Side Predictor plugin
 
-predictor = "org.cougaar.tools.alf.sensor.plugin.ARPredictorPlugin"
+predictor = "org.cougaar.tools.alf.predictor.plugin.ARPredictorPlugin"
 arg="false"
-agentList = ["47-FSB"]
+agentList = ["47-FSB.DISCOM.1-AD.ARMY.MIL"]
 
 society.each_agent do |agent|
 	if (agentList.include?(agent.name))
