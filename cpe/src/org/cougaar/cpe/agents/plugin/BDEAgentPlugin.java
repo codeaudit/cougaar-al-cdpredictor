@@ -10,6 +10,7 @@ import org.cougaar.core.service.UIDService;
 import org.cougaar.cpe.agents.Constants;
 import org.cougaar.cpe.agents.messages.*;
 import org.cougaar.cpe.model.*;
+import org.cougaar.cpe.model.events.CPEEvent;
 import org.cougaar.cpe.planning.zplan.*;
 import org.cougaar.cpe.relay.GenericRelayMessageTransport;
 import org.cougaar.cpe.relay.MessageSink;
@@ -76,12 +77,22 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 	private long baseTime;
 
 	/**
-	* Measurement Points for the 2 classes of traffic dealt with in BDE 
-	*/
+	 * Measurement Points for the 2 classes of traffic dealt with in BDE
+	 */
 	private DelayMeasurementPoint BDEUpdateProcessMP;
 	private DelayMeasurementPoint zonePlanMP;
+    private HashMap bnAggUnitToMetricsMap = new HashMap();
+    private IncrementalSubscription mpSubscrption;
 
-	protected void setupSubscriptions() {
+    protected void setupSubscriptions() {
+        mpSubscrption = (IncrementalSubscription) getBlackboardService().subscribe(
+				new UnaryPredicate() {
+                    public boolean execute(Object o)
+                    {
+                        return o instanceof MeasurementPoint ;
+                    }
+        } ) ;
+
 		logger =
 			(LoggingService) getServiceBroker().getService(
 				this,
@@ -118,7 +129,9 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 				new FindOrgsPredicate());
 
 		publishOperatingModes();
+
 		makeMeasurementPoints();
+
 		getConfigInfo();
 	}
 
@@ -295,14 +308,15 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 					(Organization) subordinateCombatOrganizations.get(
 						event.getSource().getAddress());
 				if (org != null) {
+					//NG: NEED RT (update message)
 					processMessageFromSubordinate(event);
+					//System.out.println("PMFS called");
 				}
 			}
 		}
 	}
 
 	protected void processMessageFromSubordinate(MessageEvent message) {
-
 		if (message instanceof BNStatusUpdateMessage) {
 			//			TODO NG: NEED PBT (update message)
 			long startTime = System.currentTimeMillis();
@@ -311,7 +325,6 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 				wasOpen = false;
 				getBlackboardService().openTransaction();
 			}
-
 			BNStatusUpdateMessage wsum = (BNStatusUpdateMessage) message;
 
 			WorldStateModel statusReport = wsum.getWorldStateModel();
@@ -351,10 +364,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 			}
 
 			// TODO merge the target locations based on fidelity/error.
-			System.out.println("Merging status report " + statusReport);
-			mergeSensorValues(statusReport);
-
-			//long startTime = System.currentTimeMillis();
+            mergeSensorValues( statusReport ) ;
 
 			if (updateStatusNIU > 0) {
 				CPUConsumer.consumeCPUMemoryIntensive(updateStatusNIU);
@@ -491,6 +501,15 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 			Plan p = new Plan(t);
 			agg.setZonePlan(p);
 
+            MeasuredWorldMetrics mwm;
+            referenceZoneWorld.addEventListener( mwm = new MeasuredWorldMetrics( agg.getId(),
+                    referenceZoneWorld, 40000 ) );
+            bnAggUnitToMetricsMap.put( agg.getId(), mwm ) ;
+            getBlackboardService().publishAdd( mwm.getAttrition() ) ;
+            getBlackboardService().publishAdd( mwm.getEntryRate() ) ;
+            getBlackboardService().publishAdd( mwm.getKills() ) ;
+            getBlackboardService().publishAdd( mwm.getPenalties() ) ;
+
 			// Make configuration message and send it to the subordinate.
 			if (subordinateCombatOrganizations.get(agg.getId()) == null) {
 				logger.warn(
@@ -515,6 +534,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 				agg.setZonePlan(p);
 				agg.setCurrentZone(
 					referenceZoneWorld.getIntervalForZone(currentZone));
+                mwm.setZoneSchedule( p );
 
 				gmrt.sendMessage(
 					MessageAddress.getMessageAddress(agg.getId()),
@@ -613,7 +633,8 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 		// Now, find out what the current plans are and what the scheduled zones ought to be based on the current plans.
 		// Run the reference zone forward until matches the current base time.
 		// Update the location of the aggregate units.
-		//		TODO NG: NEED RT (zone plan)
+
+		//TODO NG: NEED RT (zone plan)
 		long startTime = System.currentTimeMillis();
 		boolean wasOpen = true;
 		if (!getBlackboardService().isTransactionOpen()) {
@@ -633,8 +654,10 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 					agg.setCurrentZone(z);
 				}
 			}
+
 		}
 
+		//TODO NG: NEED PBT (zone plan)
 		zonePlanner.plan(
 			referenceZoneWorld,
 			getPlanningDelay()
@@ -652,15 +675,19 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 			agg.setZonePlan(zonePlan);
 		}
 
-		// Notify any observers that we have changed.
-		getBlackboardService().publishChange(worldStateRef);
-
 		plans = zonePlanner.getPlans(true);
 
 		for (int i = 0; i < plans.length; i++) {
 			Object[] plan = plans[i];
 			String unitId = (String) plan[0];
 			Plan zonePlan = (Plan) plan[1];
+
+            // Update the measurements according to the zone schedule.
+            MeasuredWorldMetrics mw = (MeasuredWorldMetrics) bnAggUnitToMetricsMap.get( unitId );
+            if ( mw != null ) {
+               mw.setZoneSchedule( zonePlan );
+            }
+
 			Organization org =
 				(Organization) subordinateCombatOrganizations.get(unitId);
 			if (org != null) {
@@ -668,7 +695,7 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 				gmrt.sendMessage(org.getMessageAddress(), zsm);
 			}
 		}
-		//		TODO NG: NEED ET (zone plan)
+		//TODO NG: NEED ET (zone plan)
 		long endTime = System.currentTimeMillis();
 		// updateUnitStatusDelayMP.add(new Delay(null, null, null, startTime, endTime));
 		zonePlanMP.addMeasurement(
@@ -682,7 +709,6 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 		if (getBlackboardService().isTransactionOpen() && !wasOpen) {
 			getBlackboardService().closeTransaction();
 		}
-
 	}
 
 	protected int getPlanningBreadth() {
@@ -700,7 +726,26 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 			doConfigure((ConfigureMessage) event);
 		} else if (event instanceof UnitStatusUpdateMessage) {
 			processWorldStateUpdateMessage((UnitStatusUpdateMessage) event);
-		}
+		} if ( event instanceof PublishMPMessage ) {
+             BundledMPMessage bmm = new BundledMPMessage() ;
+             // Just subscribe to all measurement points!
+             for (Iterator iterator = mpSubscrption.iterator(); iterator.hasNext();)
+             {
+                 MeasurementPoint mp = (MeasurementPoint) iterator.next();
+                 bmm.addData( mp ) ;
+             }
+
+             // Send the configuration information.
+             Collection params = getParameters() ;
+             Vector paramVector = new Vector( params ) ;
+             String fileName = null ;
+             if ( paramVector.size() > 0 && configBytes != null  ) {
+                 fileName = ( String ) paramVector.elementAt(0) ;
+                 bmm.addData( fileName, configBytes);
+             }
+
+             gmrt.sendMessage( event.getSource(), bmm );
+         }
 	}
 
 	/**
@@ -735,8 +780,24 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 		//        System.out.println("Modified zone world=" + referenceZoneWorld );
 		referenceZoneWorld.setTime(sensedWorldState);
 
+        processEvents( event.getEvents() ) ;
+
 		getBlackboardService().publishChange(worldStateRef);
 
+	}
+
+    private void processEvents(ArrayList events)
+    {
+        for (int i = 0; i < events.size(); i++) {
+            CPEEvent event = (CPEEvent)events.get(i);
+            referenceZoneWorld.fireEvent( event );
+        }
+    }
+
+	public void execute() {
+		processOrganizations();
+
+		gmrt.execute(getBlackboardService());
 	}
 
 	private void makeMeasurementPoints() {
@@ -749,12 +810,6 @@ public class BDEAgentPlugin extends ComponentPlugin implements MessageSink {
 		zonePlanMP = new EventDurationMeasurementPoint("ZonePlan");
 		getBlackboardService().publishAdd(zonePlanMP);
 
-	}
-
-	public void execute() {
-		processOrganizations();
-
-		gmrt.execute(getBlackboardService());
 	}
 
 	LoggingService logger;
