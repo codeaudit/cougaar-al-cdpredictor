@@ -3,6 +3,7 @@ package org.cougaar.tools.castellan.ldm;
 
 import org.cougaar.core.blackboard.*;
 import org.cougaar.core.agent.*;
+import org.cougaar.core.domain.*;
 import org.cougaar.planning.ldm.plan.*;
 
 import java.util.*;

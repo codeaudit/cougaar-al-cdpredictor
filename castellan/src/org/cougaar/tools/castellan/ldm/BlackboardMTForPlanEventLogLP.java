@@ -86,6 +86,7 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
     }
 
     public void handleIncomingMessages(LogMessage lm) {
+//        System.out.println("RECEIVING " + lm );
         if (lm instanceof WrappedPDUMessage) {
             WrappedPDUMessage wpm = (WrappedPDUMessage) lm;
             PDU pdu = wpm.getPDU();
@@ -98,6 +99,33 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
         }
         else if (lm instanceof BatchMessage) {
             // Decompress each batch message.
+            BatchMessage bm = ( BatchMessage ) lm ;
+
+            try {
+                ByteArrayInputStream bis = new ByteArrayInputStream( bm.getByteArray() ) ;
+                ObjectInputStream ois = new ObjectInputStream( bis ) ;
+                while ( bis.available() > 0 ) {
+                    Object o = ois.readObject() ;
+
+                    if ( o instanceof PDU ) {
+                        PDU p = ( PDU ) o ;
+                        String sa = lm.getSourceAgent() ;
+                        if ( sa != null ) {
+                            sa.intern() ;
+                        }
+                        p.setSource( sa ) ;
+//                        if ( p instanceof TaskPDU ) {
+//                            System.out.println("Receiving " + p );
+//                        }
+                        sink.processPDU( p ) ;
+                    }
+                }
+            }
+            catch ( Exception e ) {
+                e.printStackTrace();
+            }
+
+            /*
             for (Iterator iter1 = ( (BatchMessage) lm ).getIterator() ; iter1.hasNext() ;) {
                 PDU pdu = (PDU) iter1.next();
                 String sa = lm.getSourceAgent();
@@ -109,6 +137,7 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
                     sink.processPDU(pdu);
                 }
             }
+            */
         }
     }
 
@@ -122,12 +151,17 @@ public class BlackboardMTForPlanEventLogLP implements ClientMessageTransport {
     }
 
     public void sendMessage(PDU pdu) {
+
         if (pdu instanceof DeclarePDU) {
             flush();
             sendWrappedMessage(pdu);
         }
         else {
+
             try {
+//                if ( pdu instanceof TaskPDU ) {
+//                    System.out.println("Writing " + pdu );
+//                }
                 oos.writeObject(pdu);
                 oos.flush();
                 if (bas.size() > maxBatchSize) {

@@ -6,10 +6,10 @@ import org.cougaar.core.agent.*;
 
 import java.util.*;
 
-public class CastellanDomain extends DomainAdapter {
+public class CastellanDomain2 extends DomainAdapter {
     public static final String CASTELLAN_DOMAIN = "castellan".intern();
 
-    public CastellanDomain() {
+    public CastellanDomain2() {
         super() ;
     }
 
@@ -81,7 +81,7 @@ public class CastellanDomain extends DomainAdapter {
 
         LogPlan logPlan = (LogPlan) getXPlan();
 
-        addLogicProvider(new PlanEventLogLP((LogPlanServesLogicProvider) logPlan, cluster));
+        addLogicProvider( new PlanLogLP( ( LogPlanServesLogicProvider ) logPlan, cluster ) ) ;
     }
 
 }

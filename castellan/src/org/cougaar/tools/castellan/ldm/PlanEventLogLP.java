@@ -1,6 +1,6 @@
 /*
   * <copyright>
-  *  Copyright 2001 (Intelligent Automation, Inc.)
+  *  Copyright 2002 (Intelligent Automation, Inc.)
   *  under sponsorship of the Defense Advanced Research Projects
   *  Agency (DARPA).
   *
@@ -27,6 +27,7 @@ import org.cougaar.core.agent.*;
 import org.cougaar.core.blackboard.*;
 import org.cougaar.core.util.*;
 import org.cougaar.core.service.LoggingService;
+import org.cougaar.core.domain.*;
 import org.cougaar.planning.ldm.plan.*;
 import org.cougaar.planning.ldm.asset.*;
 import org.cougaar.tools.castellan.plugin.*;
@@ -37,6 +38,13 @@ import org.cougaar.glm.ldm.asset.Organization;
 
 import java.util.*;
 
+/**
+ * Monitors all EnvelopeTuples.  For client agents, they are sent to the designed plan log server.  For
+ * server agents.
+ *
+ * <p>  This plugin is configured using a XML configuration file whose name is passed to the PlanLogConfigPlugin.
+ * If this configuration file is not present, no EventPDUs will be emitted.
+ */
 public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvider, EnvelopeLogicProvider, MessageLogicProvider,
         PDUSink {
 
@@ -48,7 +56,7 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
     public void init() {
         clientMessageTransport = new BlackboardMTForPlanEventLogLP(logplan, cluster);
         clientMessageTransport.setPDUSink(this);
-        sendMessage(new DeclarePDU(cluster.getClusterIdentifier().cleanToString()));
+        // sendMessage(new DeclarePDU(cluster.getClusterIdentifier().cleanToString()));
     }
 
     protected AllocationResult replicate(AllocationResult ar) {
@@ -394,7 +402,8 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
                     if (action == EventPDU.ACTION_ADD && o instanceof org.cougaar.glm.ldm.asset.Organization) {
                         Organization org = (Organization) o;
                         RelationshipPGPDU pgpdu = PlanToPDUTranslator.makeRelationshipPDU(cet, ct, org.getRelationshipPG());
-                        apdu.setPropertyGroups(new PropertyGroupPDU[]{pgpdu});
+                        ClusterPGPDU cpgpdu = PlanToPDUTranslator.makeClusterPDU( org.getClusterPG() ) ;
+                        apdu.setPropertyGroups(new PropertyGroupPDU[]{pgpdu, cpgpdu});
                     }
                     pdu = apdu;
                 }
@@ -448,8 +457,9 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
         flushInboundPDUs();
     }
 
+    private static int count = 0 ;
     protected void sendMessage(PDU pdu) {
-        if (clientMessageTransport != null) {
+        if (clientMessageTransport != null && pdu != null ) {
             clientMessageTransport.sendMessage(pdu);
         }
     }
@@ -520,9 +530,9 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
                 // Check to see if nobody is at home.
                 if ( buffer.getSize() > 350000 ) {
 
-                    buffer.clear();
+                    buffer.clearIncoming();
                 }
-                buffer.addPDU(pdu);
+                buffer.addIncoming(pdu);
             }
         }
     }
@@ -563,21 +573,29 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
 
         flushTraces();
 
-        // Handle any configuration objects.
+        // Handle any configuration objects and send a DeclarePDU if we receive them.
         if (o instanceof PlanLogConfig) {
+            PlanLogConfig config = ( PlanLogConfig ) o ;
             System.out.println("PlanEventLogLP::Received configuration settings...");
-            setLogConfig((PlanLogConfig) o);
+            setLogConfig( config );
+            DeclarePDU pdu =
+               new DeclarePDU( config.getNodeIdentifier(),
+                       cluster.getClusterIdentifier().cleanToString(), System.currentTimeMillis(), -1 ) ;
+            sendMessage( pdu );
             return;
         }
 
         // Ignore all bulk changes
         if (env.isBulk()) {
             // DEBUG  -- REMOVE
-            System.out.println("PlanEventLogLP::Warning, Ignoring all bulk changes.");
+            System.out.println("PlanEventLogLP::Ignoring all bulk changes.");
+            if ( log.isInfoEnabled() ) {
+                log.info( "PlanEventLogLP::Ignoring all bulk changes." ) ;
+            }
             return;
         }
 
-        if (env.isAdd() && ( o instanceof FlushObject )) {
+        if (env.isChange() && ( o instanceof FlushObject )) {
             clientMessageTransport.conditionalFlush();
             return;
         }
@@ -587,6 +605,10 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
             return;
         }
 
+        //if ( o instanceof Task ) {
+        //    System.out.print("Processing " + ( ( UniqueObject ) o ).getUID() );
+        //}
+
         if (env.isAdd()) {
             processObject(env, o, UniqueObjectPDU.ACTION_ADD);
         }
@@ -595,6 +617,9 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
         }
         else if (env.isChange()) {
             processChangedObject(env, o);
+        }
+        else {
+            System.out.println("Warning: Unknown change type.");
         }
     }
 
@@ -612,7 +637,7 @@ public class PlanEventLogLP extends LogPlanLogicProvider implements LogicProvide
     protected BlackboardMTForPlanEventLogLP clientMessageTransport;
 
     /**
-     * Mapping from
+     * Mapping from allocations to succes/failure mappings.
      */
     protected HashMap allocationToBooleanMap = new HashMap();
     protected HashMap allocationToARMap = new HashMap();

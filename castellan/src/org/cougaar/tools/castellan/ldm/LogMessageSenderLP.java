@@ -2,6 +2,7 @@ package org.cougaar.tools.castellan.ldm;
 
 import org.cougaar.core.agent.*;
 import org.cougaar.core.blackboard.*;
+import org.cougaar.core.domain.* ;
 
 import java.util.*;
 
