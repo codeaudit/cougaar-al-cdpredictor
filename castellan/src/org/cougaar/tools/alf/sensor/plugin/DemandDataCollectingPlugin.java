@@ -154,11 +154,14 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 	boolean oplan_is_not_detected = true;
 
 	java.io.BufferedWriter rst = null;
+	LoggingService myLoggingService = null;
 
     public void setupSubscriptions()   {
 
         bs = getBlackboardService();
 		cluster = agentId.toString(); // the cluster where this Plugin is running.
+		
+		myLoggingService = (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null);
 
 		taskSubscription		 	= (IncrementalSubscription) bs.subscribe(taskPredicate);
 //		planelementSubscription     = (IncrementalSubscription) bs.subscribe(pePredicate);
@@ -173,21 +176,21 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 		    System.err.println ("can't write file, io error" );
 	    }						
 
-		System.out.println("DemandDataCollectingPlugin start at " + cluster); 
+		myLoggingService.shout("DemandDataCollectingPlugin start at " + cluster); 
 		bs.setShouldBePersisted(false);
 /*
 		try
 		{
 			DateFormat df =  DateFormat.getInstance();
 			Date date1 = df.parse("July 11, 2005,  00:00:00 GMT"); // "07/11/2005 19:01:15"
-			System.out.println(date1);
+			myLoggingService.shout(date1);
 			Calendar cDay = Calendar.getInstance();
 			cDay.setTime(date1);		
-			System.out.println("first cDay = " + cDay.getTimeInMillis());		
+			myLoggingService.shout("first cDay = " + cDay.getTimeInMillis());		
 		}
 		catch (ParseException per)
 		{
-			System.out.println("parsing errors");
+			myLoggingService.shout("parsing errors");
 		}
 */		
 //		as = getAlarmService() ;
@@ -204,7 +207,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				{
 					Oplan oplan = (Oplan) iter.next();					
 					Date date = oplan.getCday();
-					System.out.println("cDay = " + date);
+					myLoggingService.shout("cDay = " + date);
 					Calendar cDay = Calendar.getInstance();
 					cDay.setTime(date);
 					baseTime =cDay.getTimeInMillis(); 
@@ -296,7 +299,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 	{
 		if (!planelementSubscription.isEmpty())
 		{
-//			System.out.println("planelementSubscription is not Empty");
+//			myLoggingService.shout("planelementSubscription is not Empty");
 			Collection c1 = planelementSubscription.getAddedCollection();
 			if (c1!=null)
 			{
@@ -340,7 +343,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				{
 					oftype = (String) pp.getIndirectObject();
 				} else {
-					System.out.println ("null Prepositional Phrase" );
+					//myLoggingService.shout ("null Prepositional Phrase" );
 					continue;
 				}
 
@@ -362,7 +365,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 				if (v.equals("GetLogSupport")==false)
 				{
-//					System.out.println(v.toString());
+//					myLoggingService.shout(v.toString());
 
 //					start_time = ti.getPreferredValue(AspectType.START_TIME);
 //   					start_time2 = ti.getPreference(AspectType.START_TIME).getScoringFunction().getBest().getValue();
@@ -426,7 +429,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				{
 					oftype = (String) pp.getIndirectObject();
 				} else {
-					System.out.println ("null Prepositional Phrase" );
+					myLoggingService.shout ("null Prepositional Phrase" );
 					continue;
 				}
 
@@ -448,7 +451,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 				if (v.equals("GetLogSupport")==false)
 				{
-//					System.out.println(v.toString());
+//					myLoggingService.shout(v.toString());
 
 					start_time = (long) (ti.getPreferredValue(AspectType.START_TIME) / 86400000) - baseTime;
 //   					start_time2 = ti.getPreference(AspectType.START_TIME).getScoringFunction().getBest().getValue();
@@ -516,7 +519,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 
 			try
 			{
-//				System.out.println("\n"+nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nFailedTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks);
+//				myLoggingService.shout("\n"+nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nFailedTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks);
 //				rst.write(nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nFailedTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks+"\n");
 				rst.write(nowTime+","+ nTasks+","+ nUnconfidentTasks+","+ nUnestimatedTasks+","+ nUnplannedTasks+","+nPSI+","+ nPSO+","+ nSI+","+ nSO+","+ nPW+","+ nW+"\n");
 				rst.flush();
@@ -534,7 +537,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				{
 					if (curr_state == -1)
 					{
-						System.out.println("SEVERE_LOAD");
+						myLoggingService.shout("SEVERE_LOAD");
 						sendLoadIndicator(1, LoadIndicator.SEVERE_LOAD); 	
 						curr_state = 1;
 					}
@@ -542,7 +545,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 				} else {
 					if (curr_state == 1)
 					{
-						System.out.println("NORMAL_LOAD");
+						myLoggingService.shout("NORMAL_LOAD");
 						sendLoadIndicator(1, LoadIndicator.NORMAL_LOAD); 				
 						curr_state = -1;
 					}
@@ -572,7 +575,7 @@ public class DemandDataCollectingPlugin extends ComponentPlugin
 			bs.publishChange(loadIndicator);
 		}	
 
-		System.out.println(cluster + ": adding loadIndicator to be sent to " + loadIndicator.getTargets());
+		myLoggingService.shout(cluster + ": adding loadIndicator to be sent to " + loadIndicator.getTargets());
 	}
 */
 /*
