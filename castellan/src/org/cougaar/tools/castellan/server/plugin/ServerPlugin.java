@@ -77,7 +77,7 @@ public class ServerPlugin extends ComponentPlugin implements PDUSink {
 
                 BlackboardService bs = getBlackboardService() ;
                 bs.openTransaction();
-                impl.flush();
+                execute();
                 bs.closeTransaction();
             }
         }
