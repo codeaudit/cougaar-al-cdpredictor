@@ -1,0 +1,19 @@
+Configuring Falling behind sensor 2:
+
+1) put the file "lookup.txt" into CIP/configs/common
+
+2) Create recipes in csmart. 
+
+   Specific Insertion: PSUFBSensor2Plugin
+      Class Name: org.cougar.tools.alf.sensor.plugin.PSUFBSensor2Plugin
+      Component Name: org.cougar.tools.alf.sensor.plugin.PSUFBSensor2Plugin
+      No. of Arguments: 0
+      Query: recipeQueryAllAgents
+
+After 'Send GLS root' button is clicked, PSUFBSensor2Plugin releases the 'LoadIndicator' with normal as an initial value and 'StartIndicator'. 
+The 'LoadIndicator'will be sent to the manager of community to which the current agent belongs. 
+The 'LoadIndicator' will be changed as the falling behindness changes.
+The 'StartIndicator'will be sent to 'TRANSCOM'agent where the loadforecaster plugin is running.
+We can see 'LoadIndicator' and 'StartIndicator'both through servlet.
+
+IMPORTANT: Insure that the system time between all the systems being run is synchronized.

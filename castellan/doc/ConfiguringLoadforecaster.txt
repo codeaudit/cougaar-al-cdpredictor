@@ -1,0 +1,19 @@
+Configuring Load forecaster:
+
+1) Add query Load forecaster in recipeQueries.q
+
+   recipeQueryTranscomManager=\
+	SELECT COMPONENT_ALIB_ID FROM ALIB_COMPONENT WHERE COMPONENT_TYPE='agent' AND COMPONENT_NAME='TRANSCOM'
+
+2) Create recipes in csmart. 
+
+   Specific Insertion: LoadForecasterPlugin
+      Class Name: org.cougaar.tools.alf.sensor.plugin.LoadForecasterPlugin
+      Component Name: org.cougaar.tools.alf.sensor.plugin.LoadForecasterPlugin
+      No. of Arguments: 0
+      Query: recipeQueryTranscomManager
+
+LoadForecasterPlugin will publish PSUSensorConditions which contains Load forecast results. 
+We can check PSUSensorConditions through servlet.
+
+IMPORTANT: Insure that the system time between all the systems being run is synchronized.
