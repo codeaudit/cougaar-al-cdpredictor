@@ -45,6 +45,10 @@ public class BoundaryVerbTaskAggregate extends AggregateVerbTaskLog {
         this.targetAgent = target ;
     }
 
+    public int getBoundaryType() {
+        return type;
+    }
+
     public void outputParamString(StringBuffer buf) {
         super.outputParamString(buf);
         buf.append( ",sourceAgent=" ).append( sourceAgent ).append( ",targetAgent=" ).append( targetAgent ) ;
