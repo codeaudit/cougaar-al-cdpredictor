@@ -38,7 +38,7 @@ import java.io.ObjectInput;
  * @version
  */
 public class TaskPDU extends UniqueObjectPDU {
-
+/*
     public TaskPDU(SymbolPDU taskVerb, UIDPDU parentTaskUID, UIDPDU uid, UIDPDU directObject,
         int action, long executionTime, long time )
     {
@@ -47,9 +47,15 @@ public class TaskPDU extends UniqueObjectPDU {
         this.taskVerbSym = taskVerb ;
         this.parentTaskUID = parentTaskUID ;
     }
+*/
 
-    public UIDPDU getDirectObject() {
-        return directObject;
+	public TaskPDU(SymbolPDU taskVerb, UIDPDU parentTaskUID, UIDPDU uid, String directObject,
+        int action, long executionTime, long time )
+    {
+        super( uid, TYPE_TASK, action, executionTime, time );
+        this.directObject = directObject ;
+        this.taskVerbSym = taskVerb ;
+        this.parentTaskUID = parentTaskUID ;
     }
 
     public SymbolPDU getTaskVerb() { return taskVerbSym ; }
@@ -75,12 +81,18 @@ public class TaskPDU extends UniqueObjectPDU {
     {
         taskVerbSym = ( SymbolPDU ) in.readObject() ;
         parentTaskUID = ( UIDPDU ) in.readObject() ;
-        directObject = ( UIDPDU ) in.readObject() ;
+//        directObject = ( UIDPDU ) in.readObject() ;
+        directObject = ( String ) in.readObject() ;
+
     }
+
+    public String getDirectObject() { return directObject ; }
 
     protected SymbolPDU taskVerbSym ;
     protected UIDPDU parentTaskUID ;
-    protected UIDPDU directObject ;
+//    protected UIDPDU directObject ;
+    protected String directObject ;
+//    protected int directObject ;
 
     static final long serialVersionUID = -6915490535562092604L;
 }

@@ -19,10 +19,10 @@ import java.util.Properties;
 import java.util.Hashtable;
 import java.util.Arrays;
 import java.util.Enumeration;
-import java.awt.Checkbox;
-import javax.swing.JFrame;
-import java.awt.Container;
-import java.awt.GridLayout;
+//import java.awt.Checkbox;
+//import javax.swing.JFrame;
+//import java.awt.Container;
+//import java.awt.GridLayout;
 
 public class FallingBehindSensor
 {
@@ -181,17 +181,17 @@ public class FallingBehindSensor
         cluster[126]="372-CGO-TRANSCO";
         cluster[127]="594-MDM-TRKCO";
    
-        check= new Checkbox[clusters];
-        fbframe=new JFrame("Falling Behind Sensor");
-        fbcontainer=fbframe.getContentPane();
-        fbcontainer.setLayout(new GridLayout(32,4)); 
+  //      check= new Checkbox[clusters];
+  //      fbframe=new JFrame("Falling Behind Sensor");
+  //      fbcontainer=fbframe.getContentPane();
+  //      fbcontainer.setLayout(new GridLayout(32,4)); 
         change=new int[clusters];
         state=new int[clusters];
-        for (i=0; i<=clusters-1; i++) {
-            check[i]=new Checkbox(cluster[i], false);
-            fbcontainer.add(check[i]);
-        }
-        fbframe.setVisible(true);
+ //       for (i=0; i<=clusters-1; i++) {
+  //          check[i]=new Checkbox(cluster[i], false);
+  //          fbcontainer.add(check[i]);
+  //      }
+ //       fbframe.setVisible(true);
     } 
     
     
@@ -206,36 +206,39 @@ public class FallingBehindSensor
         int i, clusterno=0;
         String source;
         if (pdu instanceof TaskPDU || pdu instanceof AllocationPDU) {
+
             source=pdu.getSource();
             for (i=0; i<=clusters-1; i++) {
-                 if (cluster[i]==source) {clusterno=i; break;}
+                 if (source.equalsIgnoreCase(cluster[i])) {clusterno=i; break;}
             }
             if (i==clusters) return;
+
             if (pdu instanceof TaskPDU) {
                 tpdu=(TaskPDU)pdu;
                 // Gather task arrival time series for ProjectSupply and Supply Tasks.
-                if (tpdu.getAction()==0 && ((UIDStringPDU)(tpdu.getUID())).getOwner()!=source && (((SymStringPDU)(tpdu.getTaskVerb())).toString()=="ProjectSupply" || ((SymStringPDU)(tpdu.getTaskVerb())).toString()=="Supply")) {
+                if (tpdu.getAction()==0 && (((UIDStringPDU)(tpdu.getUID())).getOwner().equalsIgnoreCase(source)==false) && (((SymStringPDU)(tpdu.getTaskVerb())).toString().equalsIgnoreCase("ProjectSupply") || ((SymStringPDU)(tpdu.getTaskVerb())).toString().equalsIgnoreCase("Supply"))) {
                     time_series[clusterno][0].put(((UIDStringPDU)(tpdu.getUID())).toString(), new Long(tpdu.getTime()));
                     change[clusterno]=1;
                     return;
                 }
                 // Gather task time series for tasks that is not interesting but allocated.                
-                if (tpdu.getAction()==0 && (((SymStringPDU)(tpdu.getTaskVerb())).toString()=="ProjectWithdraw" || ((SymStringPDU)(tpdu.getTaskVerb())).toString()=="Withdraw"))
-					if (((UIDStringPDU)(tpdu.getParentTask())).getOwner()==source) {
+                if (tpdu.getAction()==0 && (((SymStringPDU)(tpdu.getTaskVerb())).toString().equalsIgnoreCase("ProjectWithdraw") || ((SymStringPDU)(tpdu.getTaskVerb())).toString().equalsIgnoreCase("Withdraw")))
+					if (((UIDStringPDU)(tpdu.getParentTask())).getOwner().equalsIgnoreCase(source)) {
                           time_series[clusterno][1].put(((UIDStringPDU)(tpdu.getUID())).toString(), new Long(tpdu.getTime()));
                           change[clusterno]=1;
                           return;
                     }
-					if (tpdu.getAction()==0 && (((SymStringPDU)(tpdu.getTaskVerb())).toString()!="ProjectSupply" && ((SymStringPDU)(tpdu.getTaskVerb())).toString()!="Supply")&& (((SymStringPDU)(tpdu.getTaskVerb())).toString()!="ProjectWithdraw" && ((SymStringPDU)(tpdu.getTaskVerb())).toString()!="Withdraw")) {
+					if (tpdu.getAction()==0 && (((SymStringPDU)(tpdu.getTaskVerb())).toString().equalsIgnoreCase("ProjectSupply")==false) && (((SymStringPDU)(tpdu.getTaskVerb())).toString().equalsIgnoreCase("Supply")==false)&& (((SymStringPDU)(tpdu.getTaskVerb())).toString().equalsIgnoreCase("ProjectWithdraw")==false) && (((SymStringPDU)(tpdu.getTaskVerb())).toString().equalsIgnoreCase("Withdraw")==false)) {
                           time_series[clusterno][1].put(((UIDStringPDU)(tpdu.getUID())).toString(), new Long(tpdu.getTime()));
                           change[clusterno]=1; 
                           return;
                     }
             }
             // Gather allocation(not to organizational asset) time series.
+
             if (pdu instanceof AllocationPDU) {
                 apdu=(AllocationPDU)pdu;
-                if (apdu.getAction()==0 && ((UIDStringPDU)(apdu.getUID())).getOwner()==source && ((UIDStringPDU)(apdu.getTask())).getOwner()==source && ((UIDStringPDU)(apdu.getAsset())).getOwner()==source) { 
+                if (apdu.getAction()==0 && ((UIDStringPDU)(apdu.getUID())).getOwner().equalsIgnoreCase(source) && ((UIDStringPDU)(apdu.getTask())).getOwner().equalsIgnoreCase(source) && ((UIDStringPDU)(apdu.getAsset())).getOwner().equalsIgnoreCase(source)) { 
                     time_series[clusterno][2].put(((UIDStringPDU)(apdu.getTask())).toString(), new Long(apdu.getTime()));                            
                     change[clusterno]=1;
                     return;
@@ -269,16 +272,25 @@ public class FallingBehindSensor
                  n2=time_series[i][0].size();
                  // Calculate falling behind and update status.                  
                  if (n1>2 && n2>2) {
-                     if (n1>n2) {check[i].setState(false); state[i]=0; continue;}
+                     if (n1>n2) {
+				//check[i].setState(false);
+				 state[i]=0; continue;}
                      a=time_series[i][2].values().toArray();
                      Arrays.sort(a);
                      y=(((Long)a[n1-1]).longValue()-((Long)a[0]).longValue())/1000.0;
                      a=time_series[i][0].values().toArray();                      
                      Arrays.sort(a);
                      x=(((Long)a[n1-1]).longValue()-((Long)a[0]).longValue())/1000.0;
-                     if (y>x*0.8815+65) {check[i].setState(true); state[i]=1;}
-                     else {check[i].setState(false); state[i]=0;}
-                     System.out.println(cluster[i]+" "+n2+"(G) "+n1+"(A) "+x+"sec. "+y+"sec. ");
+                     if (y>x*0.8815+65) {
+			//	check[i].setState(true);
+				state[i]=1;}
+                     else {
+			//	check[i].setState(false);
+				state[i]=0;}
+                     System.out.print(cluster[i]+" "+n2+"(G) "+n1+"(A) "+x+"sec. "+y+"sec. \n");
+			   if (state[i]==1) System.out.print("Falling Behind\n");
+			   else System.out.print("\n");
+
                   }
                   change[i]=0;
               }
@@ -290,7 +302,7 @@ public class FallingBehindSensor
     String[] cluster;
     int[] change;
     int[] state;
-    JFrame fbframe;
-    Container fbcontainer ;
-    Checkbox[] check;
+ //   JFrame fbframe;
+ //   Container fbcontainer ;
+ //   Checkbox[] check;
 }

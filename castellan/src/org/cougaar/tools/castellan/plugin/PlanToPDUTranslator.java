@@ -20,6 +20,8 @@ import org.cougaar.core.agent.*;
 import org.cougaar.glm.ldm.asset.OrganizationPG;
 import org.cougaar.planning.ldm.plan.*;
 
+import org.cougaar.glm.ldm.asset.*;
+
 import java.io.*;
 
 /**
@@ -57,13 +59,54 @@ public abstract class PlanToPDUTranslator
 
     public static final TaskPDU makeTaskMessage( long executionTime, long time, Task t, int action )
     {
-
+/*  Original code
         // Do not infer the parent.  This is a significant change from the previous version
         UIDPDU directObject = null ;
         Asset doAsset = t.getDirectObject() ;
         if ( doAsset != null ) {
             directObject = toSym( doAsset.getUID() ) ;
         }
+        TaskPDU tm =
+                new TaskPDU( toSym( t.getVerb().toString() ), toSym( t.getParentTaskUID() ), toSym( t.getUID() ), directObject,
+                        action, executionTime, time );
+        return tm;
+*/
+      // Do not infer the parent.  This is a significant change from the previous version
+//        UIDPDU directObject = null ;
+
+		String directObject = "10";
+//		int directObject = 0;
+        Asset doAsset = t.getDirectObject() ;
+
+        if ( doAsset != null ) {
+//            directObject = toSym( doAsset.getUID() ) ;
+//////
+			if (doAsset instanceof ClassISubsistence)
+			{
+				directObject = "1";
+			} else if (doAsset instanceof ClassIIClothingAndEquipment)
+			{
+				directObject = "2";
+			} else if (doAsset instanceof ClassIIIPOL)
+			{
+				directObject = "3";
+			} else if (doAsset instanceof ClassIVConstructionMaterial)
+			{
+				directObject = "4";
+			} else if (doAsset instanceof ClassVAmmunition )
+			{
+				directObject = "5";
+			} else if (doAsset instanceof ClassIXRepairPart)
+			{
+				directObject = "9";
+			} else {
+				directObject = doAsset.toString();
+			}
+///////
+        }
+
+//		System.out.println("directObject = "+ directObject);
+        
         TaskPDU tm =
                 new TaskPDU( toSym( t.getVerb().toString() ), toSym( t.getParentTaskUID() ), toSym( t.getUID() ), directObject,
                         action, executionTime, time );
