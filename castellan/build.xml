@@ -2,6 +2,7 @@
 
 <property name="src" value="src"/>
 <property name="build" value="build"/>
+<property name="jar" value="castellan.jar"/>
 <property environment="env"/>
 <property name="cougaar" value="${env.COUGAAR_INSTALL_PATH}"/>
     
@@ -36,7 +37,15 @@
 	</target>
 
 	<target name="create_cougaar_overlay">
-		<echo message="TODO"/>
+		<mkdir dir="staging/lib"/>
+		<mkdir dir="staging/sys"/>
+		<antcall target="delete"/>
+		<antcall target="jar"/>
+		<copy file="${jar}" todir="staging/lib"/>
+		<copy todir="staging/sys">
+			<fileset dir="data/libs" includes="*.jar"/>
+		</copy>
+		<zip zipfile="psu_cougaar_overlay.zip" basedir="staging"/>
 	</target>
 
 	<target name="clean" depends="delete,compile,jar"/>
