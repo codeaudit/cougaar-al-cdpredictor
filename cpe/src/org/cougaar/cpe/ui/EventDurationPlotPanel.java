@@ -7,6 +7,7 @@ import com.axiom.lib.plot.Plottable;
 import org.cougaar.tools.techspecs.qos.EventDurationMeasurementPoint;
 import org.cougaar.tools.techspecs.qos.DelayMeasurement;
 import org.cougaar.tools.techspecs.qos.TimestampMeasurement;
+import org.cougaar.tools.techspecs.qos.MeasurementPoint;
 
 import javax.swing.*;
 import java.util.Iterator;
@@ -18,7 +19,7 @@ import java.awt.*;
  * Date: Sep 20, 2003
  * Time: 8:18:17 PM
  */
-public class EventDurationPlotPanel extends PlotComponent
+public class EventDurationPlotPanel extends PlotComponent implements MPObserver
 {
     EventDurationMeasurementPoint emp ;
     private AgentDisplayPlugin plugin;
@@ -114,6 +115,11 @@ public class EventDurationPlotPanel extends PlotComponent
                 repaint();
             }
         });
+    }
+
+    public MeasurementPoint getMeasurementPoint()
+    {
+        return emp ;
     }
 
 }
