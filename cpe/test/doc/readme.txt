@@ -27,7 +27,7 @@ Castellan class files.  CPE uses some of the library files from that project.
 setarguments.bat file in <CIP>\bin so that the server VM will be used. Also, add the -mx768m parameter to the
 MYMEMORY environment variable.  For example:
 
-set MYPROPERTIES=-server -Xbootclasspath/p:"%COUGAAR_INSTALL_PATH%\lib\javaiopatch.jar" -Dorg.cougaar.system.path="%COUGAAR3RDPARTY%" -Dorg.cougaar.install.path="%COUGAAR_INSTALL_PATH%" -Duser.timezone=GMT -Dorg.cougaar.core.agent.startTime="08/10/2005 00:05:00" -Dorg.cougaar.class.path=%COUGAAR_DEV_PATH% -Dorg.cougaar.workspace=%COUGAAR_WORKSPACE% -Dorg.cougaar.config.path="%COUGAAR_INSTALL_PATH%\configs\common\;%COUGAAR_INSTALL_PATH%\configs\glmtrans\;"
+set MYPROPERTIES=-server -Dorg.cougaar.system.path="%COUGAAR3RDPARTY%" -Dorg.cougaar.install.path="%COUGAAR_INSTALL_PATH%" -Duser.timezone=GMT -Dorg.cougaar.core.agent.startTime="08/10/2005 00:05:00" -Dorg.cougaar.class.path=%COUGAAR_DEV_PATH% -Dorg.cougaar.workspace=%COUGAAR_WORKSPACE% -Dorg.cougaar.config.path="%COUGAAR_INSTALL_PATH%\configs\common\;%COUGAAR_INSTALL_PATH%\configs\glmtrans\;"
 
 set MYMEMORY=-Xms256m -Xmx768m
 
