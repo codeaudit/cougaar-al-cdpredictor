@@ -169,8 +169,8 @@ public class AgentLoadObserver {
         search.initNode( new PEGraphNode(tl) );
         search.run() ;
 
-        for ( Enumeration enum = search.getClosedNodes() ; enum.hasMoreElements(); ) {
-            PEGraphNode pen = ( PEGraphNode ) enum.nextElement() ;
+        for ( Enumeration enm = search.getClosedNodes() ; enm.hasMoreElements(); ) {
+            PEGraphNode pen = ( PEGraphNode ) enm.nextElement() ;
             TaskLog taskLog = ( TaskLog ) pen.getLog() ;
             int type = getBoundaryType( taskLog ) ;
 

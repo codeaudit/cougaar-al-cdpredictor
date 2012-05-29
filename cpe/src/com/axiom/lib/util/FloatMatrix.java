@@ -140,9 +140,9 @@ public class FloatMatrix implements Serializable, Cloneable, NumberArray  {
 
         FloatMatrix result = new FloatMatrix( newSize ) ;
         float[] farr = result.getArray() ;
-        FloatMatrixEnumeration enum = new FloatMatrixEnumeration( this, lower, upper ) ;
-        for ( int i=0; enum.hasMoreElements() ; ) {
-            float value = enum.nextElement() ;
+        FloatMatrixEnumeration enm = new FloatMatrixEnumeration( this, lower, upper ) ;
+        for ( int i=0; enm.hasMoreElements() ; ) {
+            float value = enm.nextElement() ;
             farr[i++] = value ;
         }
         return result ;
