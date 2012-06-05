@@ -1,6 +1,7 @@
 package com.axiom.lib.math ;
 /**
- * 2-D n-dimensional FFT * clint hastings  28 Mar 97
+ * 2-D n-dimensional FFT
+ * clint hastings  28 Mar 97
  * adapted from book - Numerical Recipes in C
  */
 
@@ -15,7 +16,8 @@ final int IMAG = 2;
 //      For 2-D, nn[1] = width, nn[2] = height
 // ndim: number of dimensions
 // foward: true for forward fft, false for reverse
-public static void compute(double data[], int nn[], boolean forward) {    int ndim = nn.length ;
+public static void compute(double data[], int nn[], boolean forward) {
+        int ndim = nn.length;
 
 	int i1, i2, i3, i2rev, i3rev;
 	int ip1, ip2, ip3, ifp1, ifp2;
