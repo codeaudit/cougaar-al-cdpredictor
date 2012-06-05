@@ -4,11 +4,11 @@ package com.axiom.lib.math ;
  * adapted from book - Numerical Recipes in C
  */
 
-public abstract class FFT extends Object {
+public abstract class FFT extends Object {
 boolean FORWARD = true;
 boolean REVERSE = false;
 final int REAL = 1;
-final int IMAG = 2;
+final int IMAG = 2;
 // fourn parameters
 // data: array [1..2*length]  of real,complex pairs
 // nn : array[1..ndim] of fft length in each dimension, must be power of 2
